@@ -1,4 +1,3 @@
-ls · JS
 // Utilidades: pantallas, menú y texto seguro
  
 const $ = id => document.getElementById(id);
