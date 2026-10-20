@@ -86,29 +86,35 @@
   <p id="p-info" class="gr"></p>
   <p id="p-hostal" class="gr hide">El panel de habitaciones estará disponible pronto.</p>
   <div id="inv" class="hide">
-    <input type="text" id="buscar" placeholder="Buscar por código o nombre" oninput="listar()">
-    <div id="form-prod" class="card" style="margin:16px 0">
-      <b id="f-titulo">Agregar producto</b>
-      <div class="f2">
-        <div><label>Código</label><input type="text" id="f-codigo"></div>
-        <div><label>Nombre</label><input type="text" id="f-nombre"></div>
-        <div><label>Precio (S/)</label><input type="number" id="f-precio" min="0" step="0.01" inputmode="decimal"></div>
-        <div><label>Stock</label><input type="number" id="f-stock" min="0" step="1" inputmode="numeric"></div>
-        <div><label>Avisar si baja de</label><input type="number" id="f-min" min="0" step="1" inputmode="numeric" placeholder="0 = sin aviso"></div>
+    <div class="inv-grid" id="inv-grid">
+      <div class="inv-izq">
+        <div id="form-prod" class="card">
+          <b id="f-titulo">Agregar producto</b>
+          <div class="f2">
+            <div><label>Código</label><input type="text" id="f-codigo"></div>
+            <div><label>Nombre</label><input type="text" id="f-nombre"></div>
+            <div><label>Precio (S/)</label><input type="number" id="f-precio" min="0" step="0.01" inputmode="decimal"></div>
+            <div><label>Stock</label><input type="number" id="f-stock" min="0" step="1" inputmode="numeric"></div>
+            <div><label>Avisar si baja de</label><input type="number" id="f-min" min="0" step="1" inputmode="numeric" placeholder="0 = sin aviso"></div>
+          </div>
+          <button class="pri full" id="f-btn" onclick="guardarProducto()">Guardar producto</button>
+          <button class="full hide" id="f-cancel" onclick="limpiarForm()">Cancelar edición</button>
+        </div>
+        <div class="msg" id="pr-msg"></div>
+        <div id="imp" class="card">
+          <b>Importar desde Excel</b>
+          <p class="gr">Columnas: codigo, nombre, precio, stock y stock_minimo (opcional). Si un código ya existe, se actualiza.</p>
+          <input type="file" id="f-xls" accept=".xlsx,.xls,.csv">
+          <button class="pri" onclick="importar()">Importar</button>
+          <button onclick="plantilla()">Descargar plantilla</button>
+        </div>
       </div>
-      <button class="pri full" id="f-btn" onclick="guardarProducto()">Guardar producto</button>
-      <button class="full hide" id="f-cancel" onclick="limpiarForm()">Cancelar edición</button>
+      <div class="inv-der">
+        <input type="text" id="buscar" placeholder="Buscar por código o nombre" oninput="listar()">
+        <div id="alerta" class="card hide" style="border-color:#f59e0b;background:#fffbeb;margin-bottom:12px"></div>
+        <div id="lista"></div>
+      </div>
     </div>
-    <div id="imp" class="card" style="margin:16px 0">
-      <b>Importar desde Excel</b>
-      <p class="gr">Columnas: codigo, nombre, precio, stock y stock_minimo (opcional). Si un código ya existe, se actualiza.</p>
-      <input type="file" id="f-xls" accept=".xlsx,.xls,.csv">
-      <button class="pri" onclick="importar()">Importar</button>
-      <button onclick="plantilla()">Descargar plantilla</button>
-    </div>
-    <div id="alerta" class="card hide" style="border-color:#f59e0b;background:#fffbeb;margin-bottom:12px"></div>
-    <div class="msg" id="pr-msg"></div>
-    <div id="lista"></div>
   </div>
 </div></section>
 

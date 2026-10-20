@@ -4,6 +4,29 @@ let NEG = null, PUEDE = false, PRODS = [], EDIT = null;
 
 const bajo = p => p.stock_minimo > 0 && p.stock <= p.stock_minimo;
 
+let AUTO = "";
+
+// Calcula el siguiente código: mismo formato que el último producto creado, +1
+function siguienteCodigo(){
+  const re = /^(\D*)(\d+)$/;
+  const ult = [...PRODS].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+                        .map(p => p.codigo.match(re)).find(Boolean);
+  const pre = ult ? ult[1] : "", ancho = ult ? ult[2].length : 5;
+  let n = 0;
+  PRODS.forEach(p => { const m = p.codigo.match(re); if (m && m[1] === pre) n = Math.max(n, parseInt(m[2], 10)); });
+  const usados = new Set(PRODS.map(p => p.codigo));
+  let c;
+  do { n++; c = pre + String(n).padStart(ancho, "0"); } while (usados.has(c));
+  return c;
+}
+
+// Rellena el código solo si está vacío o si todavía tiene el código automático
+function codigoPorDefecto(){
+  if (!PUEDE || EDIT) return;
+  const campo = $("f-codigo"), v = campo.value.trim();
+  if (v === "" || v === AUTO) { AUTO = siguienteCodigo(); campo.value = AUTO; }
+}
+
 async function cargarProductos(){
   const { data, error } = await sb.from("productos").select("*").order("nombre");
   $("pr-msg").textContent = error ? "No se pudo cargar: " + error.message : "";
@@ -13,6 +36,7 @@ async function cargarProductos(){
   $("alerta").innerHTML = "<b>Stock bajo en " + b.length + " producto(s):</b> " +
     b.slice(0, 8).map(p => esc(p.nombre) + " (" + p.stock + ")").join(", ") + (b.length > 8 ? "..." : "");
   listar();
+  codigoPorDefecto();
 }
 
 function listar(){
@@ -31,6 +55,7 @@ function limpiarForm(){
   $("f-titulo").textContent = "Agregar producto";
   $("f-btn").textContent = "Guardar producto";
   $("f-cancel").classList.add("hide");
+  codigoPorDefecto();
 }
 
 function editar(id){

@@ -32,3 +32,11 @@ input[type=text],input[type=email],input[type=password],input[type=tel]{width:10
 .gr{color:var(--gr)}
 input[type=number]{width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;font:inherit}
 .hide{display:none!important}
+
+#v-panel .wrap{max-width:1100px}
+.inv-grid{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:24px;align-items:start}
+.inv-izq .card{margin-bottom:16px}
+.inv-der{min-width:0}
+.inv-grid.solo{grid-template-columns:1fr}
+.inv-grid.solo .inv-izq{display:none}
+@media(max-width:820px){.inv-grid{grid-template-columns:1fr}}

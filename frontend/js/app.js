@@ -20,6 +20,7 @@ async function irSegunNegocio(){
   $("p-hostal").classList.toggle("hide", esTienda);
   $("form-prod").classList.toggle("hide", !PUEDE);
   $("imp").classList.toggle("hide", !PUEDE);
+  $("inv-grid").classList.toggle("solo", !PUEDE);
   show("panel");
   if (esTienda) cargarProductos();
 }
