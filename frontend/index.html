@@ -38,12 +38,12 @@
 <!-- REGISTRO -->
 <section class="v hide" id="v-registro"><div class="box">
   <h2>Crear cuenta</h2>
+  <div class="msg" id="r-msg"></div>
   <label>Correo</label><input type="email" id="r-email" autocomplete="email">
-  <label>Contraseña</label><input type="password" id="r-pass" autocomplete="new-password">
-  <label>Repite la contraseña</label><input type="password" id="r-pass2" autocomplete="new-password">
+  <label>Contraseña</label><input type="password" id="r-pass" autocomplete="new-password" oninput="verCoincidencia()">
+  <label>Repite la contraseña</label><input type="password" id="r-pass2" autocomplete="new-password" oninput="verCoincidencia()">
   <label>WhatsApp (9 dígitos)</label><input type="tel" id="r-wsp" inputmode="numeric" maxlength="9" placeholder="987654321">
   <button class="pri full" onclick="registrar()">Crear cuenta</button>
-  <div class="msg" id="r-msg"></div>
 </div></section>
 
 <!-- CORREO ENVIADO -->
