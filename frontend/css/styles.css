@@ -43,3 +43,15 @@ input[type=number]{width:100%;padding:11px;border:1px solid var(--bd);border-rad
 
 #r-msg{margin:0 0 4px;font-weight:600}
 input.error{border-color:#b91c1c;background:#fef2f2}
+
+.cuartos{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-bottom:16px}
+.cuarto{border:2px solid var(--bd);border-radius:12px;padding:10px;text-align:center;cursor:pointer;background:#fff;min-height:68px}
+.cuarto b{display:block;font-size:18px}
+.cuarto small{display:block;color:var(--gr);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cuarto.ocupado{background:#dcfce7;border-color:#16a34a}
+.cuarto.ocupado b{color:#166534}
+.cuarto.venc{border-color:#f59e0b}
+.cuarto.sel{outline:3px solid var(--az)}
+.hues{border:1px solid var(--bd);border-radius:10px;padding:8px;margin:8px 0;display:grid;gap:6px}
+select,input[type=datetime-local]{width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;font:inherit;background:#fff}
+#h-resumen{margin-bottom:10px;font-weight:600;color:var(--gr)}
