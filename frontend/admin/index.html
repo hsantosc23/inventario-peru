@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Administración</title>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<header><span>Administración</span><button id="salir" class="hide" onclick="salir()">Salir</button></header>
+
+<div class="wrap" id="login">
+  <h2>Acceso de administrador</h2>
+  <input type="email" id="e" placeholder="Correo" autocomplete="email">
+  <input type="password" id="p" placeholder="Contraseña" autocomplete="current-password">
+  <button class="pri" onclick="entrar()">Entrar</button>
+  <div class="msg" id="m"></div>
+</div>
+
+<div class="wrap hide" id="app">
+  <input type="text" id="q" placeholder="Buscar por correo o nombre del negocio" oninput="pintar()">
+  <div id="resumen" class="gr"></div>
+  <div id="det" class="hide"></div>
+  <div id="lista"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/supabase-client.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/admin.js"></script>
+</body>
+</html>

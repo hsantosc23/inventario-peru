@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TuMarca · Administra tu negocio fácil</title>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<header>
+  <!-- Cambia este bloque por tu logo cuando lo tengas -->
+  <div class="logo" onclick="show('home')"><img src="/images/logo.svg" alt="" width="32" height="32"> TuMarca</div>
+  <nav id="nav-out">
+    <button onclick="show('login')">Acceder</button>
+    <button class="pri" onclick="show('registro')">Registrarse</button>
+  </nav>
+  <nav id="nav-in" class="hide"><button onclick="salir()">Salir</button></nav>
+</header>
+
+<!-- INICIO -->
+<section class="v" id="v-home">
+  <div class="hero">
+    <h1>Administra tu negocio sin complicaciones</h1>
+    <p>Controla tu inventario o tus habitaciones desde el celular o la computadora. Prueba gratis 7 días.</p>
+    <button class="pri" onclick="show('registro')">Empieza gratis</button>
+    <button onclick="show('login')">Ya tengo cuenta</button>
+  </div>
+  <div class="grid">
+    <div class="card"><b>Busca por código</b><p>Encuentra cualquier producto y su precio en segundos, y vende más rápido.</p></div>
+    <div class="card"><b>Stock al día</b><p>Sabe qué tienes y qué te falta, sin cuadernos ni hojas sueltas.</p></div>
+    <div class="card"><b>Control de hostales</b><p>Registra huéspedes y habitaciones, por hora, noche o día completo.</p></div>
+    <div class="card"><b>Tus datos seguros</b><p>Cada negocio ve solo su información, con su propia cuenta.</p></div>
+  </div>
+</section>
+
+<!-- REGISTRO -->
+<section class="v hide" id="v-registro"><div class="box">
+  <h2>Crear cuenta</h2>
+  <label>Correo</label><input type="email" id="r-email" autocomplete="email">
+  <label>Contraseña</label><input type="password" id="r-pass" autocomplete="new-password">
+  <label>Repite la contraseña</label><input type="password" id="r-pass2" autocomplete="new-password">
+  <label>WhatsApp (9 dígitos)</label><input type="tel" id="r-wsp" inputmode="numeric" maxlength="9" placeholder="987654321">
+  <button class="pri full" onclick="registrar()">Crear cuenta</button>
+  <div class="msg" id="r-msg"></div>
+</div></section>
+
+<!-- CORREO ENVIADO -->
+<section class="v hide" id="v-pendiente"><div class="box">
+  <h2>Revisa tu correo</h2>
+  <p>Te enviamos un enlace para confirmar tu cuenta. Después de confirmarlo, vuelve aquí y toca Acceder.</p>
+  <button class="pri full" onclick="show('login')">Acceder</button>
+</div></section>
+
+<!-- LOGIN -->
+<section class="v hide" id="v-login"><div class="box">
+  <h2>Acceder</h2>
+  <label>Correo</label><input type="email" id="l-email" autocomplete="email">
+  <label>Contraseña</label><input type="password" id="l-pass" autocomplete="current-password">
+  <button class="pri full" onclick="acceder()">Entrar</button>
+  <div class="msg" id="l-msg"></div>
+</div></section>
+
+<!-- MODALIDAD -->
+<section class="v hide" id="v-modalidad"><div class="box">
+  <h2>¿Qué tipo de negocio tienes?</h2>
+  <label>Nombre de tu negocio</label><input type="text" id="m-nombre">
+  <label class="opt"><input type="radio" name="tipo" value="tienda" onchange="verTipo()">
+    Negocio con control de inventario<small>Productos, códigos, precios y stock.</small></label>
+  <label class="opt"><input type="radio" name="tipo" value="hostal" onchange="verTipo()">
+    Hotel con control de habitaciones<small>Habitaciones y registro de huéspedes.</small></label>
+  <div id="m-cobro" class="hide">
+    <label>¿Cómo cobras las habitaciones? (puedes marcar varias)</label>
+    <label class="opt"><input type="checkbox" name="cobro" value="hora"> Por hora</label>
+    <label class="opt"><input type="checkbox" name="cobro" value="noche"> Por noche</label>
+    <label class="opt"><input type="checkbox" name="cobro" value="dia_completo"> Día completo</label>
+  </div>
+  <button class="pri full" onclick="guardarModalidad()">Continuar</button>
+  <div class="msg" id="m-msg"></div>
+</div></section>
+
+<!-- PANEL (provisional) -->
+<section class="v hide" id="v-panel"><div class="wrap">
+  <h2 id="p-titulo">Bienvenido</h2>
+  <p id="p-info" class="gr"></p>
+  <p id="p-hostal" class="gr hide">El panel de habitaciones estará disponible pronto.</p>
+  <div id="inv" class="hide">
+    <input type="text" id="buscar" placeholder="Buscar por código o nombre" oninput="listar()">
+    <div id="form-prod" class="card" style="margin:16px 0">
+      <b id="f-titulo">Agregar producto</b>
+      <div class="f2">
+        <div><label>Código</label><input type="text" id="f-codigo"></div>
+        <div><label>Nombre</label><input type="text" id="f-nombre"></div>
+        <div><label>Precio (S/)</label><input type="number" id="f-precio" min="0" step="0.01" inputmode="decimal"></div>
+        <div><label>Stock</label><input type="number" id="f-stock" min="0" step="1" inputmode="numeric"></div>
+        <div><label>Avisar si baja de</label><input type="number" id="f-min" min="0" step="1" inputmode="numeric" placeholder="0 = sin aviso"></div>
+      </div>
+      <button class="pri full" id="f-btn" onclick="guardarProducto()">Guardar producto</button>
+      <button class="full hide" id="f-cancel" onclick="limpiarForm()">Cancelar edición</button>
+    </div>
+    <div id="imp" class="card" style="margin:16px 0">
+      <b>Importar desde Excel</b>
+      <p class="gr">Columnas: codigo, nombre, precio, stock y stock_minimo (opcional). Si un código ya existe, se actualiza.</p>
+      <input type="file" id="f-xls" accept=".xlsx,.xls,.csv">
+      <button class="pri" onclick="importar()">Importar</button>
+      <button onclick="plantilla()">Descargar plantilla</button>
+    </div>
+    <div id="alerta" class="card hide" style="border-color:#f59e0b;background:#fffbeb;margin-bottom:12px"></div>
+    <div class="msg" id="pr-msg"></div>
+    <div id="lista"></div>
+  </div>
+</div></section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/supabase-client.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/onboarding.js"></script>
+<script src="/js/inventario.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>
