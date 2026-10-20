@@ -1,8 +1,10 @@
 // Arranque: decide qué pantalla mostrar
 
 async function irSegunNegocio(){
-  const { data: n, error } = await sb.from("negocios").select("id,nombre,tipo,estado,prueba_hasta,modalidades,whatsapp").maybeSingle();
-  if (error || !n) return show("login");
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return show("login");
+  const { data: n, error } = await sb.from("negocios").select("id,nombre,tipo,estado,prueba_hasta,modalidades,whatsapp").eq("owner_id", user.id).maybeSingle();
+  if (error || !n) { show("login"); $("l-msg").textContent = "No se pudo cargar tu negocio" + (error ? ": " + error.message : "."); return; }
   nav(true);
   if (!n.tipo) return show("modalidad");
   const dias = Math.ceil((new Date(n.prueba_hasta) - new Date()) / 86400000);
@@ -17,12 +19,13 @@ async function irSegunNegocio(){
   NEG = n;
   const esTienda = n.tipo === "tienda";
   $("inv").classList.toggle("hide", !esTienda);
-  $("p-hostal").classList.toggle("hide", esTienda);
+  $("hotel").classList.toggle("hide", esTienda);
   $("form-prod").classList.toggle("hide", !PUEDE);
   $("imp").classList.toggle("hide", !PUEDE);
   $("inv-grid").classList.toggle("solo", !PUEDE);
+  $("hotel-grid").classList.toggle("solo", !PUEDE);
   show("panel");
-  if (esTienda) cargarProductos();
+  if (esTienda) cargarProductos(); else iniciarHotel();
 }
 
 sb.auth.getSession().then(({ data }) => { if (data.session) irSegunNegocio(); });
