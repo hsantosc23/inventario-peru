@@ -6,12 +6,15 @@ async function irSegunNegocio(){
   nav(true);
   if (!n.tipo) return show("modalidad");
   const dias = Math.ceil((new Date(n.prueba_hasta) - new Date()) / 86400000);
+  const { data: ok } = await sb.rpc("puede_editar");
+  PUEDE = ok === true;
   $("p-titulo").textContent = n.nombre || "Bienvenido";
-  $("p-info").textContent = n.estado === "activo" ? "Plan activo."
-    : (dias > 0 ? "Te quedan " + dias + " día(s) de prueba gratis."
-                : "Tu prueba terminó: puedes ver tus datos, pero no editarlos. Activa tu plan.");
+  $("p-info").textContent = PUEDE
+    ? (n.estado === "activo" ? "Plan activo." : "Te quedan " + dias + " día(s) de prueba gratis.")
+    : n.estado === "suspendido" ? "Tu cuenta está suspendida: puedes ver tu inventario, pero no editarlo. Escríbenos para reactivarla."
+    : n.estado === "activo" ? "Tu plan venció: puedes ver tu inventario, pero no editarlo. Renueva tu pago para seguir."
+    : "Tu prueba terminó: puedes ver tu inventario, pero no editarlo. Activa tu plan.";
   NEG = n;
-  PUEDE = n.estado === "activo" || (n.estado === "prueba" && dias > 0);
   const esTienda = n.tipo === "tienda";
   $("inv").classList.toggle("hide", !esTienda);
   $("p-hostal").classList.toggle("hide", esTienda);
