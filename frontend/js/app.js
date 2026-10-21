@@ -24,8 +24,9 @@ async function irSegunNegocio(){
   $("imp").classList.toggle("hide", !PUEDE);
   $("inv-grid").classList.toggle("solo", !PUEDE);
   $("hotel-grid").classList.toggle("solo", !PUEDE);
+  $("ven-grid").classList.toggle("solo", !PUEDE);
   show("panel");
-  if (esTienda) cargarProductos(); else iniciarHotel();
+  if (esTienda) { verTab("inv"); cargarProductos(); } else iniciarHotel();
 }
 
 sb.auth.getSession().then(({ data }) => { if (data.session) irSegunNegocio(); });

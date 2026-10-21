@@ -126,7 +126,13 @@
   </div>
 
   <div id="inv" class="hide">
+    <div class="tabs">
+      <button id="tab-inv" class="act" onclick="verTab('inv')">Registro de inventario</button>
+      <button id="tab-ven" onclick="verTab('ven')">Registro de ventas</button>
+    </div>
+    <div id="t-inv">
     <div class="inv-grid" id="inv-grid">
+
       <div class="inv-izq">
         <div id="form-prod" class="card">
           <b id="f-titulo">Agregar producto</b>
@@ -152,7 +158,28 @@
       <div class="inv-der">
         <input type="text" id="buscar" placeholder="Buscar por código o nombre" oninput="listar()">
         <div id="alerta" class="card hide" style="border-color:#f59e0b;background:#fffbeb;margin-bottom:12px"></div>
-        <div id="lista"></div>
+                <div id="lista"></div>
+      </div>
+    </div>
+    </div>
+    <div id="t-ven" class="hide">
+      <div class="inv-grid" id="ven-grid">
+        <div class="inv-izq">
+          <div class="card">
+            <b>Nueva venta</b>
+            <label>Buscar producto (código o nombre)</label>
+            <input type="text" id="v-buscar" placeholder="Escribe y toca el producto" oninput="buscarVenta()" onkeydown="enterVenta(event)">
+            <div id="v-res"></div>
+            <div id="v-carrito" style="margin-top:12px"></div>
+            <div id="v-total" class="pre" style="font-size:20px;margin-top:8px">Total: S/ 0.00</div>
+            <button class="pri full" onclick="registrarVenta()">Registrar venta</button>
+            <div class="msg" id="v-msg"></div>
+          </div>
+        </div>
+        <div class="inv-der">
+          <div id="v-hoy" style="margin-bottom:10px;font-weight:600;color:var(--gr)"></div>
+          <div id="v-lista"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -166,6 +193,7 @@
 <script src="/js/auth.js"></script>
 <script src="/js/onboarding.js"></script>
 <script src="/js/inventario.js"></script>
+<script src="/js/ventas.js"></script>
 <script src="/js/hostal.js"></script>
 <script src="/js/app.js"></script>
 </body>

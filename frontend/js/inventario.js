@@ -28,7 +28,7 @@ function codigoPorDefecto(){
 }
 
 async function cargarProductos(){
-  const { data, error } = await sb.from("productos").select("*").order("nombre");
+  const { data, error } = await sb.from("productos").select("*").eq("negocio_id", NEG.id).order("nombre");
   $("pr-msg").textContent = error ? "No se pudo cargar: " + error.message : "";
   PRODS = error ? [] : data;
   const b = PRODS.filter(bajo);
@@ -90,8 +90,9 @@ async function guardarProducto(){
 
 async function borrar(id){
   if (!confirm("¿Borrar este producto?")) return;
-  const { error } = await sb.from("productos").delete().eq("id", id);
+  const { data, error } = await sb.from("productos").delete().eq("id", id).eq("negocio_id", NEG.id).select();
   if (error) return $("pr-msg").textContent = "No se pudo borrar: " + error.message;
+  if (!data.length) return $("pr-msg").textContent = "No se pudo borrar: el producto no es de tu negocio o tu plan no lo permite.";
   cargarProductos();
 }
 
