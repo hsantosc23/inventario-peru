@@ -70,3 +70,6 @@ button:disabled{opacity:.4;cursor:default}
 .nav-per{display:flex;align-items:center;gap:10px;margin:8px 0}
 .nav-per b{flex:1;text-align:center;text-transform:capitalize;color:var(--tx)}
 .dia{margin:14px 0 4px;color:var(--gr);font-size:14px}
+
+.fila.anulada{opacity:.55}
+.fila.anulada .pre{text-decoration:line-through}

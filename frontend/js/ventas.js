@@ -124,17 +124,34 @@ async function cargarVentas(){
     : VPER === "semana" ? "Semana del " + f(a, { day: "numeric", month: "short" }) + " al " + f(fin, { day: "numeric", month: "short" })
     : f(a, { month: "long", year: "numeric" });
   $("v-sig").disabled = b > ahora;
-  const { data, error } = await sb.from("ventas").select("id,fecha,total,venta_items(codigo,nombre,cantidad)")
+  const { data, error } = await sb.from("ventas").select("id,fecha,total,anulada,venta_items(codigo,nombre,cantidad)")
     .eq("negocio_id", NEG.id).gte("fecha", a.toISOString()).lt("fecha", b.toISOString()).order("fecha", { ascending: false });
   if (error) return $("v-lista").innerHTML = `<p class="msg">No se pudieron cargar: ${esc(error.message)}</p>`;
-  const suma = data.reduce((s, v) => s + Number(v.total), 0);
-  $("v-hoy").textContent = data.length + " venta(s) · Total: S/ " + suma.toFixed(2);
+  const validas = data.filter(v => !v.anulada), anuladas = data.length - validas.length;
+  const suma = validas.reduce((s, v) => s + Number(v.total), 0);
+  $("v-hoy").textContent = validas.length + " venta(s) · Total: S/ " + suma.toFixed(2) + (anuladas ? " · " + anuladas + " anulada(s)" : "");
   const hora = v => new Date(v.fecha).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
+  const fila = v => `<div class="fila${v.anulada ? " anulada" : ""}"><div>${hora(v)}${v.anulada ? " · <b>Anulada</b>" : ""}
+      <small>${v.venta_items.map(i => i.cantidad + "× " + esc(i.nombre)).join(", ")}</small></div>
+      <div class="pre">S/ ${Number(v.total).toFixed(2)}</div>
+      ${PUEDE && !v.anulada ? `<button onclick="anularVenta('${v.id}')">Anular</button>` : ""}</div>`;
   const dias = {};
   data.forEach(v => { const k = f(new Date(v.fecha), { weekday: "short", day: "numeric", month: "short" }); (dias[k] = dias[k] || []).push(v); });
-  $("v-lista").innerHTML = data.length ? Object.entries(dias).map(([k, vs]) =>
-    (dia ? "" : `<div class="dia"><b>${esc(k)}</b> · ${vs.length} venta(s) · S/ ${vs.reduce((s, v) => s + Number(v.total), 0).toFixed(2)}</div>`) +
-    vs.map(v => `<div class="fila"><div>${hora(v)}<small>${v.venta_items.map(i => i.cantidad + "× " + esc(i.nombre)).join(", ")}</small></div>
-      <div class="pre">S/ ${Number(v.total).toFixed(2)}</div></div>`).join("")
-  ).join("") : `<p class="gr">No hay ventas en este periodo.</p>`;
+  $("v-lista").innerHTML = data.length ? Object.entries(dias).map(([k, vs]) => {
+    const ok = vs.filter(v => !v.anulada);
+    return (dia ? "" : `<div class="dia"><b>${esc(k)}</b> · ${ok.length} venta(s) · S/ ${ok.reduce((s, v) => s + Number(v.total), 0).toFixed(2)}</div>`)
+      + vs.map(fila).join("");
+  }).join("") : `<p class="gr">No hay ventas en este periodo.</p>`;
+}
+
+async function anularVenta(id){
+  if (!confirm("¿Anular esta venta? El stock de sus productos se devolverá al inventario.")) return;
+  const msg = $("v-msg"); msg.style.color = ""; msg.textContent = "";
+  const { error } = await sb.rpc("anular_venta", { p_venta: id });
+  if (error) return msg.textContent = "No se pudo anular: " + error.message;
+  await cargarProductos();
+  pintarCarrito();
+  cargarVentas();
+  msg.style.color = "#166534";
+  msg.textContent = "Venta anulada. El stock fue devuelto al inventario.";
 }
