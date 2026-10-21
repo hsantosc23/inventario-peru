@@ -176,7 +176,17 @@
             <div class="msg" id="v-msg"></div>
           </div>
         </div>
-        <div class="inv-der">
+                <div class="inv-der">
+          <div class="tabs">
+            <button id="per-dia" class="act" onclick="verPeriodo('dia')">Diario</button>
+            <button id="per-semana" onclick="verPeriodo('semana')">Semanal</button>
+            <button id="per-mes" onclick="verPeriodo('mes')">Mensual</button>
+          </div>
+          <div class="nav-per">
+            <button id="v-ant" onclick="moverPeriodo(-1)">←</button>
+            <b id="v-rango"></b>
+            <button id="v-sig" onclick="moverPeriodo(1)">→</button>
+          </div>
           <div id="v-hoy" style="margin-bottom:10px;font-weight:600;color:var(--gr)"></div>
           <div id="v-lista"></div>
         </div>

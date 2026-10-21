@@ -30,7 +30,7 @@ function codigoPorDefecto(){
 async function cargarProductos(){
   const { data, error } = await sb.from("productos").select("*").eq("negocio_id", NEG.id).order("nombre");
   $("pr-msg").textContent = error ? "No se pudo cargar: " + error.message : "";
-  PRODS = error ? [] : data;
+  PRODS = error ? [] : data.sort((a, b) => a.codigo.localeCompare(b.codigo, undefined, { numeric: true }));
   const b = PRODS.filter(bajo);
   $("alerta").classList.toggle("hide", !b.length);
   $("alerta").innerHTML = "<b>Stock bajo en " + b.length + " producto(s):</b> " +
