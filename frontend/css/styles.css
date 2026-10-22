@@ -75,3 +75,7 @@ button:disabled{opacity:.4;cursor:default}
 .fila.anulada .pre{text-decoration:line-through}
 
 input[type=date],input[type=month]{width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;font:inherit;background:#fff}
+
+.pre small{font-weight:400}
+
+

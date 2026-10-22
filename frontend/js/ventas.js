@@ -76,7 +76,7 @@ function pintarCarrito(){
     const desc = c.precio != null ? ` · <b style="color:#b45309">descuento (lista S/ ${Number(p.precio).toFixed(2)})</b>` : "";
     return `<div class="fila carro"><div class="info"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}<small>S/ ${pu.toFixed(2)} c/u · stock ${p.stock}${desc}</small></div>
       <input type="number" class="cant" min="1" max="${p.stock - usado(c.id, c.k)}" value="${c.cant}" onchange="cambiarCant(${c.k}, this.value)">
-      <div class="pre">S/ ${sub.toFixed(2)}</div>
+        <div class="pre">S/ ${sub.toFixed(2)}<small>${c.cant} × S/ ${pu.toFixed(2)}</small></div>
       <button onclick="editarPrecio(${c.k})">Editar</button><button onclick="quitar(${c.k})">Quitar</button></div>`;
   }).join("") : `<p class="gr">Busca un producto por código o nombre y tócalo para agregarlo.</p>`;
   $("v-total").textContent = "Total: S/ " + total.toFixed(2);
