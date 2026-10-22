@@ -30,4 +30,7 @@ async function irSegunNegocio(){
   if (esTienda) { verTab("inv"); cargarProductos(); } else iniciarHotel();
 }
 
-sb.auth.getSession().then(({ data }) => { if (data.session) irSegunNegocio(); });
+sb.auth.getSession().then(({ data }) => {
+  if (data.session) irSegunNegocio();
+  else { nav(false); show("home"); }
+});

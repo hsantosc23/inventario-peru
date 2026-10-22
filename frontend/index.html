@@ -11,7 +11,7 @@
 
 <header>
     <div class="logo" onclick="show('home')"><img src="/images/logo.jpeg" alt="" height="40"> Gestora Perú</div>
-  <nav id="nav-out">
+  <nav id="nav-out" class="hide">
     <button onclick="show('login')">Acceder</button>
     <button class="pri" onclick="show('registro')">Registrarse</button>
   </nav>
@@ -19,9 +19,9 @@
 </header>
 
 <!-- INICIO -->
-<section class="v" id="v-home">
+<section class="v hide" id="v-home">
   <div class="hero">
-    <img src="/images/logo.jpeg" alt="Gestora Perú" class="hero-logo">
+    <img src="/images/logo.jpeg" alt="Gestora Perú" class="hero-logo" width="150">
     <h1>Administra tu negocio sin complicaciones</h1>
     <p>Controla tu inventario o tus habitaciones desde el celular o la computadora. Prueba gratis 7 días.</p>
     <button class="pri" onclick="show('registro')">Empieza gratis</button>
