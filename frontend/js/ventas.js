@@ -34,11 +34,12 @@ function enterVenta(ev){
 const usado = (id, k) => CARRITO.filter(c => c.id === id && c.k !== k).reduce((s, c) => s + c.cant, 0);
 
 function agregarAlCarrito(id){
+  const p = PRODS.find(x => x.id === id); if (!p) return;
+  if (usado(id, -1) >= p.stock) return alert("Ya agregaste todo el stock disponible de este producto.");
+  // Cada toque agrega un recuadro nuevo (junto a los del mismo producto) para poder editar el precio de uno solo
   const linea = { k: ++LINEA, id, cant: 1, precio: null };
   const i = CARRITO.map(x => x.id).lastIndexOf(id);
   if (i < 0) CARRITO.push(linea); else CARRITO.splice(i + 1, 0, linea);
-  const c = CARRITO.find(x => x.id === id && x.precio == null);
-  if (c) c.cant++; else CARRITO.push({ k: ++LINEA, id, cant: 1, precio: null });
   $("v-buscar").value = ""; $("v-res").className = ""; $("v-res").innerHTML = "";
   pintarCarrito(); $("v-buscar").focus();
 }
