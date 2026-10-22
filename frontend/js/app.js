@@ -16,7 +16,8 @@ async function irSegunNegocio(){
     : n.estado === "suspendido" ? "Tu cuenta está suspendida: puedes ver tu inventario, pero no editarlo. Escríbenos para reactivarla."
     : n.estado === "activo" ? "Tu plan venció: puedes ver tu inventario, pero no editarlo. Renueva tu pago para seguir."
     : "Tu prueba terminó: puedes ver tu inventario, pero no editarlo. Activa tu plan.";
-  NEG = n;
+    NEG = n;
+  actualizarPerfil();
   const esTienda = n.tipo === "tienda";
   $("inv").classList.toggle("hide", !esTienda);
   $("hotel").classList.toggle("hide", esTienda);

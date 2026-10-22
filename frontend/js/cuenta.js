@@ -1,5 +1,13 @@
 // Configuración de la cuenta: estado, nombre de la empresa, contraseña y modalidad
 
+// Círculo de usuario de la cabecera: nombre de la empresa y borde según el estado de la cuenta
+function actualizarPerfil(){
+  const n = NEG, activo = PUEDE && n.estado === "activo", prueba = PUEDE && n.estado === "prueba";
+  $("perfil-nombre").textContent = n.nombre || "Mi empresa";
+  $("perfil-av").className = "avatar " + (activo ? "ok" : prueba ? "prueba" : "mal");
+  $("perfil").title = activo ? "Plan activo" : prueba ? "Prueba gratis" : "Cuenta suspendida o vencida";
+}
+
 function verConfig(){
   if (!NEG) return alert("Primero elige el tipo de negocio.");
   const n = NEG, activo = PUEDE && n.estado === "activo", prueba = PUEDE && n.estado === "prueba";
@@ -23,7 +31,7 @@ async function guardarNombre(){
   if (!nombre) return msg.textContent = "Escribe el nombre de tu empresa.";
   const { error } = await sb.from("negocios").update({ nombre }).eq("id", NEG.id);
   if (error) return msg.textContent = "No se pudo guardar: " + error.message;
-  NEG.nombre = nombre; $("p-titulo").textContent = nombre;
+  NEG.nombre = nombre; $("p-titulo").textContent = nombre; actualizarPerfil();
   msg.style.color = "#166534"; msg.textContent = "Nombre actualizado.";
 }
 

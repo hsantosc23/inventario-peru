@@ -80,4 +80,12 @@ input[type=date],input[type=month]{width:100%;padding:11px;border:1px solid var(
 
 .hero-logo{width:150px;height:auto;border-radius:16px;margin-bottom:16px}
 
+.perfil{display:flex;align-items:center;gap:8px;padding:4px 14px 4px 4px;border-radius:999px;border:1px solid var(--bd);background:#fff;color:var(--tx)}
+.perfil span:last-child{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.avatar{width:34px;height:34px;border-radius:50%;border:3px solid var(--bd);display:grid;place-items:center;background:var(--az2);color:var(--az)}
+.avatar svg{width:20px;height:20px}
+.avatar.ok{border-color:#16a34a}
+.avatar.prueba{border-color:#1d4ed8}
+.avatar.mal{border-color:#dc2626}
+
 
