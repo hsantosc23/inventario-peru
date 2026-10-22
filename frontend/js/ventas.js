@@ -234,12 +234,19 @@ async function cargarVentas(){
 
   // Lista: una fila por producto (hora, cantidad, producto y total)
   const hora = v => new Date(v.fecha).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
-  const filas = v => v.venta_items.map((i, k) => `<tr class="${v.anulada ? "anulada" : ""}">
-      <td>${k === 0 ? hora(v) : ""}</td><td>${i.cantidad}</td><td>${esc(i.nombre)}</td>
-      <td class="pre">S/ ${Number(i.subtotal).toFixed(2)}</td>
-      <td>${k > 0 ? "" : v.anulada ? "<b>Anulada</b>" : PUEDE ? `<button onclick="anularVenta('${v.id}')">Anular</button>` : ""}</td></tr>`).join("");
-  const tabla = vs => `<table class="tv"><thead><tr><th>Hora</th><th>Cant.</th><th>Producto</th><th>Total</th><th></th></tr></thead>
-    <tbody>${vs.map(filas).join("")}</tbody></table>`;
+    // Cada compra es un bloque: la hora, los productos y el total aparecen una sola vez por compra
+  const compra = v => {
+    const n = v.venta_items.length;
+    return `<tbody class="compra${v.anulada ? " anulada" : ""}">` + v.venta_items.map((i, k) => `<tr>
+      ${k === 0 ? `<td rowspan="${n}">${hora(v)}</td>` : ""}
+      <td class="c">${i.cantidad}</td>
+      <td>${esc(i.nombre)}${n > 1 ? ` <span class="gr">· S/ ${Number(i.subtotal).toFixed(2)}</span>` : ""}</td>
+      ${k === 0 ? `<td rowspan="${n}" class="pre">S/ ${Number(v.total).toFixed(2)}</td>
+      <td rowspan="${n}">${v.anulada ? "<b>Anulada</b>" : PUEDE ? `<button onclick="anularVenta('${v.id}')">Anular</button>` : ""}</td>` : ""}
+    </tr>`).join("") + `</tbody>`;
+  };
+  const tabla = vs => `<table class="tv"><thead><tr><th>Hora</th><th class="c">Cant.</th><th>Producto</th><th class="t">Total</th><th></th></tr></thead>${vs.map(compra).join("")}</table>`;
+  
   const dias = {};
   data.forEach(v => { const k = f(new Date(v.fecha), { weekday: "short", day: "numeric", month: "short" }); (dias[k] = dias[k] || []).push(v); });
   $("v-lista").innerHTML = data.length ? Object.entries(dias).map(([k, vs]) => {

@@ -88,16 +88,19 @@ input[type=date],input[type=month]{width:100%;padding:11px;border:1px solid var(
 .avatar.prueba{border-color:#1d4ed8}
 .avatar.mal{border-color:#dc2626}
 
-.tv{width:100%;border-collapse:collapse;margin-bottom:6px}
-.tv th{text-align:left;font-size:13px;color:var(--gr);padding:6px 8px;border-bottom:2px solid var(--bd)}
-.tv td{padding:8px;border-bottom:1px solid var(--bd);vertical-align:top}
-.tv td:nth-child(2){text-align:center}
-.tv td.pre{text-align:right}
-.tv tr.anulada{opacity:.55}
-.tv tr.anulada td.pre{text-decoration:line-through}
-.tv button{padding:4px 8px;font-size:13px}
-
 .stock{display:block;font-weight:600}
 .stock.hay{color:#16a34a}
 .stock.cero{color:#dc2626}
 
+.tv{width:100%;border-collapse:collapse;margin-bottom:6px}
+.tv th{text-align:left;font-size:13px;color:var(--gr);padding:6px 8px;border-bottom:2px solid var(--bd)}
+.tv th.c{text-align:center}
+.tv th.t{text-align:right}
+.tv td{padding:8px;vertical-align:top}
+.tv td[rowspan]{vertical-align:middle}
+.tv td.c{text-align:center}
+.tv td.pre{text-align:right}
+.tv tbody.compra{border-bottom:1px solid var(--bd)}
+.tv tbody.anulada{opacity:.55}
+.tv tbody.anulada .pre{text-decoration:line-through}
+.tv button{padding:4px 8px;font-size:13px}
