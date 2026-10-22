@@ -62,7 +62,7 @@ function listar(){
   const q = $("buscar").value.trim().toLowerCase();
   const r = PRODS.filter(p => p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q));
   $("lista").innerHTML = r.length ? r.map(p =>
-    `<div class="fila"><div><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}<small>Stock: ${p.stock}${bajo(p) ? ' <b style="color:#b45309">· stock bajo</b>' : ""}</small></div>
+    `<div class="fila"><div><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}<span class="stock ${p.stock > 0 ? "hay" : "cero"}">Stock: ${p.stock}${bajo(p) ? ' <b style="color:#b45309">· stock bajo</b>' : ""}</span></div>
      <div class="pre">S/ ${Number(p.precio).toFixed(2)}</div>
      ${PUEDE ? `<button onclick="editar('${p.id}')">Editar</button><button onclick="borrar('${p.id}')">Borrar</button>` : ""}</div>`
   ).join("") : `<p class="gr">No hay productos para mostrar.</p>`;
