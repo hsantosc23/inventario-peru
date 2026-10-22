@@ -11,9 +11,9 @@ let AUTO = "";
 function siguienteCodigo(talla){
   const usados = new Set(PRODS.map(p => p.codigo));
   let n = 0;
-    PRODS.forEach(p => { const m = p.codigo.match(/^(\D*)(\d+)$/); if (m && m[1] === (talla || "")) n = Math.max(n, parseInt(m[2], 10)); });
+  PRODS.forEach(p => { const m = p.codigo.match(/^(\D*)(\d+)$/); if (m && m[1] === (talla || "")) n = Math.max(n, parseInt(m[2], 10)); });
   let c;
-  do { n++; c = (talla || "") + String(n).padStart(4, "0"); } while (usados.has(c));
+    do { n++; c = (talla || "") + String(n).padStart(6 - (talla || "").length, "0"); } while (usados.has(c));
   return c;
 }
 
