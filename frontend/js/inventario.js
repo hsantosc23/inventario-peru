@@ -31,10 +31,25 @@ function codigoPorTalla(){
   $("f-codigo").value = AUTO;
 }
 
+// Orden de la lista: tallas XS, S, M, L (de arriba hacia abajo) y, dentro de cada talla, de menor a mayor número.
+// Los códigos sin talla van al final.
+const ORDEN_TALLA = { XS: 0, S: 1, M: 2, L: 3 };
+
+function ordenarProductos(lista){
+  const clave = p => {
+    const m = p.codigo.match(/^(XS|S|M|L)(\d+)$/i);
+    return m ? [ORDEN_TALLA[m[1].toUpperCase()], parseInt(m[2], 10)] : [4, 0];
+  };
+  return lista.sort((a, b) => {
+    const x = clave(a), y = clave(b);
+    return x[0] - y[0] || x[1] - y[1] || a.codigo.localeCompare(b.codigo, undefined, { numeric: true });
+  });
+}
+
 async function cargarProductos(){
   const { data, error } = await sb.from("productos").select("*").eq("negocio_id", NEG.id).order("nombre");
   $("pr-msg").textContent = error ? "No se pudo cargar: " + error.message : "";
-  PRODS = error ? [] : data.sort((a, b) => a.codigo.localeCompare(b.codigo, undefined, { numeric: true }));
+  PRODS = error ? [] : ordenarProductos(data);
   const b = PRODS.filter(bajo);
   $("alerta").classList.toggle("hide", !b.length);
   $("alerta").innerHTML = "<b>Stock bajo en " + b.length + " producto(s):</b> " +
