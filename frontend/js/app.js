@@ -35,3 +35,10 @@ sb.auth.getSession().then(({ data }) => {
   if (data.session) irSegunNegocio();
   else { nav(false); show("home"); }
 });
+
+
+// Logo y nombre: con la sesión iniciada vuelven al panel (nunca a la portada); sin sesión, a la portada
+function clicLogo(){
+  if ($("nav-in").classList.contains("hide")) return show("home");
+  if (NEG && $("v-panel").classList.contains("hide")) irSegunNegocio();
+}
