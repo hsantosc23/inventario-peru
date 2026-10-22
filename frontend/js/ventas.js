@@ -353,5 +353,13 @@ async function imprimirComprobante(id){
     </body></html>`);
 }
 
+function abrirSunat() {
+  const w = Math.floor(screen.availWidth / 2), h = screen.availHeight;
+  window.open(
+    "https://e-menu.sunat.gob.pe/cl-ti-itmenu/MenuInternet.htm", "sunat",
+    `popup=yes,width=${w},height=${h},left=${(screen.availLeft || 0) + w},top=${screen.availTop || 0}`
+  );
+}
+
 
 
