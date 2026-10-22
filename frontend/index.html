@@ -204,6 +204,20 @@
             <input type="text" id="v-buscar" placeholder="Escribe y toca el producto" oninput="buscarVenta()" onkeydown="enterVenta(event)">
             <div id="v-res"></div>
             <div id="v-carrito" style="margin-top:12px"></div>
+                        <div style="margin-top:12px">
+              <label>Comprobante</label>
+              <select id="v-tipo" onchange="verTipoDoc()"><option value="boleta">Boleta</option><option value="factura">Factura</option></select>
+              <div id="v-cli-b">
+                <label>DNI del cliente (obligatorio si pasa de S/ 700)</label><input type="text" id="v-dni" inputmode="numeric" maxlength="8">
+                <label>Nombre del cliente (opcional)</label><input type="text" id="v-nombre-b">
+              </div>
+              <div id="v-cli-f" class="hide">
+                <label>RUC</label><input type="text" id="v-ruc" inputmode="numeric" maxlength="11">
+                <label>Razón social</label><input type="text" id="v-razon">
+                <label>Dirección (opcional)</label><input type="text" id="v-dir">
+              </div>
+              <label class="opt" style="padding:10px"><input type="checkbox" id="v-imprimir" checked> Imprimir al registrar</label>
+            </div>
             <div id="v-total" class="pre" style="font-size:20px;margin-top:8px">Total: S/ 0.00</div>
             <button class="pri full" onclick="registrarVenta()">Registrar venta</button>
             <div class="msg" id="v-msg"></div>

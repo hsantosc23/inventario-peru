@@ -85,15 +85,36 @@ function pintarCarrito(){
 async function registrarVenta(){
   const msg = $("v-msg"); msg.style.color = ""; msg.textContent = "";
   if (!CARRITO.length) return msg.textContent = "Agrega al menos un producto.";
+  const tipo = $("v-tipo").value, fac = tipo === "factura";
+  const doc = (fac ? $("v-ruc") : $("v-dni")).value.trim();
+  const nombre = (fac ? $("v-razon") : $("v-nombre-b")).value.trim(), dir = fac ? $("v-dir").value.trim() : "";
+  const total = CARRITO.reduce((s, c) => { const p = PRODS.find(x => x.id === c.id); return s + (c.precio != null ? c.precio : Number(p.precio)) * c.cant; }, 0);
+  if (fac) {
+    if (!/^[0-9]{11}$/.test(doc)) return msg.textContent = "La factura necesita un RUC de 11 dígitos.";
+    if (!nombre) return msg.textContent = "La factura necesita la razón social.";
+  } else {
+    if (doc && !/^[0-9]{8}$/.test(doc)) return msg.textContent = "El DNI debe tener 8 dígitos.";
+    if (total > 700 && !doc) return msg.textContent = "Una boleta mayor a S/ 700 necesita el DNI del cliente.";
+  }
   const items = CARRITO.map(c => ({ producto_id: c.id, cantidad: c.cant, precio: c.precio }));
-  const { error } = await sb.rpc("registrar_venta", { p_items: items });
+  const { data: id, error } = await sb.rpc("registrar_venta", { p_items: items });
   if (error) return msg.textContent = "No se pudo registrar la venta: " + error.message;
+  const { error: e2 } = await sb.rpc("datos_comprobante", { p_venta: id, p_tipo: tipo, p_doc: doc, p_nombre: nombre, p_direccion: dir });
   CARRITO = [];
+  ["v-dni", "v-nombre-b", "v-ruc", "v-razon", "v-dir"].forEach(i => $(i).value = "");
   await cargarProductos();
   pintarCarrito();
   cargarVentas();
+  if (e2) return msg.textContent = "Venta registrada y stock descontado, pero no se pudo emitir el comprobante: " + e2.message;
   msg.style.color = "#166534";
   msg.textContent = "Venta registrada. El stock ya se descontó.";
+  if ($("v-imprimir").checked) imprimirComprobante(id);
+}
+
+function verTipoDoc(){
+  const f = $("v-tipo").value === "factura";
+  $("v-cli-b").classList.toggle("hide", f);
+  $("v-cli-f").classList.toggle("hide", !f);
 }
 
 // ---------- Historial: diario, semanal y mensual ----------
@@ -224,7 +245,7 @@ async function cargarVentas(){
 
   VDATA = [];
   const { data, error } = await sb.from("ventas")
-    .select("id,fecha,total,anulada,venta_items(codigo,nombre,cantidad,precio_unitario,subtotal)")
+    .select("id,fecha,total,anulada,tipo_doc,numero,venta_items(codigo,nombre,cantidad,precio_unitario,subtotal)")
     .eq("negocio_id", NEG.id).gte("fecha", a.toISOString()).lt("fecha", b.toISOString()).order("fecha", { ascending: true });
   if (error) return $("v-lista").innerHTML = `<p class="msg">No se pudieron cargar: ${esc(error.message)}</p>`;
   VDATA = data;
@@ -238,11 +259,11 @@ async function cargarVentas(){
   const compra = v => {
     const n = v.venta_items.length;
     return `<tbody class="compra${v.anulada ? " anulada" : ""}">` + v.venta_items.map((i, k) => `<tr>
-      ${k === 0 ? `<td rowspan="${n}">${hora(v)}</td>` : ""}
+      ${k === 0 ? `<td rowspan="${n}">${hora(v)}${v.tipo_doc ? `<small class="gr"><br>${v.tipo_doc === "factura" ? "Factura" : "Boleta"} ${String(v.numero).padStart(6, "0")}</small>` : ""}</td>` : ""}
       <td class="c">${i.cantidad}</td>
       <td>${esc(i.nombre)}${n > 1 ? ` <span class="gr">· S/ ${Number(i.subtotal).toFixed(2)}</span>` : ""}</td>
       ${k === 0 ? `<td rowspan="${n}" class="pre">S/ ${Number(v.total).toFixed(2)}</td>
-      <td rowspan="${n}">${v.anulada ? "<b>Anulada</b>" : PUEDE ? `<button onclick="anularVenta('${v.id}')">Anular</button>` : ""}</td>` : ""}
+      <td rowspan="${n}">${v.anulada ? "<b>Anulada</b>" : `<button onclick="imprimirComprobante('${v.id}')">Imprimir</button>` + (PUEDE ? ` <button onclick="anularVenta('${v.id}')">Anular</button>` : "")}</td>` : ""}
     </tr>`).join("") + `</tbody>`;
   };
   const tabla = vs => `<table class="tv"><thead><tr><th>Hora</th><th class="c">Cant.</th><th>Producto</th><th class="t">Total</th><th></th></tr></thead>${vs.map(compra).join("")}</table>`;
@@ -276,3 +297,61 @@ function descargarVentas(){
   XLSX.utils.book_append_sheet(wb, ws, "Ventas");
   XLSX.writeFile(wb, "ventas_" + VNOMBRE + ".xlsx");
 }
+
+
+// ---------- Impresión del comprobante (ticket de 80 mm) ----------
+
+// Mientras la plataforma no esté conectada a SUNAT, el comprobante es interno.
+// Cuando se conecte, deja este texto vacío ("").
+const AVISO_COMPROBANTE = "Documento interno. No es comprobante de pago electrónico válido ante la SUNAT.";
+
+function imprimirHTML(html){
+  let f = document.getElementById("print-frame");
+  if (!f) {
+    f = document.createElement("iframe");
+    f.id = "print-frame";
+    f.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+    document.body.appendChild(f);
+  }
+  const d = f.contentWindow.document;
+  d.open(); d.write(html); d.close();
+  setTimeout(() => { f.contentWindow.focus(); f.contentWindow.print(); }, 250);
+}
+
+async function imprimirComprobante(id){
+  const { data: v, error } = await sb.from("ventas")
+    .select("id,fecha,total,anulada,tipo_doc,numero,cliente_doc,cliente_nombre,cliente_direccion,venta_items(codigo,nombre,cantidad,precio_unitario,subtotal)")
+    .eq("id", id).single();
+  if (error) return alert("No se pudo cargar la venta: " + error.message);
+  if (v.anulada) return alert("Esta venta está anulada.");
+  const fac = v.tipo_doc === "factura", d = new Date(v.fecha), total = Number(v.total);
+  const titulo = fac ? "FACTURA" : v.tipo_doc === "boleta" ? "BOLETA DE VENTA" : "COMPROBANTE DE VENTA";
+  const num = v.numero ? "N.º " + String(v.numero).padStart(6, "0") : "";
+  const cliente = fac
+    ? `RUC: ${esc(v.cliente_doc)}<br>Razón social: ${esc(v.cliente_nombre)}${v.cliente_direccion ? "<br>Dirección: " + esc(v.cliente_direccion) : ""}<hr>`
+    : (v.cliente_doc || v.cliente_nombre)
+      ? `${v.cliente_nombre ? "Cliente: " + esc(v.cliente_nombre) + "<br>" : ""}${v.cliente_doc ? "DNI: " + esc(v.cliente_doc) : ""}<hr>` : "";
+  const filas = v.venta_items.map(i => `<tr><td>${i.cantidad} x ${esc(i.nombre)}<br>&nbsp;&nbsp;S/ ${Number(i.precio_unitario).toFixed(2)} c/u</td>
+    <td class="r">S/ ${Number(i.subtotal).toFixed(2)}</td></tr>`).join("");
+  // Factura: desglose referencial suponiendo que los precios ya incluyen IGV (18 %)
+  const base = total / 1.18;
+  const totales = fac
+    ? `<tr><td>Op. gravada</td><td class="r">S/ ${base.toFixed(2)}</td></tr><tr><td>IGV (18 %)</td><td class="r">S/ ${(total - base).toFixed(2)}</td></tr>` : "";
+  imprimirHTML(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${titulo} ${num}</title><style>
+    @page{size:80mm auto;margin:4mm}
+    body{font:12px/1.35 monospace;width:72mm;margin:0;color:#000}
+    .c{text-align:center}.r{text-align:right;white-space:nowrap}
+    hr{border:0;border-top:1px dashed #000;margin:6px 0}
+    table{width:100%;border-collapse:collapse}td{vertical-align:top;padding:2px 0}
+    </style></head><body>
+    <div class="c"><b>${esc(NEG.nombre || "")}</b><br>${titulo}<br>${num}</div><hr>
+    Fecha: ${d.toLocaleDateString("es-PE")} ${d.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}<br>
+    ${cliente || "<hr>"}
+    <table>${filas}</table><hr>
+    <table>${totales}<tr><td><b>TOTAL</b></td><td class="r"><b>S/ ${total.toFixed(2)}</b></td></tr></table><hr>
+    <div class="c">${AVISO_COMPROBANTE ? AVISO_COMPROBANTE + "<br>" : ""}¡Gracias por su compra!</div>
+    </body></html>`);
+}
+
+
+
