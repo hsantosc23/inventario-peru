@@ -3,25 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TuMarca · Administra tu negocio fácil</title>
-<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<title>Gestora Perú · Tu negocio bajo control</title>
+<link rel="icon" href="/images/logo.jpeg">
 <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
 
 <header>
-  <!-- Cambia este bloque por tu logo cuando lo tengas -->
-  <div class="logo" onclick="show('home')"><img src="/images/logo.svg" alt="" width="32" height="32"> TuMarca</div>
+    <div class="logo" onclick="show('home')"><img src="/images/logo.jpeg" alt="" height="40"> Gestora Perú</div>
   <nav id="nav-out">
     <button onclick="show('login')">Acceder</button>
     <button class="pri" onclick="show('registro')">Registrarse</button>
   </nav>
-  <nav id="nav-in" class="hide"><button onclick="salir()">Salir</button></nav>
+    <nav id="nav-in" class="hide"><button onclick="verConfig()">Configuración</button><button onclick="salir()">Salir</button></nav>
 </header>
 
 <!-- INICIO -->
 <section class="v" id="v-home">
   <div class="hero">
+    <img src="/images/logo.jpeg" alt="Gestora Perú" class="hero-logo">
     <h1>Administra tu negocio sin complicaciones</h1>
     <p>Controla tu inventario o tus habitaciones desde el celular o la computadora. Prueba gratis 7 días.</p>
     <button class="pri" onclick="show('registro')">Empieza gratis</button>
@@ -225,6 +225,40 @@
   </div>
 </div></section>
 
+<!-- CONFIGURACIÓN -->
+<section class="v hide" id="v-config"><div class="wrap" style="max-width:560px">
+  <button onclick="irSegunNegocio()">← Volver al panel</button>
+  <h2 style="margin-top:16px">Configuración</h2>
+  <div id="c-estado" class="card"><b>Estado de tu cuenta</b><p id="c-estado-txt" style="margin:6px 0 0"></p></div>
+  <div class="card" style="margin-top:16px">
+    <b>Nombre de tu empresa</b>
+    <input type="text" id="c-nombre" style="margin-top:8px">
+    <button class="pri full" onclick="guardarNombre()">Guardar nombre</button>
+    <div class="msg" id="c-msg-nombre"></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <b>Cambiar contraseña</b>
+    <label>Contraseña actual</label><input type="password" id="c-clave0" autocomplete="current-password">
+    <label>Nueva contraseña</label><input type="password" id="c-clave1" autocomplete="new-password">
+    <label>Repite la nueva contraseña</label><input type="password" id="c-clave2" autocomplete="new-password">
+    <button class="pri full" onclick="cambiarClave()">Cambiar contraseña</button>
+    <div class="msg" id="c-msg-clave"></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <b>Modalidad del negocio</b>
+    <label class="opt"><input type="radio" name="c-tipo" value="tienda" onchange="verTipoConfig()"> Negocio con control de inventario</label>
+    <label class="opt"><input type="radio" name="c-tipo" value="hostal" onchange="verTipoConfig()"> Hotel con control de habitaciones</label>
+    <div id="c-cobros" class="hide">
+      <label>¿Cómo cobras las habitaciones?</label>
+      <label class="opt"><input type="checkbox" name="c-cobro" value="hora"> Por hora</label>
+      <label class="opt"><input type="checkbox" name="c-cobro" value="noche"> Por noche</label>
+      <label class="opt"><input type="checkbox" name="c-cobro" value="dia_completo"> Día completo</label>
+    </div>
+    <button class="pri full" onclick="cambiarModalidad()">Cambiar modalidad</button>
+    <div class="msg" id="c-msg-tipo"></div>
+  </div>
+</div></section>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/js/config.js"></script>
@@ -235,6 +269,7 @@
 <script src="/js/inventario.js"></script>
 <script src="/js/ventas.js"></script>
 <script src="/js/hostal.js"></script>
+<script src="/js/cuenta.js"></script>
 <script src="/js/app.js"></script>
 </body>
 </html>
