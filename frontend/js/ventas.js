@@ -94,21 +94,38 @@ async function registrarVenta(){
     if (!nombre) return msg.textContent = "La factura necesita la razón social.";
   } else {
     if (doc && !/^[0-9]{8}$/.test(doc)) return msg.textContent = "El DNI debe tener 8 dígitos.";
+    if (doc && !nombre) return msg.textContent = "Si das el DNI, escribe también el nombre del cliente.";
     if (total > 700 && !doc) return msg.textContent = "Una boleta mayor a S/ 700 necesita el DNI del cliente.";
   }
   const items = CARRITO.map(c => ({ producto_id: c.id, cantidad: c.cant, precio: c.precio }));
   const { data: id, error } = await sb.rpc("registrar_venta", { p_items: items });
   if (error) return msg.textContent = "No se pudo registrar la venta: " + error.message;
   const { error: e2 } = await sb.rpc("datos_comprobante", { p_venta: id, p_tipo: tipo, p_doc: doc, p_nombre: nombre, p_direccion: dir });
+  let r = null;
+  if (!e2) r = await emitirComprobante(id, tipo, doc, nombre);
   CARRITO = [];
   ["v-dni", "v-nombre-b", "v-ruc", "v-razon", "v-dir"].forEach(i => $(i).value = "");
   await cargarProductos();
   pintarCarrito();
   cargarVentas();
   if (e2) return msg.textContent = "Venta registrada y stock descontado, pero no se pudo emitir el comprobante: " + e2.message;
+    if (r && !r.ok) return msg.textContent = "Venta registrada, pero SUNAT no aceptó el comprobante: " + (r.mensaje || r.error);
   msg.style.color = "#166534";
-  msg.textContent = "Venta registrada. El stock ya se descontó.";
+  msg.textContent = "Venta registrada" + (r ? ". Comprobante " + r.comprobante + " emitido" : "") + ". El stock ya se descontó.";
   if ($("v-imprimir").checked) imprimirComprobante(id);
+}
+
+async function emitirComprobante(ventaId, tipo, doc, nombre) {
+  if (tipo !== "boleta" && tipo !== "factura") return null;
+  const { data, error } = await sb.functions.invoke("emitir-comprobante", {
+    body: { venta_id: ventaId, tipo, cliente: { numero: doc, nombre } }
+  });
+  if (error) {
+    let m = error.message;
+    try { m = (await error.context.json()).error || m; } catch {}
+    return { ok: false, mensaje: m };
+  }
+  return data;
 }
 
 function verTipoDoc(){
@@ -245,7 +262,7 @@ async function cargarVentas(){
 
   VDATA = [];
   const { data, error } = await sb.from("ventas")
-    .select("id,fecha,total,anulada,tipo_doc,numero,venta_items(codigo,nombre,cantidad,precio_unitario,subtotal)")
+    .select("id,fecha,total,anulada,cpe_serie,cpe_numero,cpe_estado,tipo_doc,numero,venta_items(codigo,nombre,cantidad,precio_unitario,subtotal)")
     .eq("negocio_id", NEG.id).gte("fecha", a.toISOString()).lt("fecha", b.toISOString()).order("fecha", { ascending: true });
   if (error) return $("v-lista").innerHTML = `<p class="msg">No se pudieron cargar: ${esc(error.message)}</p>`;
   VDATA = data;
@@ -259,7 +276,7 @@ async function cargarVentas(){
   const compra = v => {
     const n = v.venta_items.length;
     return `<tbody class="compra${v.anulada ? " anulada" : ""}">` + v.venta_items.map((i, k) => `<tr>
-      ${k === 0 ? `<td rowspan="${n}">${hora(v)}${v.tipo_doc ? `<small class="gr"><br>${v.tipo_doc === "factura" ? "Factura" : "Boleta"} ${String(v.numero).padStart(6, "0")}</small>` : ""}</td>` : ""}
+      ${k === 0 ? `<td rowspan="${n}">${hora(v)}${v.tipo_doc ? `<small class="gr"><br>${v.tipo_doc === "factura" ? "Factura" : "Boleta"} ${v.cpe_estado === "aceptado" ? v.cpe_serie + "-" + v.cpe_numero : String(v.numero).padStart(6, "0")}</small>` : ""}</td>` : ""}
       <td class="c">${i.cantidad}</td>
       <td>${esc(i.nombre)}${n > 1 ? ` <span class="gr">· S/ ${Number(i.subtotal).toFixed(2)}</span>` : ""}</td>
       ${k === 0 ? `<td rowspan="${n}" class="pre">S/ ${Number(v.total).toFixed(2)}</td>
@@ -304,6 +321,7 @@ function descargarVentas(){
 // Mientras la plataforma no esté conectada a SUNAT, el comprobante es interno.
 // Cuando se conecte, deja este texto vacío ("").
 const AVISO_COMPROBANTE = "Documento interno. No es comprobante de pago electrónico válido ante la SUNAT.";
+const CPE_PRODUCCION = false;
 
 function imprimirHTML(html){
   let f = document.getElementById("print-frame");
@@ -320,13 +338,20 @@ function imprimirHTML(html){
 
 async function imprimirComprobante(id){
   const { data: v, error } = await sb.from("ventas")
-    .select("id,fecha,total,anulada,tipo_doc,numero,cliente_doc,cliente_nombre,cliente_direccion,venta_items(codigo,nombre,cantidad,precio_unitario,subtotal)")
+    .select("id,fecha,total,anulada,cpe_serie,cpe_numero,cpe_estado,tipo_doc,numero,cliente_doc,cliente_nombre,cliente_direccion,venta_items(codigo,nombre,cantidad,precio_unitario,subtotal)")
     .eq("id", id).single();
   if (error) return alert("No se pudo cargar la venta: " + error.message);
   if (v.anulada) return alert("Esta venta está anulada.");
   const fac = v.tipo_doc === "factura", d = new Date(v.fecha), total = Number(v.total);
-  const titulo = fac ? "FACTURA" : v.tipo_doc === "boleta" ? "BOLETA DE VENTA" : "COMPROBANTE DE VENTA";
-  const num = v.numero ? "N.º " + String(v.numero).padStart(6, "0") : "";
+    const emitido = v.cpe_estado === "aceptado";
+  const titulo = emitido ? (fac ? "FACTURA ELECTRÓNICA" : "BOLETA DE VENTA ELECTRÓNICA")
+    : fac ? "FACTURA" : v.tipo_doc === "boleta" ? "BOLETA DE VENTA" : "COMPROBANTE DE VENTA";
+  const num = emitido ? v.cpe_serie + "-" + v.cpe_numero : (v.numero ? "N.º " + String(v.numero).padStart(6, "0") : "");
+  const aviso = !emitido ? AVISO_COMPROBANTE
+    : CPE_PRODUCCION ? "Representación impresa del comprobante electrónico"
+    : "COMPROBANTE DE PRUEBA - SIN VALOR TRIBUTARIO";
+  const { data: fis } = await sb.rpc("mis_datos_fiscales");
+  const fi = fis && fis[0];
   const cliente = fac
     ? `RUC: ${esc(v.cliente_doc)}<br>Razón social: ${esc(v.cliente_nombre)}${v.cliente_direccion ? "<br>Dirección: " + esc(v.cliente_direccion) : ""}<hr>`
     : (v.cliente_doc || v.cliente_nombre)
@@ -344,12 +369,13 @@ async function imprimirComprobante(id){
     hr{border:0;border-top:1px dashed #000;margin:6px 0}
     table{width:100%;border-collapse:collapse}td{vertical-align:top;padding:2px 0}
     </style></head><body>
-    <div class="c"><b>${esc(NEG.nombre || "")}</b><br>${titulo}<br>${num}</div><hr>
+  <div class="c"><b>${esc(emitido && fi ? fi.razon_social : (NEG.nombre || ""))}</b>${emitido && fi ? "<br>RUC " + fi.ruc : ""}<br>${titulo}<br>${num}</div><hr>
+  <div class="c"><b>${esc(NEG.nombre || "")}</b><br>${titulo}<br>${num}</div><hr>
     Fecha: ${d.toLocaleDateString("es-PE")} ${d.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}<br>
     ${cliente || "<hr>"}
     <table>${filas}</table><hr>
     <table>${totales}<tr><td><b>TOTAL</b></td><td class="r"><b>S/ ${total.toFixed(2)}</b></td></tr></table><hr>
-    <div class="c">${AVISO_COMPROBANTE ? AVISO_COMPROBANTE + "<br>" : ""}¡Gracias por su compra!</div>
+    <div class="c">${aviso ? aviso + "<br>" : ""}¡Gracias por su compra!</div>
     </body></html>`);
 }
 
