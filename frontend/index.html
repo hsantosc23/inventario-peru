@@ -138,6 +138,7 @@
         <div id="form-prod" class="card">
           <b id="f-titulo">Agregar producto</b>
           <div class="f2">
+            <div><label>Talla</label><select id="f-talla" onchange="codigoPorTalla()"><option value="">Sin talla</option><option>XS</option><option>S</option><option>M</option><option>L</option></select></div>
             <div><label>Código</label><input type="text" id="f-codigo"></div>
             <div><label>Nombre</label><input type="text" id="f-nombre"></div>
             <div><label>Precio (S/)</label><input type="number" id="f-precio" min="0" step="0.01" inputmode="decimal"></div>
@@ -214,7 +215,7 @@
             <button id="v-sig" onclick="moverPeriodo(1)">→</button>
           </div>
 
-                    <label>Ir a una fecha</label><input type="date" id="v-fecha" onchange="irAFecha(this.value)">
+          <label>Ir a una fecha</label><input type="date" id="v-fecha" onchange="irAFecha(this.value)">
 
           <div id="v-hoy" style="margin-bottom:10px;font-weight:600;color:var(--gr)"></div>
           <div id="v-lista"></div>
