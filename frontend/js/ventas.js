@@ -127,12 +127,14 @@ async function cargarVentas(){
   const [a, b] = rangoVentas(), ahora = new Date(), dia = VPER === "dia";
   const f = (d, o) => d.toLocaleDateString("es-PE", o);
   const fin = new Date(b); fin.setDate(fin.getDate() - 1);
-  $("v-rango").textContent = dia ? f(a, { weekday: "long", day: "numeric", month: "long" }) + (a <= ahora && ahora < b ? " (hoy)" : "")
-    : VPER === "semana" ? "Semana del " + f(a, { day: "numeric", month: "short" }) + " al " + f(fin, { day: "numeric", month: "short" })
-    : f(a, { month: "long", year: "numeric" });
-  $("v-sig").disabled = b > ahora;
-    $("v-fecha").max = new Date(ahora - ahora.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-  $("v-fecha").value = new Date(a - a.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const local = d => new Date(d - d.getTimezoneOffset() * 60000).toISOString();
+  const campo = $("v-fecha"), n = VPER === "mes" ? 7 : 10;
+  campo.type = VPER === "mes" ? "month" : "date";
+  campo.max = local(ahora).slice(0, n);
+  campo.value = local(VREF).slice(0, n);
+  $("v-fecha-lbl").textContent = VPER === "mes" ? "Mes" : VPER === "semana" ? "Elige un día de la semana" : "Fecha";
+  $("v-rango").textContent = VPER === "semana"
+    ? "Semana del " + f(a, { day: "numeric", month: "short" }) + " al " + f(fin, { day: "numeric", month: "short" }) : "";
   const { data, error } = await sb.from("ventas").select("id,fecha,total,anulada,venta_items(codigo,nombre,cantidad)")
     .eq("negocio_id", NEG.id).gte("fecha", a.toISOString()).lt("fecha", b.toISOString()).order("fecha", { ascending: false });
   if (error) return $("v-lista").innerHTML = `<p class="msg">No se pudieron cargar: ${esc(error.message)}</p>`;
@@ -169,8 +171,7 @@ async function anularVenta(id){
 // Calendario: ir a las ventas de una fecha concreta
 function irAFecha(v){
   if (!v) return;
-  VPER = "dia"; VREF = new Date(v + "T00:00:00");
-  ["dia", "semana", "mes"].forEach(x => $("per-" + x).classList.toggle("act", x === "dia"));
+  VREF = new Date(v.length === 7 ? v + "-01T00:00:00" : v + "T00:00:00");
   cargarVentas();
 }
 
