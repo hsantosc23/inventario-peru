@@ -88,4 +88,13 @@ input[type=date],input[type=month]{width:100%;padding:11px;border:1px solid var(
 .avatar.prueba{border-color:#1d4ed8}
 .avatar.mal{border-color:#dc2626}
 
+.tv{width:100%;border-collapse:collapse;margin-bottom:6px}
+.tv th{text-align:left;font-size:13px;color:var(--gr);padding:6px 8px;border-bottom:2px solid var(--bd)}
+.tv td{padding:8px;border-bottom:1px solid var(--bd);vertical-align:top}
+.tv td:nth-child(2){text-align:center}
+.tv td.pre{text-align:right}
+.tv tr.anulada{opacity:.55}
+.tv tr.anulada td.pre{text-decoration:line-through}
+.tv button{padding:4px 8px;font-size:13px}
+
 

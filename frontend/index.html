@@ -220,7 +220,10 @@
                     <label id="v-fecha-lbl">Fecha</label><input type="date" id="v-fecha" onchange="irAFecha(this.value)">
           <div id="v-rango" class="gr" style="margin-top:6px"></div>
 
-          <div id="v-hoy" style="margin-bottom:10px;font-weight:600;color:var(--gr)"></div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 0">
+            <div id="v-hoy" style="font-weight:600;color:var(--gr)"></div>
+            <button onclick="descargarVentas()">Descargar Excel</button>
+          </div>
           <div id="v-lista"></div>
         </div>
       </div>

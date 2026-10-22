@@ -123,38 +123,6 @@ function rangoVentas(){
   return [a, b];
 }
 
-async function cargarVentas(){
-  const [a, b] = rangoVentas(), ahora = new Date(), dia = VPER === "dia";
-  const f = (d, o) => d.toLocaleDateString("es-PE", o);
-  const fin = new Date(b); fin.setDate(fin.getDate() - 1);
-    const local = d => new Date(d - d.getTimezoneOffset() * 60000).toISOString();
-  const campo = $("v-fecha"), n = VPER === "mes" ? 7 : 10;
-  campo.type = VPER === "mes" ? "month" : "date";
-  campo.max = local(ahora).slice(0, n);
-  campo.value = local(VREF).slice(0, n);
-  $("v-fecha-lbl").textContent = VPER === "mes" ? "Mes" : VPER === "semana" ? "Elige un día de la semana" : "Fecha";
-  $("v-rango").textContent = VPER === "semana"
-    ? "Semana del " + f(a, { day: "numeric", month: "short" }) + " al " + f(fin, { day: "numeric", month: "short" }) : "";
-  const { data, error } = await sb.from("ventas").select("id,fecha,total,anulada,venta_items(codigo,nombre,cantidad)")
-    .eq("negocio_id", NEG.id).gte("fecha", a.toISOString()).lt("fecha", b.toISOString()).order("fecha", { ascending: false });
-  if (error) return $("v-lista").innerHTML = `<p class="msg">No se pudieron cargar: ${esc(error.message)}</p>`;
-  const validas = data.filter(v => !v.anulada), anuladas = data.length - validas.length;
-  const suma = validas.reduce((s, v) => s + Number(v.total), 0);
-  $("v-hoy").textContent = validas.length + " venta(s) · Total: S/ " + suma.toFixed(2) + (anuladas ? " · " + anuladas + " anulada(s)" : "");
-  const hora = v => new Date(v.fecha).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
-  const fila = v => `<div class="fila${v.anulada ? " anulada" : ""}"><div>${hora(v)}${v.anulada ? " · <b>Anulada</b>" : ""}
-      <small>${v.venta_items.map(i => i.cantidad + "× " + esc(i.nombre)).join(", ")}</small></div>
-      <div class="pre">S/ ${Number(v.total).toFixed(2)}</div>
-      ${PUEDE && !v.anulada ? `<button onclick="anularVenta('${v.id}')">Anular</button>` : ""}</div>`;
-  const dias = {};
-  data.forEach(v => { const k = f(new Date(v.fecha), { weekday: "short", day: "numeric", month: "short" }); (dias[k] = dias[k] || []).push(v); });
-  $("v-lista").innerHTML = data.length ? Object.entries(dias).map(([k, vs]) => {
-    const ok = vs.filter(v => !v.anulada);
-    return (dia ? "" : `<div class="dia"><b>${esc(k)}</b> · ${ok.length} venta(s) · S/ ${ok.reduce((s, v) => s + Number(v.total), 0).toFixed(2)}</div>`)
-      + vs.map(fila).join("");
-  }).join("") : `<p class="gr">No hay ventas en este periodo.</p>`;
-}
-
 async function anularVenta(id){
   if (!confirm("¿Anular esta venta? El stock de sus productos se devolverá al inventario.")) return;
   const msg = $("v-msg"); msg.style.color = ""; msg.textContent = "";
@@ -165,14 +133,6 @@ async function anularVenta(id){
   cargarVentas();
   msg.style.color = "#166534";
   msg.textContent = "Venta anulada. El stock fue devuelto al inventario.";
-}
-
-
-// Calendario: ir a las ventas de una fecha concreta
-function irAFecha(v){
-  if (!v) return;
-  VREF = new Date(v.length === 7 ? v + "-01T00:00:00" : v + "T00:00:00");
-  cargarVentas();
 }
 
 // ---------- Gastos ----------
@@ -215,4 +175,97 @@ async function borrarGasto(id){
   const { data, error } = await sb.from("gastos").delete().eq("id", id).eq("negocio_id", NEG.id).select();
   if (error || !data.length) return alert("No se pudo borrar" + (error ? ": " + error.message : "."));
   cargarGastos();
+}
+
+// ¿Este navegador tiene selector de semana? (si no, se usa el de fecha)
+const SEMANA_OK = (() => { const i = document.createElement("input"); i.type = "week"; return i.type === "week"; })();
+let VDATA = [], VNOMBRE = "";
+
+// Fecha -> "2026-W43" (semana ISO, empieza en lunes)
+function semanaISO(d){
+  const x = new Date(d); x.setHours(0, 0, 0, 0);
+  x.setDate(x.getDate() + 3 - ((x.getDay() + 6) % 7));
+  const s1 = new Date(x.getFullYear(), 0, 4);
+  const w = 1 + Math.round(((x - s1) / 86400000 - 3 + ((s1.getDay() + 6) % 7)) / 7);
+  return x.getFullYear() + "-W" + String(w).padStart(2, "0");
+}
+
+// "2026-W43" -> lunes de esa semana
+function lunesISO(v){
+  const [y, w] = v.split("-W").map(Number);
+  const j4 = new Date(y, 0, 4), lun = new Date(j4);
+  lun.setDate(j4.getDate() - ((j4.getDay() + 6) % 7) + (w - 1) * 7);
+  return lun;
+}
+
+function irAFecha(v){
+  if (!v) return;
+  VREF = v.includes("W") ? lunesISO(v) : new Date(v.length === 7 ? v + "-01T00:00:00" : v + "T00:00:00");
+  cargarVentas();
+}
+
+async function cargarVentas(){
+  const [a, b] = rangoVentas(), ahora = new Date(), dia = VPER === "dia";
+  const f = (d, o) => d.toLocaleDateString("es-PE", o);
+  const fin = new Date(b); fin.setDate(fin.getDate() - 1);
+  const local = d => new Date(d - d.getTimezoneOffset() * 60000).toISOString();
+  const iso = d => local(d).slice(0, 10);
+
+  // Calendario: fecha, semana (lunes a domingo) o mes, según el periodo
+  const modo = VPER === "mes" ? "month" : VPER === "semana" && SEMANA_OK ? "week" : "date";
+  const valor = d => modo === "month" ? local(d).slice(0, 7) : modo === "week" ? semanaISO(d) : iso(d);
+  const campo = $("v-fecha");
+  campo.type = modo; campo.max = valor(ahora); campo.value = valor(VREF);
+  $("v-fecha-lbl").textContent = VPER === "mes" ? "Mes"
+    : VPER === "semana" ? (modo === "week" ? "Elige la semana" : "Elige un día de la semana") : "Fecha";
+  const dl = { weekday: "long", day: "numeric", month: "short" };
+  $("v-rango").textContent = VPER === "semana" ? "Semana del " + f(a, dl) + " al " + f(fin, dl) : "";
+  VNOMBRE = dia ? "dia_" + iso(a) : VPER === "semana" ? "semana_" + iso(a) + "_al_" + iso(fin) : "mes_" + iso(a).slice(0, 7);
+
+  VDATA = [];
+  const { data, error } = await sb.from("ventas")
+    .select("id,fecha,total,anulada,venta_items(codigo,nombre,cantidad,precio_unitario,subtotal)")
+    .eq("negocio_id", NEG.id).gte("fecha", a.toISOString()).lt("fecha", b.toISOString()).order("fecha", { ascending: true });
+  if (error) return $("v-lista").innerHTML = `<p class="msg">No se pudieron cargar: ${esc(error.message)}</p>`;
+  VDATA = data;
+  const validas = data.filter(v => !v.anulada), anuladas = data.length - validas.length;
+  const suma = validas.reduce((s, v) => s + Number(v.total), 0);
+  $("v-hoy").textContent = validas.length + " venta(s) · Total: S/ " + suma.toFixed(2) + (anuladas ? " · " + anuladas + " anulada(s)" : "");
+
+  // Lista: una fila por producto (hora, cantidad, producto y total)
+  const hora = v => new Date(v.fecha).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
+  const filas = v => v.venta_items.map((i, k) => `<tr class="${v.anulada ? "anulada" : ""}">
+      <td>${k === 0 ? hora(v) : ""}</td><td>${i.cantidad}</td><td>${esc(i.nombre)}</td>
+      <td class="pre">S/ ${Number(i.subtotal).toFixed(2)}</td>
+      <td>${k > 0 ? "" : v.anulada ? "<b>Anulada</b>" : PUEDE ? `<button onclick="anularVenta('${v.id}')">Anular</button>` : ""}</td></tr>`).join("");
+  const tabla = vs => `<table class="tv"><thead><tr><th>Hora</th><th>Cant.</th><th>Producto</th><th>Total</th><th></th></tr></thead>
+    <tbody>${vs.map(filas).join("")}</tbody></table>`;
+  const dias = {};
+  data.forEach(v => { const k = f(new Date(v.fecha), { weekday: "short", day: "numeric", month: "short" }); (dias[k] = dias[k] || []).push(v); });
+  $("v-lista").innerHTML = data.length ? Object.entries(dias).map(([k, vs]) => {
+    const ok = vs.filter(v => !v.anulada);
+    return (dia ? "" : `<div class="dia"><b>${esc(k)}</b> · ${ok.length} venta(s) · S/ ${ok.reduce((s, v) => s + Number(v.total), 0).toFixed(2)}</div>`) + tabla(vs);
+  }).join("") : `<p class="gr">No hay ventas en este periodo.</p>`;
+}
+
+// Descarga en Excel las ventas del periodo que se está viendo
+function descargarVentas(){
+  if (!VDATA.length) return alert("No hay ventas en este periodo para descargar.");
+  const filas = [];
+  VDATA.forEach(v => {
+    const d = new Date(v.fecha);
+    v.venta_items.forEach(i => filas.push({
+      "Fecha": d.toLocaleDateString("es-PE"),
+      "Hora": d.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }),
+      "Código": i.codigo, "Producto": i.nombre, "Cantidad": i.cantidad,
+      "Precio unitario": Number(i.precio_unitario), "Total": Number(i.subtotal),
+      "Estado": v.anulada ? "Anulada" : "Válida" }));
+  });
+  const total = filas.filter(r => r["Estado"] === "Válida").reduce((s, r) => s + r["Total"], 0);
+  filas.push({}, { "Producto": "TOTAL (sin ventas anuladas)", "Total": Math.round(total * 100) / 100 });
+  const ws = XLSX.utils.json_to_sheet(filas);
+  ws["!cols"] = [{ wch: 11 }, { wch: 8 }, { wch: 10 }, { wch: 30 }, { wch: 9 }, { wch: 14 }, { wch: 10 }, { wch: 9 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Ventas");
+  XLSX.writeFile(wb, "ventas_" + VNOMBRE + ".xlsx");
 }
