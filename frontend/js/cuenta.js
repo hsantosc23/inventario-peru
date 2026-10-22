@@ -23,6 +23,7 @@ function verConfig(){
   ["c-msg-nombre", "c-msg-clave", "c-msg-tipo"].forEach(i => { $(i).style.color = ""; $(i).textContent = ""; });
   verTipoConfig();
   show("config");
+  cargarDatosFiscales();
 }
 
 async function guardarNombre(){
@@ -67,4 +68,19 @@ async function cambiarModalidad(){
     .update({ tipo: t.value, modalidades: t.value === "hostal" ? cobros : null }).eq("id", NEG.id);
   if (error) return msg.textContent = "No se pudo cambiar: " + error.message;
   await irSegunNegocio();
+}
+
+async function cargarDatosFiscales(){
+  const { data } = await sb.rpc("mis_datos_fiscales");
+  const f = data && data[0];
+  $("f-ruc").value = f ? (f.ruc || "") : "";
+  $("f-razon").value = f ? (f.razon_social || "") : "";
+}
+
+async function guardarDatosFiscales(){
+  const msg = $("f-msg"); msg.style.color = ""; msg.textContent = "";
+  const { error } = await sb.rpc("guardar_datos_fiscales", { p_ruc: $("f-ruc").value.trim(), p_razon: $("f-razon").value.trim() });
+  if (error) return msg.textContent = error.message;
+  msg.style.color = "#166534";
+  msg.textContent = "Datos de facturación guardados.";
 }

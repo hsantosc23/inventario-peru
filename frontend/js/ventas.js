@@ -242,6 +242,18 @@ function irAFecha(v){
   cargarVentas();
 }
 
+function botonesVenta(v) {
+  if (v.anulada) return "<b>Anulada</b>";
+  let h = `<button onclick="imprimirComprobante('${v.id}')">Imprimir</button>`;
+  if (PUEDE && v.tipo_doc && v.cpe_estado !== "aceptado")
+    h += ` <button onclick="reintentarEmision('${v.id}')">Reintentar emisión</button>`;
+  if (PUEDE)
+    h += (v.cpe_estado === "aceptado" && v.cpe_nc_estado !== "aceptado")
+      ? ` <button onclick="devolverVenta('${v.id}')">Devolución</button>`
+      : ` <button onclick="anularVenta('${v.id}')">Anular</button>`;
+  return h;
+}
+
 async function cargarVentas(){
   const [a, b] = rangoVentas(), ahora = new Date(), dia = VPER === "dia";
   const f = (d, o) => d.toLocaleDateString("es-PE", o);
@@ -262,7 +274,7 @@ async function cargarVentas(){
 
   VDATA = [];
   const { data, error } = await sb.from("ventas")
-    .select("id,fecha,total,anulada,cpe_serie,cpe_numero,cpe_estado,tipo_doc,numero,venta_items(codigo,nombre,cantidad,precio_unitario,subtotal)")
+    .select("id,fecha,total,anulada,cliente_doc,cliente_nombre,cpe_nc_estado,cpe_serie,cpe_numero,cpe_estado,tipo_doc,numero,venta_items(codigo,nombre,cantidad,precio_unitario,subtotal)")
     .eq("negocio_id", NEG.id).gte("fecha", a.toISOString()).lt("fecha", b.toISOString()).order("fecha", { ascending: true });
   if (error) return $("v-lista").innerHTML = `<p class="msg">No se pudieron cargar: ${esc(error.message)}</p>`;
   VDATA = data;
@@ -280,7 +292,7 @@ async function cargarVentas(){
       <td class="c">${i.cantidad}</td>
       <td>${esc(i.nombre)}${n > 1 ? ` <span class="gr">· S/ ${Number(i.subtotal).toFixed(2)}</span>` : ""}</td>
       ${k === 0 ? `<td rowspan="${n}" class="pre">S/ ${Number(v.total).toFixed(2)}</td>
-      <td rowspan="${n}">${v.anulada ? "<b>Anulada</b>" : `<button onclick="imprimirComprobante('${v.id}')">Imprimir</button>` + (PUEDE ? ` <button onclick="anularVenta('${v.id}')">Anular</button>` : "")}</td>` : ""}
+      <td rowspan="${n}">${botonesVenta(v)}</td>` : ""}
     </tr>`).join("") + `</tbody>`;
   };
   const tabla = vs => `<table class="tv"><thead><tr><th>Hora</th><th class="c">Cant.</th><th>Producto</th><th class="t">Total</th><th></th></tr></thead>${vs.map(compra).join("")}</table>`;
@@ -370,7 +382,6 @@ async function imprimirComprobante(id){
     table{width:100%;border-collapse:collapse}td{vertical-align:top;padding:2px 0}
     </style></head><body>
   <div class="c"><b>${esc(emitido && fi ? fi.razon_social : (NEG.nombre || ""))}</b>${emitido && fi ? "<br>RUC " + fi.ruc : ""}<br>${titulo}<br>${num}</div><hr>
-  <div class="c"><b>${esc(NEG.nombre || "")}</b><br>${titulo}<br>${num}</div><hr>
     Fecha: ${d.toLocaleDateString("es-PE")} ${d.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}<br>
     ${cliente || "<hr>"}
     <table>${filas}</table><hr>
@@ -379,13 +390,22 @@ async function imprimirComprobante(id){
     </body></html>`);
 }
 
-function abrirSunat() {
-  const w = Math.floor(screen.availWidth / 2), h = screen.availHeight;
-  window.open(
-    "https://e-menu.sunat.gob.pe/cl-ti-itmenu/MenuInternet.htm", "sunat",
-    `popup=yes,width=${w},height=${h},left=${(screen.availLeft || 0) + w},top=${screen.availTop || 0}`
-  );
+async function devolverVenta(id) {
+  if (!confirm("Se emitirá una NOTA DE CRÉDITO en SUNAT por el total de la venta y luego se anulará, devolviendo el stock. ¿Continuar?")) return;
+  const msg = $("v-msg"); msg.style.color = ""; msg.textContent = "Emitiendo nota de crédito...";
+  const { data, error } = await sb.functions.invoke("emitir-comprobante", { body: { accion: "nota_credito", venta_id: id } });
+  let r = data;
+  if (error) { r = { ok: false, mensaje: error.message }; try { r.mensaje = (await error.context.json()).error || r.mensaje; } catch {} }
+  if (!r || !r.ok) return msg.textContent = "No se pudo emitir la nota de crédito: " + ((r && (r.mensaje || r.error)) || "sin respuesta");
+  msg.style.color = "#166534"; msg.textContent = "Nota de crédito " + r.comprobante + " emitida.";
+  await anularVenta(id);
 }
 
-
+async function reintentarEmision(id) {
+  const { data: v, error } = await sb.from("ventas").select("tipo_doc,cliente_doc,cliente_nombre").eq("id", id).single();
+  if (error) return alert(error.message);
+  const r = await emitirComprobante(id, v.tipo_doc, v.cliente_doc || "", v.cliente_nombre || "");
+  alert(r && r.ok ? "Comprobante " + r.comprobante + " emitido" : "No se pudo emitir: " + ((r && (r.mensaje || r.error)) || "sin respuesta"));
+  cargarVentas();
+}
 

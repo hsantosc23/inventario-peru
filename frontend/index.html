@@ -189,6 +189,7 @@
         </div>
         <div class="inv-der">
           <label>Mes</label><input type="month" id="g-mes" onchange="cargarGastos()">
+          <button type="button" onclick="descargarResumenMes()" style="margin-top:8px">Descargar resumen del mes (Excel)</button>
           <div id="g-total" style="margin:10px 0;font-weight:600;color:var(--gr)"></div>
           <div id="g-lista"></div>
         </div>
@@ -219,7 +220,7 @@
               <label class="opt" style="padding:10px"><input type="checkbox" id="v-imprimir" checked> Imprimir al registrar</label>
             </div>
             <div id="v-total" class="pre" style="font-size:20px;margin-top:8px">Total: S/ 0.00</div>
-            <button class="pri full" onclick="registrarVenta()">Registrar venta</button><button type="button" onclick="abrirSunat()">Emitir en SUNAT</button>
+            <button class="pri full" onclick="registrarVenta()">Registrar venta</button>
             <div class="msg" id="v-msg"></div>
           </div>
         </div>
@@ -256,6 +257,16 @@
     <button class="pri full" onclick="guardarNombre()">Guardar nombre</button>
     <div class="msg" id="c-msg-nombre"></div>
   </div>
+
+    <div class="card" style="margin-top:16px">
+    <b>Datos para facturación</b>
+    <p class="gr" style="margin:6px 0 0">Necesarios para emitir boletas y facturas electrónicas.</p>
+    <label>RUC del negocio</label><input type="text" id="f-ruc" inputmode="numeric" maxlength="11" placeholder="11 dígitos">
+    <label>Razón social (como figura en SUNAT)</label><input type="text" id="f-razon">
+    <button class="pri full" onclick="guardarDatosFiscales()">Guardar datos de facturación</button>
+    <div class="msg" id="f-msg"></div>
+  </div>
+
   <div class="card" style="margin-top:16px">
     <b>Cambiar contraseña</b>
     <label>Contraseña actual</label><input type="password" id="c-clave0" autocomplete="current-password">
