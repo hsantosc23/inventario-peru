@@ -25,6 +25,7 @@ async function irSegunNegocio(){
   $("inv-grid").classList.toggle("solo", !PUEDE);
   $("hotel-grid").classList.toggle("solo", !PUEDE);
   $("ven-grid").classList.toggle("solo", !PUEDE);
+  $("gas-grid").classList.toggle("solo", !PUEDE);
   show("panel");
   if (esTienda) { verTab("inv"); cargarProductos(); } else iniciarHotel();
 }

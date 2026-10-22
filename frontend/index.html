@@ -129,6 +129,7 @@
     <div class="tabs">
       <button id="tab-inv" class="act" onclick="verTab('inv')">Registro de inventario</button>
       <button id="tab-ven" onclick="verTab('ven')">Registro de ventas</button>
+            <button id="tab-gas" onclick="verTab('gas')">Registro de gastos</button>
     </div>
     <div id="t-inv">
     <div class="inv-grid" id="inv-grid">
@@ -162,6 +163,31 @@
       </div>
     </div>
     </div>
+
+        <div id="t-gas" class="hide">
+      <div class="inv-grid" id="gas-grid">
+        <div class="inv-izq">
+          <div class="card">
+            <b>Nuevo gasto</b>
+            <label>Concepto</label><input type="text" id="g-concepto" placeholder="Ej.: pago de luz">
+            <label>Categoría</label>
+            <select id="g-cat"><option>Mercadería</option><option>Alquiler</option><option>Servicios</option><option>Sueldos</option><option>Transporte</option><option>Otros</option></select>
+            <div class="f2">
+              <div><label>Monto (S/)</label><input type="number" id="g-monto" min="0" step="0.01"></div>
+              <div><label>Fecha</label><input type="date" id="g-fecha"></div>
+            </div>
+            <button class="pri full" onclick="guardarGasto()">Registrar gasto</button>
+            <div class="msg" id="g-msg"></div>
+          </div>
+        </div>
+        <div class="inv-der">
+          <label>Mes</label><input type="month" id="g-mes" onchange="cargarGastos()">
+          <div id="g-total" style="margin:10px 0;font-weight:600;color:var(--gr)"></div>
+          <div id="g-lista"></div>
+        </div>
+      </div>
+    </div>
+
     <div id="t-ven" class="hide">
       <div class="inv-grid" id="ven-grid">
         <div class="inv-izq">
@@ -187,6 +213,9 @@
             <b id="v-rango"></b>
             <button id="v-sig" onclick="moverPeriodo(1)">→</button>
           </div>
+
+                    <label>Ir a una fecha</label><input type="date" id="v-fecha" onchange="irAFecha(this.value)">
+
           <div id="v-hoy" style="margin-bottom:10px;font-weight:600;color:var(--gr)"></div>
           <div id="v-lista"></div>
         </div>

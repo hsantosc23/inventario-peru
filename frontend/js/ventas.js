@@ -1,13 +1,14 @@
 // Registro de ventas: carrito con descuentos, descuento de stock e historial por periodo
 
-let CARRITO = [], VPER = "dia", VREF = new Date();
+let CARRITO = [], VPER = "dia", VREF = new Date(), LINEA = 0;
 
 function verTab(t){
-  $("t-inv").classList.toggle("hide", t !== "inv");
-  $("t-ven").classList.toggle("hide", t !== "ven");
-  $("tab-inv").classList.toggle("act", t === "inv");
-  $("tab-ven").classList.toggle("act", t === "ven");
+  ["inv", "ven", "gas"].forEach(x => {
+    $("t-" + x).classList.toggle("hide", x !== t);
+    $("tab-" + x).classList.toggle("act", x === t);
+  });
   if (t === "ven") { cargarVentas(); pintarCarrito(); $("v-buscar").focus(); }
+  if (t === "gas") cargarGastos();
 }
 
 function buscarVenta(){
@@ -29,36 +30,49 @@ function enterVenta(ev){
   if (p && p.stock > 0) agregarAlCarrito(p.id);
 }
 
+// Unidades de un producto que ya están en otras líneas del carrito
+const usado = (id, k) => CARRITO.filter(c => c.id === id && c.k !== k).reduce((s, c) => s + c.cant, 0);
+
 function agregarAlCarrito(id){
   const p = PRODS.find(x => x.id === id); if (!p) return;
-  const c = CARRITO.find(x => x.id === id);
-  if (c) c.cant = Math.min(c.cant + 1, p.stock); else CARRITO.push({ id, cant: 1, precio: null });
+  if (usado(id, -1) >= p.stock) return alert("Ya agregaste todo el stock disponible de este producto.");
+  const c = CARRITO.find(x => x.id === id && x.precio == null);
+  if (c) c.cant++; else CARRITO.push({ k: ++LINEA, id, cant: 1, precio: null });
   $("v-buscar").value = ""; $("v-res").className = ""; $("v-res").innerHTML = "";
   pintarCarrito(); $("v-buscar").focus();
 }
 
-function cambiarCant(id, v){
-  const c = CARRITO.find(x => x.id === id), p = PRODS.find(x => x.id === id);
-  if (!c || !p) return;
-  c.cant = Math.max(1, Math.min(parseInt(v, 10) || 1, p.stock));
+function cambiarCant(k, v){
+  const c = CARRITO.find(x => x.k === k), p = c && PRODS.find(x => x.id === c.id);
+  if (!p) return;
+  c.cant = Math.max(1, Math.min(parseInt(v, 10) || 1, p.stock - usado(c.id, k)));
   pintarCarrito();
 }
 
-// Descuento: baja el precio por unidad (nunca por encima del precio de lista)
-function editarPrecio(id){
-  const c = CARRITO.find(x => x.id === id), p = PRODS.find(x => x.id === id);
-  if (!c || !p) return;
+// Descuento: baja el precio por unidad (nunca por encima del de lista).
+// Si la línea tiene varias unidades, pregunta a cuántas aplicarlo y las separa en otra línea.
+function editarPrecio(k){
+  const c = CARRITO.find(x => x.k === k), p = c && PRODS.find(x => x.id === c.id);
+  if (!p) return;
   const lista = Number(p.precio), actual = c.precio != null ? c.precio : lista;
   const txt = prompt("Precio por unidad (S/). Precio de lista: " + lista.toFixed(2), actual.toFixed(2));
   if (txt === null) return;
   const v = Math.round(parseFloat(txt.replace(",", ".")) * 100) / 100;
   if (isNaN(v) || v < 0) return alert("Escribe un precio válido.");
-  if (v > lista) return alert("El precio no puede ser mayor al de lista (S/ " + lista.toFixed(2) + "). Para subirlo, edita el producto en el inventario.");
-  c.precio = v === lista ? null : v;
+  if (v > lista) return alert("El precio no puede ser mayor al de lista (S/ " + lista.toFixed(2) + ").");
+  let n = c.cant;
+  if (c.cant > 1) {
+    const r = prompt("Tienes " + c.cant + " unidades. ¿A cuántas aplicar este precio? (1 a " + c.cant + ")", "1");
+    if (r === null) return;
+    n = Math.max(1, Math.min(parseInt(r, 10) || 1, c.cant));
+  }
+  const precio = v === lista ? null : v;
+  if (n === c.cant) c.precio = precio;
+  else { c.cant -= n; CARRITO.splice(CARRITO.indexOf(c) + 1, 0, { k: ++LINEA, id: c.id, cant: n, precio }); }
   pintarCarrito();
 }
 
-function quitar(id){ CARRITO = CARRITO.filter(x => x.id !== id); pintarCarrito(); }
+function quitar(k){ CARRITO = CARRITO.filter(x => x.k !== k); pintarCarrito(); }
 
 function pintarCarrito(){
   CARRITO = CARRITO.filter(c => PRODS.some(p => p.id === c.id));
@@ -68,9 +82,9 @@ function pintarCarrito(){
     total += sub;
     const desc = c.precio != null ? ` · <b style="color:#b45309">descuento (lista S/ ${Number(p.precio).toFixed(2)})</b>` : "";
     return `<div class="fila carro"><div class="info"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}<small>S/ ${pu.toFixed(2)} c/u · stock ${p.stock}${desc}</small></div>
-      <input type="number" class="cant" min="1" max="${p.stock}" value="${c.cant}" onchange="cambiarCant('${c.id}', this.value)">
+      <input type="number" class="cant" min="1" max="${p.stock - usado(c.id, c.k)}" value="${c.cant}" onchange="cambiarCant(${c.k}, this.value)">
       <div class="pre">S/ ${sub.toFixed(2)}</div>
-      <button onclick="editarPrecio('${c.id}')">Editar</button><button onclick="quitar('${c.id}')">Quitar</button></div>`;
+      <button onclick="editarPrecio(${c.k})">Editar</button><button onclick="quitar(${c.k})">Quitar</button></div>`;
   }).join("") : `<p class="gr">Busca un producto por código o nombre y tócalo para agregarlo.</p>`;
   $("v-total").textContent = "Total: S/ " + total.toFixed(2);
 }
@@ -124,6 +138,8 @@ async function cargarVentas(){
     : VPER === "semana" ? "Semana del " + f(a, { day: "numeric", month: "short" }) + " al " + f(fin, { day: "numeric", month: "short" })
     : f(a, { month: "long", year: "numeric" });
   $("v-sig").disabled = b > ahora;
+    $("v-fecha").max = new Date(ahora - ahora.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  $("v-fecha").value = new Date(a - a.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   const { data, error } = await sb.from("ventas").select("id,fecha,total,anulada,venta_items(codigo,nombre,cantidad)")
     .eq("negocio_id", NEG.id).gte("fecha", a.toISOString()).lt("fecha", b.toISOString()).order("fecha", { ascending: false });
   if (error) return $("v-lista").innerHTML = `<p class="msg">No se pudieron cargar: ${esc(error.message)}</p>`;
@@ -154,4 +170,55 @@ async function anularVenta(id){
   cargarVentas();
   msg.style.color = "#166534";
   msg.textContent = "Venta anulada. El stock fue devuelto al inventario.";
+}
+
+
+// Calendario: ir a las ventas de una fecha concreta
+function irAFecha(v){
+  if (!v) return;
+  VPER = "dia"; VREF = new Date(v + "T00:00:00");
+  ["dia", "semana", "mes"].forEach(x => $("per-" + x).classList.toggle("act", x === "dia"));
+  cargarVentas();
+}
+
+// ---------- Gastos ----------
+
+async function cargarGastos(){
+  const hoy = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  if (!$("g-mes").value) $("g-mes").value = hoy.slice(0, 7);
+  if (!$("g-fecha").value) $("g-fecha").value = hoy;
+  const [y, m] = $("g-mes").value.split("-").map(Number);
+  const ini = `${y}-${String(m).padStart(2, "0")}-01`;
+  const sig = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
+  const { data, error } = await sb.from("gastos").select("*").eq("negocio_id", NEG.id)
+    .gte("fecha", ini).lt("fecha", sig).order("fecha", { ascending: false });
+  if (error) return $("g-lista").innerHTML = `<p class="msg">No se pudieron cargar: ${esc(error.message)}</p>`;
+  const suma = data.reduce((s, g) => s + Number(g.monto), 0);
+  $("g-total").textContent = data.length + " gasto(s) · Total: S/ " + suma.toFixed(2);
+  $("g-lista").innerHTML = data.length ? data.map(g =>
+    `<div class="fila"><div><b>${esc(g.concepto)}</b><small>${esc(g.categoria)} · ${g.fecha.split("-").reverse().join("/")}</small></div>
+      <div class="pre">S/ ${Number(g.monto).toFixed(2)}</div>
+      ${PUEDE ? `<button onclick="borrarGasto('${g.id}')">Borrar</button>` : ""}</div>`).join("")
+    : `<p class="gr">No hay gastos en este mes.</p>`;
+}
+
+async function guardarGasto(){
+  const msg = $("g-msg"); msg.style.color = ""; msg.textContent = "";
+  const concepto = $("g-concepto").value.trim(), monto = parseFloat($("g-monto").value), fecha = $("g-fecha").value;
+  if (!concepto) return msg.textContent = "Escribe el concepto del gasto.";
+  if (isNaN(monto) || monto < 0) return msg.textContent = "Escribe un monto válido.";
+  if (!fecha) return msg.textContent = "Elige la fecha.";
+  const { error } = await sb.from("gastos").insert({ negocio_id: NEG.id, concepto, categoria: $("g-cat").value, monto, fecha });
+  if (error) return msg.textContent = "No se pudo guardar: " + error.message;
+  $("g-concepto").value = ""; $("g-monto").value = "";
+  $("g-mes").value = fecha.slice(0, 7);
+  msg.style.color = "#166534"; msg.textContent = "Gasto registrado.";
+  cargarGastos();
+}
+
+async function borrarGasto(id){
+  if (!confirm("¿Borrar este gasto?")) return;
+  const { data, error } = await sb.from("gastos").delete().eq("id", id).eq("negocio_id", NEG.id).select();
+  if (error || !data.length) return alert("No se pudo borrar" + (error ? ": " + error.message : "."));
+  cargarGastos();
 }
