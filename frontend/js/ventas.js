@@ -51,8 +51,7 @@ function cambiarCant(k, v){
   pintarCarrito();
 }
 
-// Descuento: baja el precio por unidad (nunca por encima del de lista).
-// Si la línea tiene varias unidades, pregunta a cuántas aplicarlo y las separa en otra línea.
+// Descuento: baja el precio por unidad de este recuadro (nunca por encima del de lista)
 function editarPrecio(k){
   const c = CARRITO.find(x => x.k === k), p = c && PRODS.find(x => x.id === c.id);
   if (!p) return;
@@ -62,15 +61,7 @@ function editarPrecio(k){
   const v = Math.round(parseFloat(txt.replace(",", ".")) * 100) / 100;
   if (isNaN(v) || v < 0) return alert("Escribe un precio válido.");
   if (v > lista) return alert("El precio no puede ser mayor al de lista (S/ " + lista.toFixed(2) + ").");
-  let n = c.cant;
-  if (c.cant > 1) {
-    const r = prompt("Tienes " + c.cant + " unidades. ¿A cuántas aplicar este precio? (1 a " + c.cant + ")", "1");
-    if (r === null) return;
-    n = Math.max(1, Math.min(parseInt(r, 10) || 1, c.cant));
-  }
-  const precio = v === lista ? null : v;
-  if (n === c.cant) c.precio = precio;
-  else { c.cant -= n; CARRITO.splice(CARRITO.indexOf(c) + 1, 0, { k: ++LINEA, id: c.id, cant: n, precio }); }
+  c.precio = v === lista ? null : v;
   pintarCarrito();
 }
 
