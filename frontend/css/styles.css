@@ -219,3 +219,26 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   #tab-gas::before{content:"💸"} #tab-est::before{content:"📊"}
   :has(> #tab-inv) > button.act{color:#fff;background:rgba(59,130,246,.22)}
 }
+
+/* ===== Arreglo de desborde horizontal en celular ===== */
+*,*::before,*::after{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+img,canvas,svg,video{max-width:100%}
+input,select,textarea,button{max-width:100%;min-width:0}
+.card,.box,.v,main,section,form,div{min-width:0}
+
+@media (max-width:700px){
+  /* Cabecera: logo + nombre arriba, botones abajo en una fila que se ajusta */
+  header,.hdr{flex-wrap:wrap;gap:8px;padding:10px 12px}
+  .hdr-der{display:flex;flex-wrap:wrap;gap:8px;width:100%;justify-content:flex-start}
+  .hdr-der>*{flex:0 1 auto;min-height:40px;padding:6px 12px;font-size:14px}
+
+  /* Formularios: una sola columna a todo el ancho */
+  .grid,.fila,.row,.cols,.form-grid{display:grid;grid-template-columns:1fr;gap:10px}
+  .card input,.card select,.card textarea,.card button{width:100%}
+  .card{margin-left:0;margin-right:0}
+
+  /* Contenido centrado con márgenes parejos */
+  main,.wrap,.v{padding-left:12px;padding-right:12px;margin-left:auto;margin-right:auto;width:100%}
+  p,small,label{overflow-wrap:anywhere}
+}
