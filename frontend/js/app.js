@@ -3,7 +3,7 @@
 async function irSegunNegocio(){
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return show("login");
-  const { data: n, error } = await sb.from("negocios").select("id,nombre,tipo,estado,prueba_hasta,modalidades,whatsapp").eq("owner_id", user.id).maybeSingle();
+  const { data: n, error } = await sb.from("negocios").select("id,nombre,tipo,estado,prueba_hasta,modalidades,whatsapp,formalidad,rubro").eq("owner_id", user.id).maybeSingle();
   if (error || !n) { show("login"); $("l-msg").textContent = "No se pudo cargar tu negocio" + (error ? ": " + error.message : "."); return; }
   nav(true);
   if (!n.tipo) return show("modalidad");
@@ -17,6 +17,7 @@ async function irSegunNegocio(){
     : n.estado === "activo" ? "Tu plan venció: puedes ver tu inventario, pero no editarlo. Renueva tu pago para seguir."
     : "Tu prueba terminó: puedes ver tu inventario, pero no editarlo. Activa tu plan.";
     NEG = n;
+    aplicarModalidad();
   actualizarPerfil();
   const esTienda = n.tipo === "tienda";
   $("inv").classList.toggle("hide", !esTienda);

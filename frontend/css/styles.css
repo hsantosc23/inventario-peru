@@ -159,3 +159,14 @@ html[data-tema="oscuro"] .tv .bts .aviso{background:#1a2440;color:#fbbf24;border
 html[data-tema="oscuro"] .spin{border-color:#2b354b;border-top-color:var(--az)}
 html[data-tema="oscuro"] ::-webkit-calendar-picker-indicator{filter:invert(.8)}
 html[data-tema="oscuro"] :is(h1,h2,h3,.logo,.card b,.pre,button,a){color:#fff}
+
+.est-barra{display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:12px}
+.est-barra label{margin-top:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.kpi{padding:14px 16px}
+.kpi small{display:block;color:var(--gr);font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+.kpi b{display:block;font-size:22px;margin-top:4px;color:var(--tx)}
+.est-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.est-ancho{grid-column:1/-1}
+.est-card b{color:var(--tx)}
+.est-lienzo{position:relative;height:280px;margin-top:10px}

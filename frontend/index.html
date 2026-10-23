@@ -73,15 +73,15 @@
 <section class="v hide" id="v-modalidad"><div class="box">
   <h2>¿Qué tipo de negocio tienes?</h2>
   <label>Nombre de tu negocio</label><input type="text" id="m-nombre">
-  <label class="opt"><input type="radio" name="tipo" value="tienda" onchange="verTipo()">
-    Negocio con control de inventario<small>Productos, códigos, precios y stock.</small></label>
-  <label class="opt"><input type="radio" name="tipo" value="hostal" onchange="verTipo()">
-    Hotel con control de habitaciones<small>Habitaciones y registro de huéspedes.</small></label>
-  <div id="m-cobro" class="hide">
-    <label>¿Cómo cobras las habitaciones? (puedes marcar varias)</label>
-    <label class="opt"><input type="checkbox" name="cobro" value="hora"> Por hora</label>
-    <label class="opt"><input type="checkbox" name="cobro" value="noche"> Por noche</label>
-    <label class="opt"><input type="checkbox" name="cobro" value="dia_completo"> Día completo</label>
+  <label class="opt"><input type="radio" name="tipo" value="formal" onchange="verTipo()">
+    Negocio formal<small>Emite boletas y facturas electrónicas a SUNAT.</small></label>
+  <label class="opt"><input type="radio" name="tipo" value="por_formalizar" onchange="verTipo()">
+    Negocio por formalizar<small>Registra tus ventas con notas de venta. No se envía nada a SUNAT.</small></label>
+  <label class="opt"><input type="radio" name="tipo" value="hotel" onchange="verTipo()">
+    Hotel<small>Habitaciones y registro de huéspedes.</small></label>
+  <div id="m-rubro-box" class="hide">
+    <label>Rubro de tu negocio</label>
+    <select id="m-rubro"><option value="">Elige un rubro</option><option value="ropa">Venta de ropa</option><option value="calzado">Calzado</option><option value="accesorios">Accesorios</option><option value="artefactos">Artefactos</option><option value="bodega">Bodega o minimarket</option><option value="ferreteria">Ferretería</option><option value="otros">Otros</option></select>
   </div>
   <button class="pri full" onclick="guardarModalidad()">Continuar</button>
   <div class="msg" id="m-msg"></div>
@@ -145,7 +145,7 @@
         <div id="form-prod" class="card">
           <b id="f-titulo">Agregar producto</b>
           <div class="f2">
-            <div><label>Talla</label><select id="f-talla" onchange="codigoPorTalla()"><option value="">Sin talla</option><option>XS</option><option>S</option><option>M</option><option>L</option></select></div>
+            <div id="f-talla-box"><label>Talla</label><select id="f-talla" onchange="codigoPorTalla()"><option value="">Sin talla</option><option>XS</option><option>S</option><option>M</option><option>L</option></select></div>
             <div><label>Código</label><input type="text" id="f-codigo"></div>
             <div><label>Nombre</label><input type="text" id="f-nombre"></div>
             <div><label>Precio (S/)</label><input type="number" id="f-precio" min="0" step="0.01" inputmode="decimal"></div>
@@ -172,6 +172,22 @@
     </div>
     </div>
 
+    <div id="t-est" class="hide">
+  <div class="est-barra"><div><label>Mes</label><input type="month" id="e-mes" onchange="cargarEstadisticas()"></div><div id="e-msg" class="msg"></div></div>
+  <div class="kpis">
+    <div class="card kpi"><small>Ventas</small><b id="e-k-ventas">S/ 0.00</b></div>
+    <div class="card kpi"><small>Gastos</small><b id="e-k-gastos">S/ 0.00</b></div>
+    <div class="card kpi"><small>Ventas menos gastos</small><b id="e-k-util">S/ 0.00</b></div>
+    <div class="card kpi"><small>N.º de ventas</small><b id="e-k-n">0</b></div>
+    <div class="card kpi"><small>Venta promedio</small><b id="e-k-ticket">S/ 0.00</b></div>
+  </div>
+  <div class="est-grid">
+    <div class="card est-card est-ancho"><b>Ventas y gastos por día</b><div class="est-lienzo"><canvas id="g-linea"></canvas></div></div>
+    <div class="card est-card"><b>Gastos por categoría</b><div class="est-lienzo"><canvas id="g-pie"></canvas></div><p id="g-pie-vacio" class="gr hide">No hay gastos en este mes.</p></div>
+    <div class="card est-card"><b>Ventas por hora del día</b><small class="gr">Cada punto es una venta</small><div class="est-lienzo"><canvas id="g-puntos"></canvas></div><p id="g-puntos-vacio" class="gr hide">No hay ventas en este mes.</p></div>
+  </div>
+</div>
+
         <div id="t-gas" class="hide">
       <div class="inv-grid" id="gas-grid">
         <div class="inv-izq">
@@ -185,6 +201,7 @@
               <div><label>Fecha</label><input type="date" id="g-fecha"></div>
             </div>
             <button class="pri full" onclick="guardarGasto()">Registrar gasto</button>
+            <button id="tab-est" onclick="verTab('est')">Estadísticas</button>
             <div class="msg" id="g-msg"></div>
           </div>
         </div>
@@ -277,17 +294,16 @@
     <button class="pri full" onclick="cambiarClave()">Cambiar contraseña</button>
     <div class="msg" id="c-msg-clave"></div>
   </div>
-  <div class="card" style="margin-top:16px">
-    <b>Modalidad del negocio</b>
-    <label class="opt"><input type="radio" name="c-tipo" value="tienda" onchange="verTipoConfig()"> Negocio con control de inventario</label>
-    <label class="opt"><input type="radio" name="c-tipo" value="hostal" onchange="verTipoConfig()"> Hotel con control de habitaciones</label>
-    <div id="c-cobros" class="hide">
-      <label>¿Cómo cobras las habitaciones?</label>
-      <label class="opt"><input type="checkbox" name="c-cobro" value="hora"> Por hora</label>
-      <label class="opt"><input type="checkbox" name="c-cobro" value="noche"> Por noche</label>
-      <label class="opt"><input type="checkbox" name="c-cobro" value="dia_completo"> Día completo</label>
+    <div class="card" style="margin-top:16px">
+    <b>Tipo de negocio</b>
+    <label class="opt"><input type="radio" name="c-tipo" value="formal" onchange="verTipoConfig()"> Negocio formal</label>
+    <label class="opt"><input type="radio" name="c-tipo" value="por_formalizar" onchange="verTipoConfig()"> Negocio por formalizar</label>
+    <label class="opt"><input type="radio" name="c-tipo" value="hotel" onchange="verTipoConfig()"> Hotel</label>
+    <div id="c-rubro-box" class="hide">
+      <label>Rubro</label>
+      <select id="c-rubro"><option value="">Elige un rubro</option><option value="ropa">Venta de ropa</option><option value="calzado">Calzado</option><option value="accesorios">Accesorios</option><option value="artefactos">Artefactos</option><option value="bodega">Bodega o minimarket</option><option value="ferreteria">Ferretería</option><option value="otros">Otros</option></select>
     </div>
-    <button class="pri full" onclick="cambiarModalidad()">Cambiar modalidad</button>
+    <button class="pri full" onclick="cambiarModalidad()">Guardar tipo de negocio</button>
     <div class="msg" id="c-msg-tipo"></div>
   </div>
 </div></section>
@@ -304,6 +320,8 @@
 <script src="/js/hostal.js"></script>
 <script src="/js/cuenta.js"></script>
 <script src="/js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/js/estadisticas.js"></script>
 <script src="/js/ui.js"></script>
 </body>
 </html>

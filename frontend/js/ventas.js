@@ -3,12 +3,13 @@
 let CARRITO = [], VPER = "dia", VREF = new Date(), LINEA = 0;
 
 function verTab(t){
-  ["inv", "ven", "gas"].forEach(x => {
+  ["inv", "ven", "gas", "est"].forEach(x => {
     $("t-" + x).classList.toggle("hide", x !== t);
     $("tab-" + x).classList.toggle("act", x === t);
   });
-  if (t === "ven") { pintarUsoComprobantes();cargarVentas(); pintarCarrito(); $("v-buscar").focus(); }
+  if (t === "ven") { cargarVentas(); pintarCarrito(); pintarUsoComprobantes(); $("v-buscar").focus(); }
   if (t === "gas") cargarGastos();
+  if (t === "est") cargarEstadisticas();
 }
 
 function buscarVenta(){
@@ -421,6 +422,7 @@ async function reintentarEmision(id) {
 
 async function pintarUsoComprobantes(){
   const el = $("v-uso"); if (!el) return;
+  if (!NEG || NEG.formalidad === "por_formalizar") { el.textContent = ""; return; }
   const { data: u } = await sb.rpc("mi_uso_comprobantes");
   el.textContent = u && u.en_prueba ? `Prueba: ${u.usados} de ${u.limite} boletas o facturas usadas` : "";
 }

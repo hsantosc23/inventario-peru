@@ -17,8 +17,9 @@ function verConfig(){
     : n.estado === "suspendido" ? "Cuenta suspendida por falta de pago: puedes ver tus datos, pero no editarlos."
     : "Tu plan o tu prueba venció: puedes ver tus datos, pero no editarlos. Renueva tu pago para seguir.";
   $("c-nombre").value = n.nombre || "";
-  document.querySelectorAll('input[name="c-tipo"]').forEach(r => r.checked = r.value === n.tipo);
-  document.querySelectorAll('input[name="c-cobro"]').forEach(c => c.checked = (n.modalidades || []).includes(c.value));
+    const actual = n.tipo === "hostal" ? "hotel" : (n.formalidad || "formal");
+  document.querySelectorAll('input[name="c-tipo"]').forEach(r => r.checked = r.value === actual);
+  $("c-rubro").value = n.rubro || "";
   ["c-clave0", "c-clave1", "c-clave2"].forEach(i => $(i).value = "");
   ["c-msg-nombre", "c-msg-clave", "c-msg-tipo"].forEach(i => { $(i).style.color = ""; $(i).textContent = ""; });
   verTipoConfig();
@@ -53,21 +54,38 @@ async function cambiarClave(){
 
 function verTipoConfig(){
   const t = document.querySelector('input[name="c-tipo"]:checked');
-  $("c-cobros").classList.toggle("hide", !(t && t.value === "hostal"));
+  $("c-rubro-box").classList.toggle("hide", !t || t.value === "hotel");
 }
 
 async function cambiarModalidad(){
   const msg = $("c-msg-tipo"); msg.style.color = ""; msg.textContent = "";
   const t = document.querySelector('input[name="c-tipo"]:checked');
-  const cobros = [...document.querySelectorAll('input[name="c-cobro"]:checked')].map(c => c.value);
   if (!t) return msg.textContent = "Elige el tipo de negocio.";
-  if (t.value === "hostal" && !cobros.length) return msg.textContent = "Marca al menos una forma de cobro.";
-  if (t.value === "tienda" && NEG.tipo === "tienda") return msg.textContent = "Ya tienes esa modalidad.";
-  if (!confirm("¿Cambiar la modalidad de tu negocio? Tus datos no se borran: seguirán guardados si vuelves a la modalidad anterior.")) return;
-  const { error } = await sb.from("negocios")
-    .update({ tipo: t.value, modalidades: t.value === "hostal" ? cobros : null }).eq("id", NEG.id);
+  const hotel = t.value === "hotel", rubro = $("c-rubro").value;
+  if (!hotel && !rubro) return msg.textContent = "Elige el rubro de tu negocio.";
+  const actual = NEG.tipo === "hostal" ? "hotel" : (NEG.formalidad || "formal");
+  if (t.value === actual && (hotel || rubro === (NEG.rubro || ""))) return msg.textContent = "No hay cambios.";
+  if (!confirm("¿Cambiar el tipo de negocio? Tus datos no se borran.")) return;
+  const cambios = hotel
+    ? { tipo: "hostal", formalidad: null, rubro: null, modalidades: null }
+    : { tipo: "tienda", formalidad: t.value, rubro, modalidades: null };
+  const { error } = await sb.from("negocios").update(cambios).eq("id", NEG.id);
   if (error) return msg.textContent = "No se pudo cambiar: " + error.message;
   await irSegunNegocio();
+}
+
+// Ajusta las pantallas según el tipo de negocio y el rubro
+function aplicarModalidad(){
+  if (!NEG || NEG.tipo !== "tienda") return;
+  const informal = NEG.formalidad === "por_formalizar";
+  const caja = $("f-talla-box");
+  if (caja) caja.classList.toggle("hide", NEG.rubro !== "ropa");
+  if (NEG.rubro !== "ropa" && $("f-talla")) $("f-talla").value = "";
+  $("v-tipo").innerHTML = informal
+    ? '<option value="nota">Nota de venta (sin SUNAT)</option>'
+    : '<option value="boleta">Boleta</option><option value="factura">Factura</option>';
+  verTipoDoc();
+  pintarUsoComprobantes();
 }
 
 async function cargarDatosFiscales(){
