@@ -172,8 +172,8 @@ function rangoVentas(){
   return [a, b];
 }
 
-async function anularVenta(id){
-  if (!confirm("¿Anular esta venta? El stock de sus productos se devolverá al inventario.")) return;
+async function anularVenta(id, sinPreguntar){
+  if (!sinPreguntar && !confirm("¿Anular esta venta? El stock de sus productos se devolverá al inventario.")) return;
   const msg = $("v-msg"); msg.style.color = ""; msg.textContent = "";
   const { error } = await sb.rpc("anular_venta", { p_venta: id });
   if (error) return msg.textContent = "No se pudo anular: " + error.message;
@@ -409,7 +409,7 @@ async function devolverVenta(id) {
   if (error) { r = { ok: false, mensaje: error.message }; try { r.mensaje = (await error.context.json()).error || r.mensaje; } catch {} }
   if (!r || !r.ok) return msg.textContent = "No se pudo emitir la nota de crédito: " + ((r && (r.mensaje || r.error)) || "sin respuesta");
   msg.style.color = "#166534"; msg.textContent = "Nota de crédito " + r.comprobante + " emitida.";
-  await anularVenta(id);
+  await anularVenta(id, true);
 }
 
 async function reintentarEmision(id) {

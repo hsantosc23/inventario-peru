@@ -253,3 +253,5 @@ input,select,textarea,button{max-width:100%;min-width:0}
 .card .modos button.act{background:var(--az);color:#fff}
 html[data-tema="oscuro"] .card .modos button{background:transparent;border:0}
 html[data-tema="oscuro"] .card .modos button.act{background:#2f6df6;color:#fff}
+
+.opt input[type=checkbox],.opt input[type=radio]{width:auto;min-height:0;margin:0 8px 0 0;vertical-align:middle}
