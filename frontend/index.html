@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
 <title>Gestora Perú · Tu negocio bajo control</title>
 <link rel="icon" href="/images/logo.jpeg">
 <script>try{var t=localStorage.getItem("tema");if(!t)t=matchMedia("(prefers-color-scheme:dark)").matches?"oscuro":"claro";document.documentElement.dataset.tema=t}catch(e){}</script>
@@ -134,9 +135,9 @@
 
   <div id="inv" class="hide">
     <div class="tabs">
-      <button id="tab-inv" class="act" onclick="verTab('inv')">Registro de inventario</button>
-      <button id="tab-ven" onclick="verTab('ven')">Registro de ventas</button>
-      <button id="tab-gas" onclick="verTab('gas')">Registro de gastos</button>
+      <button id="tab-inv" class="act" onclick="verTab('inv')">Inventario</button>
+      <button id="tab-ven" onclick="verTab('ven')">Ventas</button>
+      <button id="tab-gas" onclick="verTab('gas')">Gastos</button>
       <button id="tab-est" onclick="verTab('est')">Estadísticas</button>
     </div>
     <div id="t-inv">
@@ -185,7 +186,7 @@
   <div class="est-grid">
     <div class="card est-card est-ancho"><b>Ventas y gastos por día</b><div class="est-lienzo"><canvas id="g-linea"></canvas></div></div>
     <div class="card est-card"><b>Gastos por categoría</b><div class="est-lienzo"><canvas id="g-pie"></canvas></div><p id="g-pie-vacio" class="gr hide">No hay gastos en este mes.</p></div>
-    <div class="card est-card"><b>Ventas por hora del día</b><small class="gr">Cada punto es una venta</small><div class="est-lienzo"><canvas id="g-puntos"></canvas></div><p id="g-puntos-vacio" class="gr hide">No hay ventas en este mes.</p></div>
+    <div class="card est-card"><b>Ventas por hora del día</b><br><small class="gr">Cada punto es una venta</small><div class="est-lienzo"><canvas id="g-puntos"></canvas></div><p id="g-puntos-vacio" class="gr hide">No hay ventas en este mes.</p></div>
   </div>
 </div>
 

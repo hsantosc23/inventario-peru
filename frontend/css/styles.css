@@ -170,3 +170,52 @@ html[data-tema="oscuro"] :is(h1,h2,h3,.logo,.card b,.pre,button,a){color:#fff}
 .est-ancho{grid-column:1/-1}
 .est-card b{color:var(--tx)}
 .est-lienzo{position:relative;height:280px;margin-top:10px}
+
+/* ===== Móvil y tablet: aspecto de app ===== */
+html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+body{overflow-x:hidden;padding-bottom:env(safe-area-inset-bottom)}
+button,.opt,select{touch-action:manipulation}
+button{min-height:44px;border-radius:12px}
+input,select,textarea{font-size:16px;min-height:46px;border-radius:12px} /* 16px evita el zoom en iPhone */
+.card,.box{border-radius:16px}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+
+/* Tablet */
+@media (max-width:1024px){
+  main,.wrap,.v{padding-left:16px;padding-right:16px}
+  .est-grid{grid-template-columns:1fr 1fr}
+  .est-ancho{grid-column:1/-1}
+}
+
+/* Celular */
+@media (max-width:700px){
+  body{padding-bottom:calc(76px + env(safe-area-inset-bottom))} /* espacio para la barra de abajo */
+  h1{font-size:20px} h2{font-size:18px}
+  .card{padding:14px}
+  .box{width:100%;max-width:none;margin:0;border-radius:0;min-height:100vh;padding:24px 18px}
+  .est-grid{grid-template-columns:1fr}
+  .est-lienzo{height:240px}
+  .kpis{grid-template-columns:1fr 1fr}
+  .kpi b{font-size:19px}
+  .bts{display:flex;flex-wrap:wrap;gap:6px}
+  .bts button{flex:1 1 44%;font-size:13px;padding:8px}
+  button.pri,.full{width:100%}
+
+  /* Barra de pestañas fija abajo */
+  :has(> #tab-inv){
+    position:fixed;left:0;right:0;bottom:0;z-index:50;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:0;
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+    background:var(--card,#1e293b);border-top:1px solid rgba(148,163,184,.25);
+    box-shadow:0 -6px 20px rgba(0,0,0,.18);
+  }
+  :has(> #tab-inv) > button{
+    background:none;border:0;box-shadow:none;border-radius:12px;
+    min-height:54px;padding:4px 2px;font-size:11px;line-height:1.2;
+    color:var(--gr,#94a3b8);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  }
+  :has(> #tab-inv) > button::before{font-size:20px;line-height:1}
+  #tab-inv::before{content:"📦"} #tab-ven::before{content:"🧾"}
+  #tab-gas::before{content:"💸"} #tab-est::before{content:"📊"}
+  :has(> #tab-inv) > button.act{color:#fff;background:rgba(59,130,246,.22)}
+}
