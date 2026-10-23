@@ -27,6 +27,28 @@ function verConfig(){
   cargarDatosFiscales();
 }
 
+async function cargarNumeracion(){
+  const { data: n } = await sb.rpc("mi_numeracion");
+  $("n-sb").value = (n && n.serie_boleta) || "B001";
+  $("n-sf").value = (n && n.serie_factura) || "F001";
+  $("n-ub").value = (n && n.ultimo_boleta) || 0;
+  $("n-uf").value = (n && n.ultimo_factura) || 0;
+}
+
+async function guardarNumeracion(){
+  const msg = $("n-msg"); msg.style.color = ""; msg.textContent = "";
+  const serB = $("n-sb").value.trim().toUpperCase(), serF = $("n-sf").value.trim().toUpperCase();
+  const ub = parseInt($("n-ub").value || "0", 10), uf = parseInt($("n-uf").value || "0", 10);
+  if (!/^B[A-Z0-9]{3}$/.test(serB)) return msg.textContent = "La serie de boletas empieza con B y tiene 4 caracteres (ej.: B001).";
+  if (!/^F[A-Z0-9]{3}$/.test(serF)) return msg.textContent = "La serie de facturas empieza con F y tiene 4 caracteres (ej.: F001).";
+  if (isNaN(ub) || ub < 0 || isNaN(uf) || uf < 0) return msg.textContent = "Escribe números válidos.";
+  const { error } = await sb.rpc("configurar_numeracion", { p_sb: serB, p_ub: ub, p_sf: serF, p_uf: uf });
+  if (error) return msg.textContent = "No se pudo guardar: " + error.message;
+  msg.style.color = "#166534";
+  msg.textContent = `Listo. La próxima boleta será ${serB}-${String(ub + 1).padStart(8, "0")} y la próxima factura ${serF}-${String(uf + 1).padStart(8, "0")}.`;
+  cargarNumeracion();
+}
+
 async function guardarNombre(){
   const msg = $("c-msg-nombre"); msg.style.color = ""; msg.textContent = "";
   const nombre = $("c-nombre").value.trim();
