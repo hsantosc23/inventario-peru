@@ -93,14 +93,21 @@ input[type=date],input[type=month]{width:100%;padding:11px;border:1px solid var(
 .stock.cero{color:#dc2626}
 
 .tv{width:100%;border-collapse:collapse;margin-bottom:6px}
-.tv th{text-align:left;font-size:13px;color:var(--gr);padding:6px 8px;border-bottom:2px solid var(--bd)}
+.tv th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--gr);padding:6px 8px;border-bottom:2px solid var(--bd)}
 .tv th.c{text-align:center}
 .tv th.t{text-align:right}
-.tv td{padding:8px;vertical-align:top}
+.tv td{padding:10px 8px;vertical-align:top;font-size:14px}
 .tv td[rowspan]{vertical-align:middle}
-.tv td.c{text-align:center}
-.tv td.pre{text-align:right}
+.tv td[rowspan]:first-child{white-space:nowrap;font-weight:600;width:1%}
+.tv td.c{text-align:center;width:1%}
+.tv td.pre{text-align:right;white-space:nowrap;font-weight:700;color:var(--az)}
+.tv td.bt{width:1%;white-space:nowrap}
+.tv .bts{display:flex;flex-direction:column;gap:6px;min-width:118px}
+.tv .bts button{width:100%;padding:6px 10px;font-size:13px}
+.tv .bts .peligro{border-color:#dc2626;color:#dc2626;background:#fff}
+.tv .bts .aviso{border-color:#d97706;color:#b45309;background:#fff}
 .tv tbody.compra{border-bottom:1px solid var(--bd)}
+.tv tbody.compra:hover{background:#f5f8ff}
 .tv tbody.anulada{opacity:.55}
 .tv tbody.anulada .pre{text-decoration:line-through}
-.tv button{padding:4px 8px;font-size:13px}
+.tv .gr{white-space:nowrap}

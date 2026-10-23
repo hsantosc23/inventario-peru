@@ -246,12 +246,12 @@ function botonesVenta(v) {
   if (v.anulada) return "<b>Anulada</b>";
   let h = `<button onclick="imprimirComprobante('${v.id}')">Imprimir</button>`;
   if (PUEDE && v.tipo_doc && v.cpe_estado !== "aceptado")
-    h += ` <button onclick="reintentarEmision('${v.id}')">Reintentar emisión</button>`;
+    h += `<button class="aviso" onclick="reintentarEmision('${v.id}')">Reintentar emisión</button>`;
   if (PUEDE)
     h += (v.cpe_estado === "aceptado" && v.cpe_nc_estado !== "aceptado")
-      ? ` <button onclick="devolverVenta('${v.id}')">Devolución</button>`
-      : ` <button onclick="anularVenta('${v.id}')">Anular</button>`;
-  return h;
+      ? `<button class="peligro" onclick="devolverVenta('${v.id}')">Devolución</button>`
+      : `<button class="peligro" onclick="anularVenta('${v.id}')">Anular</button>`;
+  return `<div class="bts">${h}</div>`;
 }
 
 async function cargarVentas(){
@@ -275,7 +275,7 @@ async function cargarVentas(){
   VDATA = [];
   const { data, error } = await sb.from("ventas")
     .select("id,fecha,total,anulada,cliente_doc,cliente_nombre,cpe_nc_estado,cpe_serie,cpe_numero,cpe_estado,tipo_doc,numero,venta_items(codigo,nombre,cantidad,precio_unitario,subtotal)")
-    .eq("negocio_id", NEG.id).gte("fecha", a.toISOString()).lt("fecha", b.toISOString()).order("fecha", { ascending: true });
+    .eq("negocio_id", NEG.id).gte("fecha", a.toISOString()).lt("fecha", b.toISOString()).order("fecha", { ascending: false });
   if (error) return $("v-lista").innerHTML = `<p class="msg">No se pudieron cargar: ${esc(error.message)}</p>`;
   VDATA = data;
   const validas = data.filter(v => !v.anulada), anuladas = data.length - validas.length;
@@ -292,7 +292,7 @@ async function cargarVentas(){
       <td class="c">${i.cantidad}</td>
       <td>${esc(i.nombre)}${n > 1 ? ` <span class="gr">· S/ ${Number(i.subtotal).toFixed(2)}</span>` : ""}</td>
       ${k === 0 ? `<td rowspan="${n}" class="pre">S/ ${Number(v.total).toFixed(2)}</td>
-      <td rowspan="${n}">${botonesVenta(v)}</td>` : ""}
+      <td rowspan="${n}" class="bt">${botonesVenta(v)}</td>` : ""}
     </tr>`).join("") + `</tbody>`;
   };
   const tabla = vs => `<table class="tv"><thead><tr><th>Hora</th><th class="c">Cant.</th><th>Producto</th><th class="t">Total</th><th></th></tr></thead>${vs.map(compra).join("")}</table>`;
