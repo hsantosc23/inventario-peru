@@ -80,8 +80,8 @@ function aplicarModalidad(){
   const informal = NEG.formalidad === "por_formalizar";
   const caja = $("f-talla-box");
   if (caja) caja.classList.toggle("hide", NEG.rubro !== "ropa");
-  const pc = $("prenda-card"); if (pc) pc.classList.toggle("hide", NEG.rubro !== "ropa");
-  if (NEG.rubro !== "ropa" && $("f-talla")) $("f-talla").value = "";
+  const mb = $("modos"); if (mb) mb.classList.toggle("hide", NEG.rubro !== "ropa");
+  if (NEG.rubro !== "ropa") verModo("uno");
   $("v-tipo").innerHTML = informal
     ? '<option value="nota">Nota de venta (sin SUNAT)</option>'
     : '<option value="boleta">Boleta</option><option value="factura">Factura</option>';

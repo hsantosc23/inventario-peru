@@ -80,6 +80,7 @@ function limpiarForm(){
 function editar(id){
   const p = PRODS.find(x => x.id === id); if (!p) return;
   EDIT = id;
+  verModo("uno");
   $("f-codigo").value = p.codigo; $("f-nombre").value = p.nombre;
   $("f-precio").value = p.precio; $("f-stock").value = p.stock; $("f-min").value = p.stock_minimo;
   $("f-talla").value = (p.codigo.match(/^(XS|S|M|L)\d+$/) || [])[1] || "";
@@ -106,6 +107,13 @@ async function guardarProducto(){
     ? "Ya tienes un producto con ese código." : "No se pudo guardar: " + error.message;
   limpiarForm();
   cargarProductos();
+}
+
+function verModo(m){
+  $("modo-uno").classList.toggle("hide", m !== "uno");
+  $("modo-bloque").classList.toggle("hide", m !== "bloque");
+  $("modo-b-uno").classList.toggle("act", m === "uno");
+  $("modo-b-bloque").classList.toggle("act", m === "bloque");
 }
 
 async function guardarPrenda(){

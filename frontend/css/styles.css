@@ -247,3 +247,9 @@ input,select,textarea,button{max-width:100%;min-width:0}
 .tallas-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 12px}
 .tallas-grid small{display:block;text-align:center;font-weight:700;margin-bottom:4px}
 .tallas-grid input{text-align:center;padding-left:4px;padding-right:4px}
+
+.modos{display:flex;gap:6px;margin:10px 0 4px;padding:4px;border:1px solid var(--bd);border-radius:12px}
+.card .modos button{flex:1;width:auto;min-height:38px;padding:6px 8px;font-size:14px;border:0;box-shadow:none;background:transparent}
+.card .modos button.act{background:var(--az);color:#fff}
+html[data-tema="oscuro"] .card .modos button{background:transparent;border:0}
+html[data-tema="oscuro"] .card .modos button.act{background:#2f6df6;color:#fff}

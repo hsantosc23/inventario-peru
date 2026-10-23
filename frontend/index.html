@@ -149,37 +149,43 @@
     <div class="inv-grid" id="inv-grid">
 
       <div class="inv-izq">
-        <div id="form-prod" class="card">
+                <div id="form-prod" class="card">
           <b id="f-titulo">Agregar producto</b>
-          <div class="card" id="prenda-card" style="margin-top:16px">
-  <b>Prenda en todas las tallas</b>
-  <small class="gr">Escribe el modelo una sola vez y la cantidad de cada talla.</small>
-  <div class="grid">
-    <div><label>Modelo</label><input type="text" id="p-modelo" placeholder="Ej.: encaje"></div>
-    <div><label>Color</label><input type="text" id="p-color" placeholder="Ej.: negro"></div>
-    <div><label>Precio (S/)</label><input type="number" id="p-precio" step="0.01" inputmode="decimal"></div>
-    <div><label>Avisar si baja de</label><input type="number" id="p-min" placeholder="0 = sin aviso" inputmode="numeric"></div>
-  </div>
-  <label>Cantidad por talla (deja vacío si no hay)</label>
-  <div class="tallas-grid">
-    <div><small>XS</small><input type="number" min="0" id="p-XS" inputmode="numeric"></div>
-    <div><small>S</small><input type="number" min="0" id="p-S" inputmode="numeric"></div>
-    <div><small>M</small><input type="number" min="0" id="p-M" inputmode="numeric"></div>
-    <div><small>L</small><input type="number" min="0" id="p-L" inputmode="numeric"></div>
-  </div>
-  <button class="pri full" onclick="guardarPrenda()">Guardar prenda</button>
-  <div class="msg" id="p-msg"></div>
-</div>
-          <div class="f2">
-            <div id="f-talla-box"><label>Talla</label><select id="f-talla" onchange="codigoPorTalla()"><option value="">Sin talla</option><option>XS</option><option>S</option><option>M</option><option>L</option></select></div>
-            <div><label>Código</label><input type="text" id="f-codigo"></div>
-            <div><label>Nombre</label><input type="text" id="f-nombre"></div>
-            <div><label>Precio (S/)</label><input type="number" id="f-precio" min="0" step="0.01" inputmode="decimal"></div>
-            <div><label>Stock</label><input type="number" id="f-stock" min="0" step="1" inputmode="numeric"></div>
-            <div><label>Avisar si baja de</label><input type="number" id="f-min" min="0" step="1" inputmode="numeric" placeholder="0 = sin aviso"></div>
+          <div class="modos" id="modos">
+            <button type="button" id="modo-b-uno" class="act" onclick="verModo('uno')">Uno por uno</button>
+            <button type="button" id="modo-b-bloque" onclick="verModo('bloque')">Por bloque (tallas)</button>
           </div>
-          <button class="pri full" id="f-btn" onclick="guardarProducto()">Guardar producto</button>
-          <button class="full hide" id="f-cancel" onclick="limpiarForm()">Cancelar edición</button>
+
+          <div id="modo-uno">
+            <div class="f2">
+              <div id="f-talla-box"><label>Talla</label><select id="f-talla" onchange="codigoPorTalla()"><option value="">Sin talla</option><option>XS</option><option>S</option><option>M</option><option>L</option></select></div>
+              <div><label>Código</label><input type="text" id="f-codigo"></div>
+              <div><label>Nombre</label><input type="text" id="f-nombre"></div>
+              <div><label>Precio (S/)</label><input type="number" id="f-precio" min="0" step="0.01" inputmode="decimal"></div>
+              <div><label>Stock</label><input type="number" id="f-stock" min="0" step="1" inputmode="numeric"></div>
+              <div><label>Avisar si baja de</label><input type="number" id="f-min" min="0" step="1" inputmode="numeric" placeholder="0 = sin aviso"></div>
+            </div>
+            <button class="pri full" id="f-btn" onclick="guardarProducto()">Guardar producto</button>
+            <button class="full hide" id="f-cancel" onclick="limpiarForm()">Cancelar edición</button>
+          </div>
+
+          <div id="modo-bloque" class="hide">
+            <div class="f2">
+              <div><label>Modelo</label><input type="text" id="p-modelo" placeholder="Ej.: encaje"></div>
+              <div><label>Color</label><input type="text" id="p-color" placeholder="Ej.: negro"></div>
+              <div><label>Precio (S/)</label><input type="number" id="p-precio" min="0" step="0.01" inputmode="decimal"></div>
+              <div><label>Avisar si baja de</label><input type="number" id="p-min" min="0" step="1" inputmode="numeric" placeholder="0 = sin aviso"></div>
+            </div>
+            <label>Cantidad por talla (vacío si no hay)</label>
+            <div class="tallas-grid">
+              <div><small>XS</small><input type="number" min="0" id="p-XS" inputmode="numeric"></div>
+              <div><small>S</small><input type="number" min="0" id="p-S" inputmode="numeric"></div>
+              <div><small>M</small><input type="number" min="0" id="p-M" inputmode="numeric"></div>
+              <div><small>L</small><input type="number" min="0" id="p-L" inputmode="numeric"></div>
+            </div>
+            <button class="pri full" onclick="guardarPrenda()">Guardar las tallas</button>
+            <div class="msg" id="p-msg"></div>
+          </div>
         </div>
         <div class="msg" id="pr-msg"></div>
         <div id="imp" class="card">
