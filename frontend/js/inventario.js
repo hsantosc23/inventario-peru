@@ -108,6 +108,38 @@ async function guardarProducto(){
   cargarProductos();
 }
 
+async function guardarPrenda(){
+  const msg = $("p-msg"); msg.style.color = ""; msg.textContent = "";
+  const modelo = $("p-modelo").value.trim(), color = $("p-color").value.trim();
+  const precio = parseFloat($("p-precio").value), min = parseInt($("p-min").value) || 0;
+  if (!modelo) return msg.textContent = "Escribe el modelo.";
+  if (!color) return msg.textContent = "Escribe el color.";
+  if (!(precio > 0)) return msg.textContent = "Escribe un precio válido.";
+  const tallas = ["XS", "S", "M", "L"].filter(t => $("p-" + t).value !== "");
+  if (!tallas.length) return msg.textContent = "Escribe la cantidad de al menos una talla.";
+  for (const t of tallas) if (!(parseInt($("p-" + t).value) >= 0)) return msg.textContent = "Cantidad inválida en la talla " + t + ".";
+
+  const filas = [];
+  for (const t of tallas) {
+    // siguiente número libre de esa talla: XS0006 -> XS0007
+    const { data } = await sb.from("productos").select("codigo").eq("negocio_id", NEG.id).like("codigo", t + "%");
+    const re = new RegExp("^" + t + "(\\d+)$");
+    const max = (data || []).reduce((m, r) => { const x = re.exec(r.codigo); return x ? Math.max(m, +x[1]) : m; }, 0);
+    filas.push({
+      negocio_id: NEG.id,
+      codigo: t + String(max + 1).padStart(6 - t.length, "0"),
+      nombre: `${modelo} ${color}`,
+      precio, stock: parseInt($("p-" + t).value), stock_minimo: min
+    });
+  }
+  const { error } = await sb.from("productos").insert(filas);
+  if (error) return msg.textContent = "No se pudo guardar: " + error.message;
+  msg.style.color = "var(--ok,#16a34a)";
+  msg.textContent = `Listo: ${filas.length} tallas registradas (${filas.map(f => f.codigo).join(", ")}).`;
+  ["p-modelo", "p-color", "p-precio", "p-min", "p-XS", "p-S", "p-M", "p-L"].forEach(i => $(i).value = "");
+  if (typeof cargarProductos === "function") cargarProductos();
+}
+
 async function borrar(id){
   if (!confirm("¿Borrar este producto?")) return;
   const { data, error } = await sb.from("productos").delete().eq("id", id).eq("negocio_id", NEG.id).select();
