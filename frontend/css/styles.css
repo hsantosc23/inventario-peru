@@ -135,7 +135,7 @@ h2{letter-spacing:-.01em}
 .spin{width:44px;height:44px;border-radius:50%;border:5px solid var(--bd);border-top-color:var(--az);animation:giro .8s linear infinite}
 @keyframes giro{to{transform:rotate(360deg)}}
 
-html[data-tema="oscuro"]{color-scheme:dark;--az:#6ea8ff;--az2:#16233f;--tx:#e6eaf2;--gr:#98a4ba;--bd:#2b354b}
+html[data-tema="oscuro"]{color-scheme:dark;--az:#6ea8ff;--az2:#16233f;--tx:#ffffff;--gr:#e2e8f0;--bd:#2b354b}
 html[data-tema="oscuro"] body{background:#0e1424;color:var(--tx)}
 html[data-tema="oscuro"] header{background:rgba(19,26,43,.92)}
 html[data-tema="oscuro"] .hero{background:linear-gradient(180deg,#14203a,#0e1424)}
@@ -158,3 +158,4 @@ html[data-tema="oscuro"] .tv .bts .peligro{background:#1a2440;color:#f87171;bord
 html[data-tema="oscuro"] .tv .bts .aviso{background:#1a2440;color:#fbbf24;border-color:#b7791f}
 html[data-tema="oscuro"] .spin{border-color:#2b354b;border-top-color:var(--az)}
 html[data-tema="oscuro"] ::-webkit-calendar-picker-indicator{filter:invert(.8)}
+html[data-tema="oscuro"] :is(h1,h2,h3,.logo,.card b,.pre,button,a){color:#fff}
