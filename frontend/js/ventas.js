@@ -7,7 +7,7 @@ function verTab(t){
     $("t-" + x).classList.toggle("hide", x !== t);
     $("tab-" + x).classList.toggle("act", x === t);
   });
-  if (t === "ven") { cargarVentas(); pintarCarrito(); $("v-buscar").focus(); }
+  if (t === "ven") { pintarUsoComprobantes();cargarVentas(); pintarCarrito(); $("v-buscar").focus(); }
   if (t === "gas") cargarGastos();
 }
 
@@ -85,24 +85,34 @@ function pintarCarrito(){
 async function registrarVenta(){
   const msg = $("v-msg"); msg.style.color = ""; msg.textContent = "";
   if (!CARRITO.length) return msg.textContent = "Agrega al menos un producto.";
-  const tipo = $("v-tipo").value, fac = tipo === "factura";
-  const doc = (fac ? $("v-ruc") : $("v-dni")).value.trim();
+  const tipo = $("v-tipo").value, fac = tipo === "factura", nota = tipo === "nota";
+  const doc = nota ? "" : (fac ? $("v-ruc") : $("v-dni")).value.trim();
   const nombre = (fac ? $("v-razon") : $("v-nombre-b")).value.trim(), dir = fac ? $("v-dir").value.trim() : "";
   const total = CARRITO.reduce((s, c) => { const p = PRODS.find(x => x.id === c.id); return s + (c.precio != null ? c.precio : Number(p.precio)) * c.cant; }, 0);
   if (fac) {
     if (!/^[0-9]{11}$/.test(doc)) return msg.textContent = "La factura necesita un RUC de 11 dígitos.";
     if (!nombre) return msg.textContent = "La factura necesita la razón social.";
-  } else {
+  } else if (!nota) {
     if (doc && !/^[0-9]{8}$/.test(doc)) return msg.textContent = "El DNI debe tener 8 dígitos.";
     if (doc && !nombre) return msg.textContent = "Si das el DNI, escribe también el nombre del cliente.";
     if (total > 700 && !doc) return msg.textContent = "Una boleta mayor a S/ 700 necesita el DNI del cliente.";
   }
+
+  if (!nota) {
+    const { data: uso } = await sb.rpc("mi_uso_comprobantes");
+    if (uso && uso.en_prueba && uso.usados >= uso.limite)
+      return msg.textContent = `En tu semana de prueba puedes emitir hasta ${uso.limite} boletas o facturas y ya las usaste. Registra la venta como Nota de venta o activa tu plan.`;
+  }
+
   const items = CARRITO.map(c => ({ producto_id: c.id, cantidad: c.cant, precio: c.precio }));
   const { data: id, error } = await sb.rpc("registrar_venta", { p_items: items });
   if (error) return msg.textContent = "No se pudo registrar la venta: " + error.message;
-  const { error: e2 } = await sb.rpc("datos_comprobante", { p_venta: id, p_tipo: tipo, p_doc: doc, p_nombre: nombre, p_direccion: dir });
-  let r = null;
-  if (!e2) r = await emitirComprobante(id, tipo, doc, nombre);
+    let e2 = null, r = null;
+  if (!nota) {
+    ({ error: e2 } = await sb.rpc("datos_comprobante", { p_venta: id, p_tipo: tipo, p_doc: doc, p_nombre: nombre, p_direccion: dir }));
+    if (!e2) r = await emitirComprobante(id, tipo, doc, nombre);
+  }
+  pintarUsoComprobantes();
   CARRITO = [];
   ["v-dni", "v-nombre-b", "v-ruc", "v-razon", "v-dir"].forEach(i => $(i).value = "");
   await cargarProductos();
@@ -129,9 +139,9 @@ async function emitirComprobante(ventaId, tipo, doc, nombre) {
 }
 
 function verTipoDoc(){
-  const f = $("v-tipo").value === "factura";
-  $("v-cli-b").classList.toggle("hide", f);
-  $("v-cli-f").classList.toggle("hide", !f);
+  const t = $("v-tipo").value;
+  $("v-cli-b").classList.toggle("hide", t !== "boleta");
+  $("v-cli-f").classList.toggle("hide", t !== "factura");
 }
 
 // ---------- Historial: diario, semanal y mensual ----------
@@ -357,7 +367,7 @@ async function imprimirComprobante(id){
   const fac = v.tipo_doc === "factura", d = new Date(v.fecha), total = Number(v.total);
     const emitido = v.cpe_estado === "aceptado";
   const titulo = emitido ? (fac ? "FACTURA ELECTRÓNICA" : "BOLETA DE VENTA ELECTRÓNICA")
-    : fac ? "FACTURA" : v.tipo_doc === "boleta" ? "BOLETA DE VENTA" : "COMPROBANTE DE VENTA";
+    : fac ? "FACTURA" : v.tipo_doc === "boleta" ? "BOLETA DE VENTA" : "Boleta (sin SUNAT)";
   const num = emitido ? v.cpe_serie + "-" + v.cpe_numero : (v.numero ? "N.º " + String(v.numero).padStart(6, "0") : "");
   const aviso = !emitido ? AVISO_COMPROBANTE
     : CPE_PRODUCCION ? "Representación impresa del comprobante electrónico"
@@ -409,3 +419,8 @@ async function reintentarEmision(id) {
   cargarVentas();
 }
 
+async function pintarUsoComprobantes(){
+  const el = $("v-uso"); if (!el) return;
+  const { data: u } = await sb.rpc("mi_uso_comprobantes");
+  el.textContent = u && u.en_prueba ? `Prueba: ${u.usados} de ${u.limite} boletas o facturas usadas` : "";
+}
