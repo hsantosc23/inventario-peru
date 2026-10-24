@@ -315,6 +315,16 @@
     <label>Razón social (como figura en SUNAT)</label><input type="text" id="f-razon">
     <button class="pri full" onclick="guardarDatosFiscales()">Guardar datos de facturación</button>
     <div class="msg" id="f-msg"></div>
+        <b style="display:block;margin-top:16px">Numeración de comprobantes</b>
+    <p class="gr" style="margin:6px 0 0">Si ya emitías boletas o facturas electrónicas, escribe tu serie y el <b>último número que usaste</b> para continuar desde ahí. Si empiezas de cero, deja 0.</p>
+    <div class="f2">
+      <div><label>Serie de boletas</label><input type="text" id="n-sb" maxlength="4" placeholder="B010"></div>
+      <div><label>Última boleta emitida</label><input type="number" id="n-ub" min="0" step="1" value="0"></div>
+      <div><label>Serie de facturas</label><input type="text" id="n-sf" maxlength="4" placeholder="F010"></div>
+      <div><label>Última factura emitida</label><input type="number" id="n-uf" min="0" step="1" value="0"></div>
+    </div>
+    <button class="full" onclick="guardarNumeracion()">Guardar numeración</button>
+    <div class="msg" id="n-msg"></div>
   </div>
 
       <b style="display:block;margin-top:16px">Numeración de comprobantes</b>

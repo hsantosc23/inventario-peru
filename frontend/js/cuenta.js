@@ -116,6 +116,7 @@ async function cargarDatosFiscales(){
   const f = data && data[0];
   $("f-ruc").value = f ? (f.ruc || "") : "";
   $("f-razon").value = f ? (f.razon_social || "") : "";
+  cargarNumeracion();
 }
 
 async function guardarDatosFiscales(){
@@ -124,4 +125,26 @@ async function guardarDatosFiscales(){
   if (error) return msg.textContent = error.message;
   msg.style.color = "#166534";
   msg.textContent = "Datos de facturación guardados.";
+}
+
+async function cargarNumeracion(){
+  const { data: n } = await sb.rpc("mi_numeracion");
+  $("n-sb").value = (n && n.serie_boleta) || "B010";
+  $("n-sf").value = (n && n.serie_factura) || "F010";
+  $("n-ub").value = (n && n.ultimo_boleta) || 0;
+  $("n-uf").value = (n && n.ultimo_factura) || 0;
+}
+
+async function guardarNumeracion(){
+  const msg = $("n-msg"); msg.style.color = ""; msg.textContent = "";
+  const serB = $("n-sb").value.trim().toUpperCase(), serF = $("n-sf").value.trim().toUpperCase();
+  const ub = parseInt($("n-ub").value || "0", 10), uf = parseInt($("n-uf").value || "0", 10);
+  if (!/^B[A-Z0-9]{3}$/.test(serB)) return msg.textContent = "La serie de boletas empieza con B y tiene 4 caracteres (ej.: B010).";
+  if (!/^F[A-Z0-9]{3}$/.test(serF)) return msg.textContent = "La serie de facturas empieza con F y tiene 4 caracteres (ej.: F010).";
+  if (isNaN(ub) || ub < 0 || isNaN(uf) || uf < 0) return msg.textContent = "Escribe números válidos.";
+  const { error } = await sb.rpc("configurar_numeracion", { p_sb: serB, p_ub: ub, p_sf: serF, p_uf: uf });
+  if (error) return msg.textContent = "No se pudo guardar: " + error.message;
+  await cargarNumeracion();
+  msg.style.color = "#166534";
+  msg.textContent = `Listo. La próxima boleta será ${serB}-${String(ub + 1).padStart(8, "0")} y la próxima factura ${serF}-${String(uf + 1).padStart(8, "0")}.`;
 }
