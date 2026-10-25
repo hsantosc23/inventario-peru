@@ -12,6 +12,8 @@ function verTab(t){
   if (t === "caja") cargarCaja();
   if (t === "pen") cargarPendientes();
   if (t === "est") cargarEstadisticas();
+    const b = $("tab-" + t), bar = b && b.parentElement;
+  if (bar) bar.scrollTo({ left: b.offsetLeft - (bar.clientWidth - b.offsetWidth) / 2, behavior: "smooth" });
 }
 
 function buscarVenta(){
@@ -110,7 +112,26 @@ async function registrarVenta(){
   const items = CARRITO.map(c => ({ producto_id: c.id, cantidad: c.cant, precio: c.precio }));
   const { data: id, error } = await sb.rpc("registrar_venta", { p_items: items });
   if (error) return msg.textContent = "No se pudo registrar la venta: " + error.message;
-    await sb.rpc("fijar_medio_pago", { p_venta: id, p_medio: $("v-medio").value });
+  // el medio de pago se guarda en paralelo, sin hacer esperar al resto
+  const pMedio = sb.rpc("fijar_medio_pago", { p_venta: id, p_medio: $("v-medio").value });
+  let e2 = null, r = null;
+  if (!nota) {
+    ({ error: e2 } = await sb.rpc("datos_comprobante", { p_venta: id, p_tipo: tipo, p_doc: doc, p_nombre: nombre, p_direccion: dir }));
+    if (!e2) r = await emitirComprobante(id, tipo, doc, nombre);
+  }
+  await pMedio;
+  CARRITO = [];
+  ["v-dni", "v-nombre-b", "v-ruc", "v-razon", "v-dir"].forEach(i => $(i).value = "");
+  $("v-medio").value = "efectivo";
+  pintarCarrito();
+  await Promise.all([cargarProductos(), cargarVentas()]);
+  pintarUsoComprobantes();
+  if (e2) return msg.textContent = "Venta registrada y stock descontado, pero no se pudo emitir el comprobante: " + e2.message;
+  if (r && !r.ok) return msg.textContent = "Venta registrada, pero SUNAT no aceptó el comprobante: " + (r.mensaje || r.error);
+  msg.style.color = "#166534";
+  msg.textContent = "Venta registrada" + (r ? ". Comprobante " + r.comprobante + " emitido" : "") + ". El stock ya se descontó.";
+  if ($("v-imprimir").checked) imprimirComprobante(id);
+}
     let e2 = null, r = null;
   if (!nota) {
     ({ error: e2 } = await sb.rpc("datos_comprobante", { p_venta: id, p_tipo: tipo, p_doc: doc, p_nombre: nombre, p_direccion: dir }));
@@ -128,7 +149,7 @@ async function registrarVenta(){
   msg.style.color = "#166534";
   msg.textContent = "Venta registrada" + (r ? ". Comprobante " + r.comprobante + " emitido" : "") + ". El stock ya se descontó.";
   if ($("v-imprimir").checked) imprimirComprobante(id);
-}
+
 
 async function emitirComprobante(ventaId, tipo, doc, nombre) {
   if (tipo !== "boleta" && tipo !== "factura") return null;
