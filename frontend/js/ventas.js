@@ -263,7 +263,6 @@ function irAFecha(v){
 function botonesVenta(v) {
   if (v.anulada) return "<b>Anulada</b>";
   let h = `<button onclick="imprimirComprobante('${v.id}')">Imprimir</button>`;
-  if (v.cpe_estado === "aceptado") h += `<button onclick="descargarXml('${v.id}')">XML</button>`;
   if (PUEDE && v.tipo_doc && v.cpe_estado !== "aceptado")
     h += `<button class="aviso" onclick="reintentarEmision('${v.id}')">Reintentar emisión</button>`;
   if (PUEDE)
@@ -433,17 +432,4 @@ async function pintarUsoComprobantes(){
   if (!NEG || NEG.formalidad === "por_formalizar") { el.textContent = ""; return; }
   const { data: u } = await sb.rpc("mi_uso_comprobantes");
   el.textContent = u && u.en_prueba ? `Prueba: ${u.usados} de ${u.limite} boletas o facturas usadas` : "";
-}
-
-async function descargarXml(id, nc){
-  const r = await invocarFn("xml-comprobante", { venta_id: id, nc: !!nc });
-  if (!r.ok) return alert(r.error || "No se pudo obtener el XML.");
-  const a = document.createElement("a");
-  if (r.url) a.href = r.url;
-  else {
-    const bin = r.formato === "zip" ? Uint8Array.from(atob(r.contenido), c => c.charCodeAt(0)) : new TextEncoder().encode(r.contenido);
-    a.href = URL.createObjectURL(new Blob([bin], { type: r.formato === "zip" ? "application/zip" : "application/xml" }));
-    a.download = r.nombre;
-  }
-  document.body.appendChild(a); a.click(); a.remove();
 }

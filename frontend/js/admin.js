@@ -2,13 +2,13 @@
 
 const fecha = d => new Date(d).toLocaleDateString("es-PE");
 
-let LISTA = [];
+let LISTA = [], RES = {};
 
-async function entrar(){
-  const { error } = await sb.auth.signInWithPassword({ email: $("e").value.trim(), password: $("p").value });
-  if (error) return $("m").textContent = "Datos incorrectos.";
-  iniciar();
-}
+const solesAdm = n => "S/ " + Number(n || 0).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const resumenVentas = id => {
+  const r = RES[id]; if (!r) return "";
+  return `${r.comprobantes_mes} comprobante(s) este mes · vendido ${solesAdm(r.total_mes)}${Number(r.sedes) ? " · " + r.sedes + " sede(s)" : ""}`;
+};
 
 async function iniciar(){
   const { data: ok } = await sb.rpc("es_admin");
@@ -18,9 +18,10 @@ async function iniciar(){
 }
 
 async function cargar(){
-  const { data, error } = await sb.rpc("admin_listar_negocios");
+  const [{ data, error }, { data: res }] = await Promise.all([sb.rpc("admin_listar_negocios"), sb.rpc("admin_resumen_ventas")]);
   if (error) return $("resumen").textContent = "Error: " + error.message;
   LISTA = data || [];
+  RES = {}; (res || []).forEach(r => RES[r.negocio_id] = r);
   pintar();
 }
 
@@ -39,7 +40,8 @@ function pintar(){
     const [t, c] = estadoReal(n);
     return `<div class="fila" onclick="ver('${n.id}')"><b>${esc(n.nombre || "(sin nombre aún)")}</b>
       <span class="tag ${c}">${t}</span>${n.email_confirmado ? "" : ' <span class="tag mal">Correo sin confirmar</span>'}
-      <br><small>${esc(n.email)} · ${n.tipo || "sin modalidad"} · registrado ${fecha(n.fecha_registro)}</small></div>`;
+      <br><small>${esc(n.email)} · ${n.tipo || "sin modalidad"} · registrado ${fecha(n.fecha_registro)}</small>
+      <br><small class="gr">${resumenVentas(n.id)}</small></div>`;
   }).join("") || '<p class="gr">No hay resultados.</p>';
 }
 
@@ -52,6 +54,9 @@ async function ver(id){
     <p>${esc(n.email)}<br>WhatsApp: ${wa}<br>Tipo: ${n.tipo || "no eligió modalidad"}<br>
     Prueba hasta: ${fecha(n.prueba_hasta)}<br>Correo confirmado: ${n.email_confirmado ? "sí" : "NO"}<br>
     Productos cargados: ${n.total_productos}</p>
+        <p>${(() => { const r = RES[id]; return r
+      ? `Ventas este mes: ${r.ventas_mes} (${solesAdm(r.total_mes)})<br>Comprobantes este mes: ${r.comprobantes_mes} · emitidos en total: ${r.comprobantes_total}<br>Sedes: ${r.sedes}<br>Última venta: ${r.ultima_venta ? fecha(r.ultima_venta) : "sin ventas"}`
+      : "Sin datos de ventas."; })()}</p>
     <label class="gr">Precio acordado (S/ al mes)</label><input type="number" id="d-precio" step="0.01" value="${n.precio_acordado ?? ""}">
     <label class="gr">Pagado hasta</label><input type="date" id="d-pago" value="${n.pagado_hasta ?? ""}">
     <label class="gr">Notas (solo tú las ves)</label><input type="text" id="d-notas" value="${esc(n.notas)}">
