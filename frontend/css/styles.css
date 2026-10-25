@@ -360,7 +360,7 @@ html[data-tema="oscuro"] .card .modos button.act{background:#2f6df6;color:#fff}
     scrollbar-width:none;
   }
   .tabs:has(> #tab-inv)::-webkit-scrollbar{display:none}
-  .tabs:has(> #tab-inv) > button{flex:0 0 20% !important;min-width:0;scroll-snap-align:start}
+  .tabs:has(> #tab-inv) > button{flex:0 0 24% !important;min-width:0;scroll-snap-align:start}
 }
 
 @media (max-width:700px){
@@ -380,4 +380,24 @@ html[data-tema="oscuro"] .card .modos button.act{background:#2f6df6;color:#fff}
 
 @media (max-width:700px){
   #tab-sede::before{content:"➕"}
+}
+
+@media (max-width:700px){
+  .tabs:has(> #tab-inv) > button{
+    font-size:12px !important;
+    font-weight:600;
+    letter-spacing:0 !important;
+    min-height:68px;
+    padding:8px 2px 10px !important;
+  }
+  .tabs:has(> #tab-inv) > button::before{
+    font-size:30px !important;
+    line-height:1.1;
+    margin-bottom:2px;
+  }
+  /* espacio para que la barra más alta no tape el contenido */
+  body{padding-bottom:calc(88px + env(safe-area-inset-bottom)) !important}
+}
+@media (max-width:380px){
+  .tabs:has(> #tab-inv) > button{font-size:11px !important}
 }
