@@ -132,23 +132,6 @@ async function registrarVenta(){
   msg.textContent = "Venta registrada" + (r ? ". Comprobante " + r.comprobante + " emitido" : "") + ". El stock ya se descontó.";
   if ($("v-imprimir").checked) imprimirComprobante(id);
 }
-    let e2 = null, r = null;
-  if (!nota) {
-    ({ error: e2 } = await sb.rpc("datos_comprobante", { p_venta: id, p_tipo: tipo, p_doc: doc, p_nombre: nombre, p_direccion: dir }));
-    if (!e2) r = await emitirComprobante(id, tipo, doc, nombre);
-  }
-  pintarUsoComprobantes();
-  CARRITO = [];
-  ["v-dni", "v-nombre-b", "v-ruc", "v-razon", "v-dir"].forEach(i => $(i).value = "");
-  $("v-medio").value = "efectivo";
-  await cargarProductos();
-  pintarCarrito();
-  cargarVentas();
-  if (e2) return msg.textContent = "Venta registrada y stock descontado, pero no se pudo emitir el comprobante: " + e2.message;
-    if (r && !r.ok) return msg.textContent = "Venta registrada, pero SUNAT no aceptó el comprobante: " + (r.mensaje || r.error);
-  msg.style.color = "#166534";
-  msg.textContent = "Venta registrada" + (r ? ". Comprobante " + r.comprobante + " emitido" : "") + ". El stock ya se descontó.";
-  if ($("v-imprimir").checked) imprimirComprobante(id);
 
 
 async function emitirComprobante(ventaId, tipo, doc, nombre) {
