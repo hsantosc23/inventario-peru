@@ -360,7 +360,7 @@ html[data-tema="oscuro"] .card .modos button.act{background:#2f6df6;color:#fff}
     scrollbar-width:none;
   }
   .tabs:has(> #tab-inv)::-webkit-scrollbar{display:none}
-  .tabs:has(> #tab-inv) > button{flex:0 0 24% !important;min-width:0;scroll-snap-align:start}
+  .tabs:has(> #tab-inv) > button{flex:0 0 23% !important;min-width:0;scroll-snap-align:start}
 }
 
 @media (max-width:700px){
