@@ -3,12 +3,13 @@
 let CARRITO = [], VPER = "dia", VREF = new Date(), LINEA = 0;
 
 function verTab(t){
-  ["inv", "ven", "gas", "pen", "est"].forEach(x => {
+  ["inv", "ven", "gas", "caja", "pen", "est"].forEach(x => {
     $("t-" + x).classList.toggle("hide", x !== t);
     $("tab-" + x).classList.toggle("act", x === t);
   });
   if (t === "ven") { cargarVentas(); pintarCarrito(); pintarUsoComprobantes(); $("v-buscar").focus(); }
   if (t === "gas") cargarGastos();
+  if (t === "caja") cargarCaja();
   if (t === "pen") cargarPendientes();
   if (t === "est") cargarEstadisticas();
 }
@@ -109,6 +110,7 @@ async function registrarVenta(){
   const items = CARRITO.map(c => ({ producto_id: c.id, cantidad: c.cant, precio: c.precio }));
   const { data: id, error } = await sb.rpc("registrar_venta", { p_items: items });
   if (error) return msg.textContent = "No se pudo registrar la venta: " + error.message;
+    await sb.rpc("fijar_medio_pago", { p_venta: id, p_medio: $("v-medio").value });
     let e2 = null, r = null;
   if (!nota) {
     ({ error: e2 } = await sb.rpc("datos_comprobante", { p_venta: id, p_tipo: tipo, p_doc: doc, p_nombre: nombre, p_direccion: dir }));
@@ -117,6 +119,7 @@ async function registrarVenta(){
   pintarUsoComprobantes();
   CARRITO = [];
   ["v-dni", "v-nombre-b", "v-ruc", "v-razon", "v-dir"].forEach(i => $(i).value = "");
+  $("v-medio").value = "efectivo";
   await cargarProductos();
   pintarCarrito();
   cargarVentas();

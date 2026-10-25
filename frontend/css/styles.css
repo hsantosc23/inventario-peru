@@ -320,3 +320,33 @@ html[data-tema="oscuro"] .card .modos button.act{background:#2f6df6;color:#fff}
 .pend.pagado{opacity:.85}
 .pend-hist{margin:6px 0;font-size:13px;color:var(--gr)}
 #pe-res.res{margin-top:4px}
+
+/* Cierre de caja */
+.caja-linea{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--bd);font-size:14px}
+.caja-linea.fuerte{font-size:15px;font-weight:700}
+.caja-linea.ok b{color:#10b981}
+.caja-linea.mal b{color:#ef4444}
+
+/* Celular */
+@media (max-width:700px){
+  /* "Agregar sede" sale de la barra inferior y queda en Configuración */
+  .tabs:has(> #tab-inv) > #tab-sede{display:none}
+  #tab-caja::before{content:"🧾"}
+  .tabs:has(> #tab-inv) > button{font-size:10.5px;letter-spacing:-.2px;white-space:nowrap}
+
+  /* cabecera en una sola fila */
+  header .logo{font-size:0;gap:0}
+  header .logo img{height:34px;width:auto}
+  #perfil-nombre{max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  header nav#nav-out button,header nav#nav-in button{flex:0 0 auto !important;width:auto !important;min-width:0 !important;white-space:nowrap;padding:8px 12px;font-size:14px}
+
+  /* comodidad al tocar y escribir */
+  input,select,textarea{font-size:16px}
+  .sede-barra{margin:12px 0}
+  .sede-barra select{max-width:none;flex:1}
+  .modal{padding:12px}
+  .tabla-sedes{display:block;overflow-x:auto}
+}
+@media (max-width:400px){
+  .tabs:has(> #tab-inv) > button{font-size:10px}
+}
