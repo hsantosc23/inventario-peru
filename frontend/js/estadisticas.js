@@ -45,19 +45,53 @@ async function estFilas(consulta){
   }
 }
 
+// Qué negocios se suman: la sede elegida o todas
+function estIds(){
+  const v = $("e-sede") ? $("e-sede").value : "";
+  if (!v || SEDES.length < 2) return [NEG.id];
+  return v === "todas" ? SEDES.map(s => s.id) : [v];
+}
+
+function pintarSelectorEst(){
+  const box = $("e-sede-box"), sel = $("e-sede"); if (!box) return;
+  const hay = SEDES.length > 1;
+  box.classList.toggle("hide", !hay);
+  if (!hay) return;
+  const previo = sel.value;
+  sel.innerHTML = `<option value="todas">Todas las sedes</option>` +
+    SEDES.map(s => `<option value="${s.id}">${esc(s.nombre)}${s.principal ? " (principal)" : ""}</option>`).join("");
+  sel.value = [...sel.options].some(o => o.value === previo) ? previo : NEG.id;
+}
+
+function resumenPorSede(ventas, gastos){
+  const box = $("e-por-sede"); if (!box) return;
+  const ids = estIds();
+  if (ids.length < 2) { box.classList.add("hide"); return; }
+  const m = {}; ids.forEach(id => m[id] = { v: 0, g: 0, n: 0 });
+  ventas.filter(v => !v.anulada).forEach(v => { const x = m[v.negocio_id]; if (x) { x.v += Number(v.total); x.n++; } });
+  gastos.forEach(g => { const x = m[g.negocio_id]; if (x) x.g += Number(g.monto); });
+  box.innerHTML = `<b>Resumen por sede</b><table class="tabla-sedes"><tr><th>Sede</th><th>Ventas</th><th>Gastos</th><th>Neto</th><th>N.º</th></tr>` +
+    ids.map(id => { const s = SEDES.find(x => x.id === id), x = m[id];
+      return `<tr><td>${esc(s ? s.nombre : "Sede")}</td><td>${sol(x.v)}</td><td>${sol(x.g)}</td><td>${sol(x.v - x.g)}</td><td>${x.n}</td></tr>`; }).join("") + `</table>`;
+  box.classList.remove("hide");
+}
+
 async function cargarEstadisticas(){
   const msg = $("e-msg"); msg.textContent = "";
+  pintarSelectorEst();
   if (typeof Chart === "undefined") return msg.textContent = "No se pudo cargar la librería de gráficos. Revisa tu conexión.";
   const campo = $("e-mes");
   if (!campo.value) campo.value = new Date(Date.now() - 5 * 3600000).toISOString().slice(0, 7);
   const mes = campo.value, [y, m] = mes.split("-").map(Number);
   const ini = mes + "-01", sig = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
   try {
-    const ventas = await estFilas(() => sb.from("ventas").select("fecha,total,anulada").eq("negocio_id", NEG.id)
+        const ids = estIds();
+    const ventas = await estFilas(() => sb.from("ventas").select("negocio_id,fecha,total,anulada").in("negocio_id", ids)
       .gte("fecha", ini + "T00:00:00-05:00").lt("fecha", sig + "T00:00:00-05:00").order("fecha"));
-    const gastos = await estFilas(() => sb.from("gastos").select("fecha,categoria,monto").eq("negocio_id", NEG.id)
+    const gastos = await estFilas(() => sb.from("gastos").select("negocio_id,fecha,categoria,monto").in("negocio_id", ids)
       .gte("fecha", ini).lt("fecha", sig).order("fecha"));
     EST = prepararEstadisticas(ventas, gastos, mes);
+    resumenPorSede(ventas, gastos);
   } catch (e) { return msg.textContent = "No se pudieron cargar los datos: " + e.message; }
   $("e-k-ventas").textContent = sol(EST.totalV);
   $("e-k-gastos").textContent = sol(EST.totalG);

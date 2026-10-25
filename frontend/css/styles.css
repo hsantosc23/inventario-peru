@@ -271,3 +271,36 @@ html[data-tema="oscuro"] .card .modos button.act{background:#2f6df6;color:#fff}
   :has(> #tab-inv){grid-auto-flow:column;grid-auto-columns:1fr;grid-template-columns:none}
   #tab-sede::before{content:"🏬"}
 }
+
+/* Pagos pendientes, sedes y resumen */
+.pend{border:1px solid var(--bd);border-radius:12px;padding:12px;margin-top:10px}
+.pend-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pend-nums{margin:6px 0;font-size:14px}
+.pend button,.acceso button{margin:6px 6px 0 0}
+.chip{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.chip.pen{background:rgba(245,158,11,.18);color:#f59e0b}
+.chip.ok{background:rgba(16,185,129,.18);color:#10b981}
+.acceso.inactiva{opacity:.7}
+.tabla-sedes{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
+.tabla-sedes th,.tabla-sedes td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--bd)}
+.tabla-sedes th:first-child,.tabla-sedes td:first-child{text-align:left}
+#e-sede-box{min-width:200px}
+
+@media (max-width:700px){
+  /* barra inferior con 6 pestañas */
+  .tabs:has(> #tab-inv) > button{font-size:11px;padding-left:2px;padding-right:2px}
+  #tab-pen::before{content:"🕒"}
+
+  /* Inicio y cabecera en celular */
+  header{flex-wrap:wrap;justify-content:space-between;row-gap:8px;padding-left:12px;padding-right:12px}
+  header .logo{min-width:0;font-size:16px;gap:8px}
+  header .logo img{height:34px;width:auto}
+  header nav{display:flex;align-items:center;gap:6px;flex-shrink:0}
+  header nav button{white-space:nowrap;width:auto;min-width:0;padding:8px 12px;font-size:14px;line-height:1.2}
+  .hero{text-align:center;padding:24px 16px}
+  .hero h1{font-size:24px;line-height:1.25}
+  .hero p{font-size:16px}
+  .hero button{display:block;width:100%;max-width:340px;margin:10px auto 0;box-sizing:border-box}
+  #v-home .grid{grid-template-columns:minmax(0,1fr);gap:12px;padding:0 16px}
+  #v-home .card{text-align:left;overflow-wrap:anywhere}
+}

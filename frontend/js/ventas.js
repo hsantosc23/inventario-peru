@@ -3,12 +3,13 @@
 let CARRITO = [], VPER = "dia", VREF = new Date(), LINEA = 0;
 
 function verTab(t){
-  ["inv", "ven", "gas", "est"].forEach(x => {
+  ["inv", "ven", "gas", "pen", "est"].forEach(x => {
     $("t-" + x).classList.toggle("hide", x !== t);
     $("tab-" + x).classList.toggle("act", x === t);
   });
   if (t === "ven") { cargarVentas(); pintarCarrito(); pintarUsoComprobantes(); $("v-buscar").focus(); }
   if (t === "gas") cargarGastos();
+  if (t === "pen") cargarPendientes();
   if (t === "est") cargarEstadisticas();
 }
 

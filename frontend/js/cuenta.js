@@ -27,28 +27,6 @@ function verConfig(){
   cargarDatosFiscales();
 }
 
-async function cargarNumeracion(){
-  const { data: n } = await sb.rpc("mi_numeracion");
-  $("n-sb").value = (n && n.serie_boleta) || "B001";
-  $("n-sf").value = (n && n.serie_factura) || "F001";
-  $("n-ub").value = (n && n.ultimo_boleta) || 0;
-  $("n-uf").value = (n && n.ultimo_factura) || 0;
-}
-
-async function guardarNumeracion(){
-  const msg = $("n-msg"); msg.style.color = ""; msg.textContent = "";
-  const serB = $("n-sb").value.trim().toUpperCase(), serF = $("n-sf").value.trim().toUpperCase();
-  const ub = parseInt($("n-ub").value || "0", 10), uf = parseInt($("n-uf").value || "0", 10);
-  if (!/^B[A-Z0-9]{3}$/.test(serB)) return msg.textContent = "La serie de boletas empieza con B y tiene 4 caracteres (ej.: B001).";
-  if (!/^F[A-Z0-9]{3}$/.test(serF)) return msg.textContent = "La serie de facturas empieza con F y tiene 4 caracteres (ej.: F001).";
-  if (isNaN(ub) || ub < 0 || isNaN(uf) || uf < 0) return msg.textContent = "Escribe números válidos.";
-  const { error } = await sb.rpc("configurar_numeracion", { p_sb: serB, p_ub: ub, p_sf: serF, p_uf: uf });
-  if (error) return msg.textContent = "No se pudo guardar: " + error.message;
-  msg.style.color = "#166534";
-  msg.textContent = `Listo. La próxima boleta será ${serB}-${String(ub + 1).padStart(8, "0")} y la próxima factura ${serF}-${String(uf + 1).padStart(8, "0")}.`;
-  cargarNumeracion();
-}
-
 async function guardarNombre(){
   const msg = $("c-msg-nombre"); msg.style.color = ""; msg.textContent = "";
   const nombre = $("c-nombre").value.trim();
@@ -174,10 +152,11 @@ async function cargarSedes(){
 
 function pintarBarraSedes(){
   const barra = $("sede-barra"); if (!barra) return;
-  const hay = SEDES.length > 1;
+  const act = SEDES.filter(s => s.activa !== false);
+  const hay = act.length > 1;
   barra.classList.toggle("hide", !hay);
   if (!hay) return;
-  $("sede-sel").innerHTML = SEDES.map(s => `<option value="${s.id}">${esc(s.nombre)}${s.principal ? " (principal)" : ""}</option>`).join("");
+  $("sede-sel").innerHTML = act.map(s => `<option value="${s.id}">${esc(s.nombre)}${s.principal ? " (principal)" : ""}</option>`).join("");
   $("sede-sel").value = NEG.id;
 }
 
@@ -193,12 +172,15 @@ async function cambiarSedeSel(id){
 function pintarAccesosSedes(){
   const el = $("sedes-lista"); if (!el) return;
   const hijas = SEDES.filter(s => !s.principal);
-  el.innerHTML = hijas.length ? hijas.map(s => `<div class="acceso"><b>${esc(s.nombre)}</b>
+  el.innerHTML = hijas.length ? hijas.map(s => { const off = s.activa === false; return `<div class="acceso${off ? " inactiva" : ""}"><b>${esc(s.nombre)}</b>${off ? ' <span class="chip pen">Desactivada</span>' : ""}
       <small>Boletas ${esc(s.serie_boleta)} (último ${s.ultimo_boleta}) · Facturas ${esc(s.serie_factura)} (último ${s.ultimo_factura}) · Anexo ${esc(s.anexo)}</small>
       <div class="f2"><div><label>Usuario</label><input type="text" readonly value="${esc(s.usuario)}"></div>
       <div><label>Contraseña</label><input type="text" readonly value="${esc(s.clave)}"></div></div>
       <button onclick="copiarAcceso('${s.id}')">Copiar acceso</button>
-      <button onclick="cambiarSedeSel('${s.id}')">Entrar a esta sede</button></div>`).join("")
+      ${off ? `<button class="pri" onclick="gestionarSede('${s.id}','activar')">Reactivar</button>`
+            : `<button onclick="cambiarSedeSel('${s.id}')">Entrar a esta sede</button>
+               <button onclick="gestionarSede('${s.id}','desactivar')">Desactivar</button>`}
+      <button onclick="gestionarSede('${s.id}','eliminar')" style="color:#ef4444">Eliminar</button></div>`; }).join("")
     : `<p class="gr">Aún no tienes sedes. Usa el botón "Agregar sede +" del panel.</p>`;
 }
 
@@ -252,3 +234,20 @@ async function crearSede(){
 }
 
 async function entrarSedeNueva(){ if (NUEVA_SEDE) await cambiarSedeSel(NUEVA_SEDE.id); }
+
+async function invocarFn(nombre, cuerpo){
+  const { data, error } = await sb.functions.invoke(nombre, { body: cuerpo });
+  let r = data;
+  if (error) { r = { ok: false, error: error.message }; try { r.error = (await error.context.json()).error || r.error; } catch {} }
+  return r || { ok: false, error: "Sin respuesta del servidor" };
+}
+
+async function gestionarSede(id, accion){
+  const s = SEDES.find(x => x.id === id); if (!s) return;
+  if (accion === "desactivar" && !confirm(`¿Desactivar "${s.nombre}"? Nadie podrá entrar con su usuario. Sus datos se conservan y puedes reactivarla cuando quieras.`)) return;
+  if (accion === "eliminar" && prompt(`Se borrarán el inventario, las ventas y los gastos de "${s.nombre}" y no se puede deshacer.\nPara confirmar escribe ELIMINAR`) !== "ELIMINAR") return;
+  const r = await invocarFn("gestionar-sede", { sede_id: id, accion });
+  if (!r.ok) return alert(r.error || "No se pudo completar la acción.");
+  if (NEG.id === id) return irSegunNegocio();
+  await cargarSedes();
+}

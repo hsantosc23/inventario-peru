@@ -144,6 +144,7 @@
       <button id="tab-inv" class="act" onclick="verTab('inv')">Inventario</button>
       <button id="tab-ven" onclick="verTab('ven')">Ventas</button>
       <button id="tab-gas" onclick="verTab('gas')">Gastos</button>
+      <button id="tab-pen" onclick="verTab('pen')"><span class="solo-pc">Pagos </span>Pendientes</button>
       <button id="tab-est" onclick="verTab('est')">Estadísticas</button>
       <button id="tab-sede" onclick="abrirSede()"><span class="solo-pc">Agregar </span>sede <b>+</b></button>
     </div>
@@ -206,8 +207,38 @@
     </div>
     </div>
 
+        <div id="t-pen" class="hide">
+      <div class="inv-grid" id="pen-grid">
+        <div class="inv-izq">
+          <div class="card">
+            <b>Nuevo pago pendiente</b>
+            <label>Nombre del cliente</label><input type="text" id="pe-cliente" maxlength="60">
+            <label>Producto o detalle</label><input type="text" id="pe-detalle" maxlength="120" placeholder="Ej.: Top cuerina talla S">
+            <div class="f2">
+              <div><label>Precio total (S/)</label><input type="number" id="pe-total" min="0" step="0.01" inputmode="decimal" oninput="calcFaltaPend()"></div>
+              <div><label>Adelanto (S/)</label><input type="number" id="pe-adelanto" min="0" step="0.01" inputmode="decimal" oninput="calcFaltaPend()"></div>
+            </div>
+            <label>Celular (opcional)</label><input type="tel" id="pe-cel" inputmode="numeric" maxlength="9" placeholder="987654321">
+            <div id="pe-falta" class="pre" style="font-size:18px;margin-top:8px">Falta pagar: S/ 0.00</div>
+            <button class="pri full" onclick="guardarPendiente()">Guardar pendiente</button>
+            <div class="msg" id="pe-msg"></div>
+          </div>
+        </div>
+        <div class="inv-der">
+          <input type="text" id="pe-buscar" placeholder="Buscar por nombre, producto o celular" oninput="listarPendientes()">
+          <select id="pe-estado" onchange="listarPendientes()" style="margin-top:8px">
+            <option value="pendiente">Pendientes de pago</option>
+            <option value="pagado">Pagados completos</option>
+            <option value="todos">Todos</option>
+          </select>
+          <div id="pe-resumen" style="margin:10px 0;font-weight:600;color:var(--gr)"></div>
+          <div id="pe-lista"></div>
+        </div>
+      </div>
+    </div>
+
     <div id="t-est" class="hide">
-  <div class="est-barra"><div><label>Mes</label><input type="month" id="e-mes" onchange="cargarEstadisticas()"></div><div id="e-msg" class="msg"></div></div>
+  <div class="est-barra">  <div class="est-barra"><div><label>Mes</label><input type="month" id="e-mes" onchange="cargarEstadisticas()"></div><div id="e-sede-box" class="hide"><label>Sede</label><select id="e-sede" onchange="cargarEstadisticas()"></select></div><div id="e-msg" class="msg"></div></div></div>
   <div class="kpis">
     <div class="card kpi"><small>Ventas</small><b id="e-k-ventas">S/ 0.00</b></div>
     <div class="card kpi"><small>Gastos</small><b id="e-k-gastos">S/ 0.00</b></div>
@@ -215,6 +246,7 @@
     <div class="card kpi"><small>N.º de ventas</small><b id="e-k-n">0</b></div>
     <div class="card kpi"><small>Venta promedio</small><b id="e-k-ticket">S/ 0.00</b></div>
   </div>
+  <div class="card hide" id="e-por-sede" style="margin-bottom:12px"></div>
   <div class="est-grid">
     <div class="card est-card est-ancho"><b>Ventas y gastos por día</b><div class="est-lienzo"><canvas id="g-linea"></canvas></div></div>
     <div class="card est-card"><b>Gastos por categoría</b><div class="est-lienzo"><canvas id="g-pie"></canvas></div><p id="g-pie-vacio" class="gr hide">No hay gastos en este mes.</p></div>
@@ -408,6 +440,7 @@
 <script src="/js/app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="/js/estadisticas.js"></script>
+<script src="/js/pendientes.js"></script>
 <script src="/js/ui.js"></script>
 </body>
 </html>
