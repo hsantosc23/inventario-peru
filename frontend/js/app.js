@@ -17,6 +17,7 @@ async function irSegunNegocio(){
     : n.estado === "activo" ? "Tu plan venció: puedes ver tu inventario, pero no editarlo. Renueva tu pago para seguir."
     : "Tu prueba terminó: puedes ver tu inventario, pero no editarlo. Activa tu plan.";
     NEG = n;
+    await aplicarContexto();
     aplicarModalidad();
   actualizarPerfil();
   const esTienda = n.tipo === "tienda";

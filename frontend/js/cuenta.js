@@ -148,3 +148,107 @@ async function guardarNumeracion(){
   msg.style.color = "#166534";
   msg.textContent = `Listo. La próxima boleta será ${serB}-${String(ub + 1).padStart(8, "0")} y la próxima factura ${serF}-${String(uf + 1).padStart(8, "0")}.`;
 }
+
+let CTX = { es_sede: false }, SEDES = [], NUEVA_SEDE = null;
+
+// "usuario" -> correo interno; un correo completo se deja igual
+const usuarioAEmail = v => { v = String(v || "").trim(); return v.includes("@") ? v : v.toLowerCase() + "@sede.gestoraperu.app"; };
+
+// Se llama después de cargar el negocio: si el dueño eligió una sede, el panel pasa a ser el de esa sede
+async function aplicarContexto(){
+  const [{ data: a }, { data: c }] = await Promise.all([sb.rpc("negocio_activo"), sb.rpc("mi_contexto")]);
+  CTX = c || { es_sede: false };
+  if (a && NEG && a.id !== NEG.id) NEG = { ...NEG, ...a };
+  const b = $("tab-sede"); if (b) b.classList.toggle("hide", CTX.es_sede || !NEG || NEG.tipo !== "tienda");
+  ["card-clave", "card-tipo", "card-fiscal", "sedes-card"].forEach(id => {
+    const e = $(id); if (e) e.classList.toggle("hide", CTX.es_sede || (id === "sedes-card" && (!NEG || NEG.tipo !== "tienda")));
+  });
+  await cargarSedes();
+}
+
+async function cargarSedes(){
+  SEDES = [];
+  if (!CTX.es_sede) { const { data } = await sb.rpc("mis_sedes"); SEDES = data || []; }
+  pintarBarraSedes(); pintarAccesosSedes();
+}
+
+function pintarBarraSedes(){
+  const barra = $("sede-barra"); if (!barra) return;
+  const hay = SEDES.length > 1;
+  barra.classList.toggle("hide", !hay);
+  if (!hay) return;
+  $("sede-sel").innerHTML = SEDES.map(s => `<option value="${s.id}">${esc(s.nombre)}${s.principal ? " (principal)" : ""}</option>`).join("");
+  $("sede-sel").value = NEG.id;
+}
+
+async function cambiarSedeSel(id){
+  const raiz = SEDES.find(s => s.principal);
+  const { error } = await sb.rpc("cambiar_sede", { p_negocio: raiz && id === raiz.id ? null : id });
+  if (error) return alert("No se pudo cambiar de sede: " + error.message);
+  CARRITO = [];
+  cerrarSede();
+  await irSegunNegocio();
+}
+
+function pintarAccesosSedes(){
+  const el = $("sedes-lista"); if (!el) return;
+  const hijas = SEDES.filter(s => !s.principal);
+  el.innerHTML = hijas.length ? hijas.map(s => `<div class="acceso"><b>${esc(s.nombre)}</b>
+      <small>Boletas ${esc(s.serie_boleta)} (último ${s.ultimo_boleta}) · Facturas ${esc(s.serie_factura)} (último ${s.ultimo_factura}) · Anexo ${esc(s.anexo)}</small>
+      <div class="f2"><div><label>Usuario</label><input type="text" readonly value="${esc(s.usuario)}"></div>
+      <div><label>Contraseña</label><input type="text" readonly value="${esc(s.clave)}"></div></div>
+      <button onclick="copiarAcceso('${s.id}')">Copiar acceso</button>
+      <button onclick="cambiarSedeSel('${s.id}')">Entrar a esta sede</button></div>`).join("")
+    : `<p class="gr">Aún no tienes sedes. Usa el botón "Agregar sede +" del panel.</p>`;
+}
+
+function copiarAcceso(id){
+  const s = SEDES.find(x => x.id === id) || (NUEVA_SEDE && NUEVA_SEDE.id === id ? NUEVA_SEDE : null); if (!s) return;
+  const txt = `Gestora Perú\nSede: ${s.nombre}\nUsuario: ${s.usuario}\nContraseña: ${s.clave}\nIngresa en: ${location.origin}`;
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject())
+    .then(() => alert("Acceso copiado. Pégalo en WhatsApp."), () => prompt("Copia el acceso:", txt));
+}
+
+// ---------- Ventana "Agregar sede" ----------
+function verModoSede(){
+  $("ms-series").classList.toggle("hide", document.querySelector('input[name="ms-ya"]:checked').value !== "si");
+}
+
+function abrirSede(){
+  ["ms-nombre", "ms-sb", "ms-sf"].forEach(i => $(i).value = "");
+  $("ms-ub").value = 0; $("ms-uf").value = 0;
+  $("ms-anexo").value = String(Math.max(SEDES.length, 1)).padStart(4, "0");
+  document.querySelector('input[name="ms-ya"][value="no"]').checked = true; verModoSede();
+  $("ms-msg").textContent = "";
+  $("ms-form").classList.remove("hide"); $("ms-ok").classList.add("hide");
+  $("m-sede").classList.remove("hide");
+}
+
+function cerrarSede(){ const m = $("m-sede"); if (m) m.classList.add("hide"); }
+
+async function crearSede(){
+  const msg = $("ms-msg"); msg.style.color = ""; msg.textContent = "";
+  const nombre = $("ms-nombre").value.trim(), anexo = $("ms-anexo").value.trim();
+  const ya = document.querySelector('input[name="ms-ya"]:checked').value === "si";
+  if (nombre.length < 2) return msg.textContent = "Escribe el nombre de la sede.";
+  if (!/^[0-9]{4}$/.test(anexo)) return msg.textContent = "El código de establecimiento tiene 4 dígitos (ej.: 0001).";
+  const cuerpo = { nombre, anexo, ya_emitio: ya };
+  if (ya) {
+    cuerpo.serie_boleta = $("ms-sb").value.trim().toUpperCase(); cuerpo.serie_factura = $("ms-sf").value.trim().toUpperCase();
+    cuerpo.ultimo_boleta = parseInt($("ms-ub").value || "0", 10); cuerpo.ultimo_factura = parseInt($("ms-uf").value || "0", 10);
+    if (!/^B[A-Z0-9]{3}$/.test(cuerpo.serie_boleta)) return msg.textContent = "La serie de boletas empieza con B y tiene 4 caracteres (ej.: B002).";
+    if (!/^F[A-Z0-9]{3}$/.test(cuerpo.serie_factura)) return msg.textContent = "La serie de facturas empieza con F y tiene 4 caracteres (ej.: F002).";
+    if (isNaN(cuerpo.ultimo_boleta) || cuerpo.ultimo_boleta < 0 || isNaN(cuerpo.ultimo_factura) || cuerpo.ultimo_factura < 0) return msg.textContent = "Escribe números válidos.";
+  }
+  const { data, error } = await sb.functions.invoke("crear-sede", { body: cuerpo });
+  let r = data;
+  if (error) { r = { ok: false, error: error.message }; try { r.error = (await error.context.json()).error || r.error; } catch {} }
+  if (!r || !r.ok) return msg.textContent = (r && r.error) || "No se pudo crear la sede.";
+  NUEVA_SEDE = r.sede;
+  await cargarSedes();
+  $("ok-usuario").value = NUEVA_SEDE.usuario; $("ok-clave").value = NUEVA_SEDE.clave;
+  $("ok-series").textContent = `Boletas ${NUEVA_SEDE.serie_boleta} · Facturas ${NUEVA_SEDE.serie_factura}`;
+  $("ms-form").classList.add("hide"); $("ms-ok").classList.remove("hide");
+}
+
+async function entrarSedeNueva(){ if (NUEVA_SEDE) await cambiarSedeSel(NUEVA_SEDE.id); }

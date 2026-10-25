@@ -52,7 +52,7 @@
 <section class="v hide" id="v-registro"><div class="box">
   <h2>Crear cuenta</h2>
   <div class="msg" id="r-msg"></div>
-  <label>Correo</label><input type="email" id="r-email" autocomplete="email">
+    <label>Correo o usuario</label><input type="text" id="l-email" autocomplete="username" autocapitalize="none">
   <label>Contraseña</label><input type="password" id="r-pass" autocomplete="new-password" oninput="verCoincidencia()">
   <label>Repite la contraseña</label><input type="password" id="r-pass2" autocomplete="new-password" oninput="verCoincidencia()">
   <label>WhatsApp (9 dígitos)</label><input type="tel" id="r-wsp" inputmode="numeric" maxlength="9" placeholder="987654321">
@@ -95,8 +95,8 @@
 
 <!-- PANEL (provisional) -->
 <section class="v hide" id="v-panel"><div class="wrap">
-  <h2 id="p-titulo">Bienvenido</h2>
-  <p id="p-info" class="gr"></p>
+    <h2 id="p-titulo" style="display:none">Bienvenido</h2>
+  <p id="p-info" class="gr" style="display:none"></p>
   
   <div id="hotel" class="hide">
     <div class="inv-grid" id="hotel-grid">
@@ -139,11 +139,13 @@
   </div>
 
   <div id="inv" class="hide">
+    <div id="sede-barra" class="sede-barra hide"><label>Sede</label><select id="sede-sel" onchange="cambiarSedeSel(this.value)"></select></div>
     <div class="tabs">
       <button id="tab-inv" class="act" onclick="verTab('inv')">Inventario</button>
       <button id="tab-ven" onclick="verTab('ven')">Ventas</button>
       <button id="tab-gas" onclick="verTab('gas')">Gastos</button>
       <button id="tab-est" onclick="verTab('est')">Estadísticas</button>
+      <button id="tab-sede" onclick="abrirSede()"><span class="solo-pc">Agregar </span>sede <b>+</b></button>
     </div>
     <div id="t-inv">
     <div class="inv-grid" id="inv-grid">
@@ -308,7 +310,7 @@
     <div class="msg" id="c-msg-nombre"></div>
   </div>
 
-    <div class="card" style="margin-top:16px">
+    <div class="card" id="card-fiscal" style="margin-top:16px">
     <b>Datos para facturación</b>
     <p class="gr" style="margin:6px 0 0">Necesarios para emitir boletas y facturas electrónicas.</p>
     <label>RUC del negocio</label><input type="text" id="f-ruc" inputmode="numeric" maxlength="11" placeholder="11 dígitos">
@@ -327,7 +329,7 @@
     <div class="msg" id="n-msg"></div>
   </div>
 
-  <div class="card" style="margin-top:16px">
+  <div class="card" id="card-clave" style="margin-top:16px">
     <b>Cambiar contraseña</b>
     <label>Contraseña actual</label><input type="password" id="c-clave0" autocomplete="current-password">
     <label>Nueva contraseña</label><input type="password" id="c-clave1" autocomplete="new-password">
@@ -335,7 +337,7 @@
     <button class="pri full" onclick="cambiarClave()">Cambiar contraseña</button>
     <div class="msg" id="c-msg-clave"></div>
   </div>
-    <div class="card" style="margin-top:16px">
+    <div class="card" id="card-tipo" style="margin-top:16px">
     <b>Tipo de negocio</b>
     <label class="opt"><input type="radio" name="c-tipo" value="formal" onchange="verTipoConfig()"> Negocio formal</label>
     <label class="opt"><input type="radio" name="c-tipo" value="por_formalizar" onchange="verTipoConfig()"> Negocio por formalizar</label>
@@ -347,7 +349,50 @@
     <button class="pri full" onclick="cambiarModalidad()">Guardar tipo de negocio</button>
     <div class="msg" id="c-msg-tipo"></div>
   </div>
+    <div class="card hide" id="sedes-card" style="margin-top:16px">
+    <b>Sedes y accesos</b>
+    <p class="gr" style="margin:6px 0 0">Comparte el usuario y la contraseña con quien atienda cada sede. Esa cuenta solo ve y edita su sede.</p>
+    <div id="sedes-lista" style="margin-top:8px"></div>
+  </div>
 </div></section>
+
+<div id="m-sede" class="modal hide">
+  <div class="modal-caja card">
+    <div id="ms-form">
+      <b style="font-size:18px">Agregar sede</b>
+      <label>Nombre de la sede</label><input type="text" id="ms-nombre" maxlength="40" placeholder="Ej.: Tienda Centro">
+      <label>¿La sede ya había emitido comprobantes antes?</label>
+      <label class="opt"><input type="radio" name="ms-ya" value="no" checked onchange="verModoSede()"> Es una sede nueva<small>Empieza desde el número 1 con una serie nueva.</small></label>
+      <label class="opt"><input type="radio" name="ms-ya" value="si" onchange="verModoSede()"> Ya emitió comprobantes<small>Continúa desde el último número que usó.</small></label>
+      <div id="ms-series" class="hide">
+        <div class="f2">
+          <div><label>Serie de boletas</label><input type="text" id="ms-sb" maxlength="4" placeholder="B002"></div>
+          <div><label>Última boleta emitida</label><input type="number" id="ms-ub" min="0" step="1" value="0"></div>
+          <div><label>Serie de facturas</label><input type="text" id="ms-sf" maxlength="4" placeholder="F002"></div>
+          <div><label>Última factura emitida</label><input type="number" id="ms-uf" min="0" step="1" value="0"></div>
+        </div>
+      </div>
+      <label>Código de establecimiento (anexo)</label>
+      <input type="text" id="ms-anexo" maxlength="4" inputmode="numeric" placeholder="0001">
+      <small class="gr">Registra primero la sede como establecimiento anexo en SUNAT y escribe aquí el código que te asigna (0001, 0002...).</small>
+      <button class="pri full" onclick="crearSede()">Crear sede</button>
+      <button class="full" onclick="cerrarSede()">Cancelar</button>
+      <div class="msg" id="ms-msg"></div>
+    </div>
+    <div id="ms-ok" class="hide">
+      <b style="font-size:18px">Sede creada</b>
+      <p class="gr">Comparte estos datos con quien atienda la sede. También los verás siempre en Configuración.</p>
+      <div class="f2">
+        <div><label>Usuario</label><input type="text" id="ok-usuario" readonly></div>
+        <div><label>Contraseña</label><input type="text" id="ok-clave" readonly></div>
+      </div>
+      <p class="gr" id="ok-series"></p>
+      <button class="pri full" onclick="entrarSedeNueva()">Ir al panel de la sede</button>
+      <button class="full" onclick="copiarAcceso(NUEVA_SEDE.id)">Copiar acceso</button>
+      <button class="full" onclick="cerrarSede()">Cerrar</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

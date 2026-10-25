@@ -255,3 +255,19 @@ html[data-tema="oscuro"] .card .modos button{background:transparent;border:0}
 html[data-tema="oscuro"] .card .modos button.act{background:#2f6df6;color:#fff}
 
 .opt input[type=checkbox],.opt input[type=radio]{width:auto;min-height:0;margin:0 8px 0 0;vertical-align:middle}
+
+.modal{position:fixed;inset:0;z-index:90;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px;background:rgba(15,23,42,.55)}
+.modal-caja{width:100%;max-width:460px;margin:auto}
+.sede-barra{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+.sede-barra label{margin:0;white-space:nowrap}
+.sede-barra select{max-width:340px}
+.acceso{border:1px solid var(--bd);border-radius:12px;padding:12px;margin-top:10px}
+.acceso small{display:block;color:var(--gr);margin:4px 0}
+.acceso button{margin:6px 6px 0 0}
+#tab-sede b{font-size:18px;margin-left:4px;line-height:1}
+.opt input[type=checkbox],.opt input[type=radio]{width:auto;min-height:0;margin:0 8px 0 0;vertical-align:middle}
+@media (max-width:700px){
+  .solo-pc{display:none}
+  :has(> #tab-inv){grid-auto-flow:column;grid-auto-columns:1fr;grid-template-columns:none}
+  #tab-sede::before{content:"🏬"}
+}

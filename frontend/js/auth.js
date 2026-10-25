@@ -24,7 +24,7 @@ async function registrar(){
 
 async function acceder(){
   const msg = $("l-msg"); msg.textContent = "";
-  const { error } = await sb.auth.signInWithPassword({ email: $("l-email").value.trim(), password: $("l-pass").value });
+  const { error } = await sb.auth.signInWithPassword({ email: usuarioAEmail($("l-email").value).trim(), password: $("l-pass").value });
   if (error) return msg.textContent = "Correo o contraseña incorrectos, o falta confirmar tu correo.";
   irSegunNegocio();
 }
