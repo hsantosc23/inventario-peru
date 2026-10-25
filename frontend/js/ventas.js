@@ -12,7 +12,7 @@ function verTab(t){
   if (t === "caja") cargarCaja();
   if (t === "pen") cargarPendientes();
   if (t === "est") cargarEstadisticas();
-    const b = $("tab-" + t), bar = b && b.parentElement;
+  const b = $("tab-" + t), bar = b && b.parentElement;
   if (bar) bar.scrollTo({ left: b.offsetLeft - (bar.clientWidth - b.offsetWidth) / 2, behavior: "smooth" });
 }
 
@@ -132,7 +132,6 @@ async function registrarVenta(){
   msg.textContent = "Venta registrada" + (r ? ". Comprobante " + r.comprobante + " emitido" : "") + ". El stock ya se descontó.";
   if ($("v-imprimir").checked) imprimirComprobante(id);
 }
-
 
 async function emitirComprobante(ventaId, tipo, doc, nombre) {
   if (tipo !== "boleta" && tipo !== "factura") return null;
@@ -303,7 +302,7 @@ async function cargarVentas(){
 
   // Lista: una fila por producto (hora, cantidad, producto y total)
   const hora = v => new Date(v.fecha).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
-    // Cada compra es un bloque: la hora, los productos y el total aparecen una sola vez por compra
+  // Cada compra es un bloque: la hora, los productos y el total aparecen una sola vez por compra
   const compra = v => {
     const n = v.venta_items.length;
     return `<tbody class="compra${v.anulada ? " anulada" : ""}">` + v.venta_items.map((i, k) => `<tr>
@@ -315,7 +314,7 @@ async function cargarVentas(){
     </tr>`).join("") + `</tbody>`;
   };
   const tabla = vs => `<table class="tv"><thead><tr><th>Hora</th><th class="c">Cant.</th><th>Producto</th><th class="t">Total</th><th></th></tr></thead>${vs.map(compra).join("")}</table>`;
-  
+
   const dias = {};
   data.forEach(v => { const k = f(new Date(v.fecha), { weekday: "short", day: "numeric", month: "short" }); (dias[k] = dias[k] || []).push(v); });
   $("v-lista").innerHTML = data.length ? Object.entries(dias).map(([k, vs]) => {
@@ -374,7 +373,7 @@ async function imprimirComprobante(id){
   if (error) return alert("No se pudo cargar la venta: " + error.message);
   if (v.anulada) return alert("Esta venta está anulada.");
   const fac = v.tipo_doc === "factura", d = new Date(v.fecha), total = Number(v.total);
-    const emitido = v.cpe_estado === "aceptado";
+  const emitido = v.cpe_estado === "aceptado";
   const titulo = emitido ? (fac ? "FACTURA ELECTRÓNICA" : "BOLETA DE VENTA ELECTRÓNICA")
     : fac ? "FACTURA" : v.tipo_doc === "boleta" ? "BOLETA DE VENTA" : "Boleta (sin SUNAT)";
   const num = emitido ? v.cpe_serie + "-" + v.cpe_numero : (v.numero ? "N.º " + String(v.numero).padStart(6, "0") : "");
