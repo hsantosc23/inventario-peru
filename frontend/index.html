@@ -168,6 +168,14 @@
               <div><label>Stock</label><input type="number" id="f-stock" min="0" step="1" inputmode="numeric"></div>
               <div><label>Avisar si baja de</label><input type="number" id="f-min" min="0" step="1" inputmode="numeric" placeholder="0 = sin aviso"></div>
             </div>
+                        <div class="foto-box">
+              <label>Foto del producto (opcional)</label>
+              <div class="foto-fila">
+                <img id="f-foto-prev" class="miniatura grande hide" alt="">
+                <input type="file" id="f-foto" accept="image/*" onchange="previaFoto()">
+              </div>
+              <button type="button" id="f-foto-quitar" class="hide" onclick="quitarFoto()">Quitar foto</button>
+            </div>
             <button class="pri full" id="f-btn" onclick="guardarProducto()">Guardar producto</button>
             <button class="full hide" id="f-cancel" onclick="limpiarForm()">Cancelar edición</button>
           </div>
@@ -186,6 +194,8 @@
               <div><small>M</small><input type="number" min="0" id="p-M" inputmode="numeric"></div>
               <div><small>L</small><input type="number" min="0" id="p-L" inputmode="numeric"></div>
             </div>
+            <label>Foto del modelo (opcional, se usa en todas las tallas)</label>
+            <input type="file" id="p-foto" accept="image/*">
             <button class="pri full" onclick="guardarPrenda()">Guardar las tallas</button>
             <div class="msg" id="p-msg"></div>
           </div>
@@ -213,7 +223,8 @@
           <div class="card">
             <b>Nuevo pago pendiente</b>
             <label>Nombre del cliente</label><input type="text" id="pe-cliente" maxlength="60">
-            <label>Producto o detalle</label><input type="text" id="pe-detalle" maxlength="120" placeholder="Ej.: Top cuerina talla S">
+            <label>Producto o detalle</label><input type="text" id="pe-detalle" maxlength="120" autocomplete="off" placeholder="Escribe y elige un producto de tu inventario" oninput="buscarPendProd()">
+            <div id="pe-res"></div><input type="text" id="pe-detalle" maxlength="120" placeholder="Ej.: Top cuerina talla S">
             <div class="f2">
               <div><label>Precio total (S/)</label><input type="number" id="pe-total" min="0" step="0.01" inputmode="decimal" oninput="calcFaltaPend()"></div>
               <div><label>Adelanto (S/)</label><input type="number" id="pe-adelanto" min="0" step="0.01" inputmode="decimal" oninput="calcFaltaPend()"></div>
@@ -226,10 +237,10 @@
         </div>
         <div class="inv-der">
           <input type="text" id="pe-buscar" placeholder="Buscar por nombre, producto o celular" oninput="listarPendientes()">
-          <select id="pe-estado" onchange="listarPendientes()" style="margin-top:8px">
-            <option value="pendiente">Pendientes de pago</option>
-            <option value="pagado">Pagados completos</option>
-            <option value="todos">Todos</option>
+            <select id="pe-estado" onchange="listarPendientes()" style="margin-top:8px">
+            <option value="todos">Todos (pendientes e historial)</option>
+            <option value="pendiente">Solo pendientes de pago</option>
+            <option value="pagado">Solo pagados (historial)</option>
           </select>
           <div id="pe-resumen" style="margin:10px 0;font-weight:600;color:var(--gr)"></div>
           <div id="pe-lista"></div>
@@ -425,6 +436,8 @@
     </div>
   </div>
 </div>
+
+<div id="m-foto" class="modal hide" onclick="this.classList.add('hide')"><img alt="" style="max-width:100%;max-height:90vh;margin:auto;border-radius:12px"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

@@ -304,3 +304,19 @@ html[data-tema="oscuro"] .card .modos button.act{background:#2f6df6;color:#fff}
   #v-home .grid{grid-template-columns:minmax(0,1fr);gap:12px;padding:0 16px}
   #v-home .card{text-align:left;overflow-wrap:anywhere}
 }
+
+/* Fotos de productos */
+.prod-info{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.prod-info > div{min-width:0}
+.miniatura{width:46px;height:46px;border-radius:10px;object-fit:cover;flex:0 0 46px;background:var(--bd);cursor:pointer}
+.miniatura.vacia{cursor:default;opacity:.5}
+.miniatura.grande{width:96px;height:96px;flex-basis:96px;cursor:default}
+.foto-box{margin:10px 0}
+.foto-fila{display:flex;align-items:center;gap:12px}
+.foto-fila input[type=file]{flex:1;min-width:0}
+#f-foto-quitar{margin-top:6px}
+
+/* Pagos pendientes: historial */
+.pend.pagado{opacity:.85}
+.pend-hist{margin:6px 0;font-size:13px;color:var(--gr)}
+#pe-res.res{margin-top:4px}

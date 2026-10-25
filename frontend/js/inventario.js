@@ -6,6 +6,45 @@ const bajo = p => p.stock_minimo > 0 && p.stock <= p.stock_minimo;
 
 let AUTO = "";
 
+// ---------- Fotos opcionales ----------
+let FOTO_QUITAR = false;
+const fotoUrl = ruta => ruta ? sb.storage.from("productos").getPublicUrl(ruta).data.publicUrl : "";
+const fotoEnUso = (ruta, exceptoId) => PRODS.some(p => p.foto === ruta && p.id !== exceptoId);
+
+// Reduce la foto a 700 px y la guarda como JPEG liviano
+function reducirImagen(archivo, max = 700){
+  return new Promise((ok, mal) => {
+    const img = new Image(), url = URL.createObjectURL(archivo);
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement("canvas");
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => b ? ok(b) : mal(new Error("No se pudo procesar la imagen")), "image/jpeg", 0.8);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); mal(new Error("El archivo no es una imagen válida")); };
+    img.src = url;
+  });
+}
+
+async function subirFoto(archivo){
+  const blob = await reducirImagen(archivo);
+  const ruta = `${NEG.id}/${crypto.randomUUID()}.jpg`;
+  const { error } = await sb.storage.from("productos").upload(ruta, blob, { contentType: "image/jpeg", cacheControl: "31536000" });
+  if (error) throw error;
+  return ruta;
+}
+
+const borrarFotoStorage = ruta => ruta ? sb.storage.from("productos").remove([ruta]) : null;
+
+function pintarPrevia(url){
+  const i = $("f-foto-prev"); i.classList.toggle("hide", !url); if (url) i.src = url;
+  $("f-foto-quitar").classList.toggle("hide", !url);
+}
+function previaFoto(){ const a = $("f-foto").files[0]; FOTO_QUITAR = false; pintarPrevia(a ? URL.createObjectURL(a) : null); }
+function quitarFoto(){ $("f-foto").value = ""; FOTO_QUITAR = true; pintarPrevia(null); }
+function verFoto(url){ const m = $("m-foto"); m.querySelector("img").src = url; m.classList.remove("hide"); }
+
 // Código = talla + número correlativo de todo el inventario (XS0001, M0002, L0003...).
 // Sin talla, solo el número (0004). Nunca repite un código que ya exista.
 function siguienteCodigo(talla){
@@ -61,16 +100,19 @@ async function cargarProductos(){
 function listar(){
   const q = $("buscar").value.trim().toLowerCase();
   const r = PRODS.filter(p => p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q));
-  $("lista").innerHTML = r.length ? r.map(p =>
-    `<div class="fila"><div><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}<span class="stock ${p.stock > 0 ? "hay" : "cero"}">Stock: ${p.stock}${bajo(p) ? ' <b style="color:#b45309">· stock bajo</b>' : ""}</span></div>
+  $("lista").innerHTML = r.length ? r.map(p => {
+    const url = fotoUrl(p.foto);
+    const mini = url ? `<img class="miniatura" src="${url}" alt="" loading="lazy" onclick="verFoto('${url}')">` : `<span class="miniatura vacia"></span>`;
+    return `<div class="fila"><div class="prod-info">${mini}<div><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}<span class="stock ${p.stock > 0 ? "hay" : "cero"}">Stock: ${p.stock}${bajo(p) ? ' <b style="color:#b45309">· stock bajo</b>' : ""}</span></div></div>
      <div class="pre">S/ ${Number(p.precio).toFixed(2)}</div>
-     ${PUEDE ? `<button onclick="editar('${p.id}')">Editar</button><button onclick="borrar('${p.id}')">Borrar</button>` : ""}</div>`
-  ).join("") : `<p class="gr">No hay productos para mostrar.</p>`;
+     ${PUEDE ? `<button onclick="editar('${p.id}')">Editar</button><button onclick="borrar('${p.id}')">Borrar</button>` : ""}</div>`;
+  }).join("") : `<p class="gr">No hay productos para mostrar.</p>`;
 }
 
 function limpiarForm(){
   EDIT = null;
   ["f-codigo","f-nombre","f-precio","f-stock","f-min"].forEach(i => $(i).value = "");
+  $("f-foto").value = ""; FOTO_QUITAR = false; pintarPrevia(null);
   $("f-titulo").textContent = "Agregar producto";
   $("f-btn").textContent = "Guardar producto";
   $("f-cancel").classList.add("hide");
@@ -79,11 +121,12 @@ function limpiarForm(){
 
 function editar(id){
   const p = PRODS.find(x => x.id === id); if (!p) return;
+  if (typeof verModo === "function") verModo("uno");
   EDIT = id;
-  verModo("uno");
   $("f-codigo").value = p.codigo; $("f-nombre").value = p.nombre;
   $("f-precio").value = p.precio; $("f-stock").value = p.stock; $("f-min").value = p.stock_minimo;
   $("f-talla").value = (p.codigo.match(/^(XS|S|M|L)\d+$/) || [])[1] || "";
+  $("f-foto").value = ""; FOTO_QUITAR = false; pintarPrevia(fotoUrl(p.foto) || null);
   $("f-titulo").textContent = "Editar producto";
   $("f-btn").textContent = "Guardar cambios";
   $("f-cancel").classList.remove("hide");
@@ -99,12 +142,24 @@ async function guardarProducto(){
   if (isNaN(precio) || precio < 0) return msg.textContent = "Escribe un precio válido.";
   if (isNaN(stock)) return msg.textContent = "Escribe un stock válido.";
   if (isNaN(stock_minimo) || stock_minimo < 0) return msg.textContent = "Escribe un aviso de stock válido.";
-  const fila = { codigo, nombre, precio, stock, stock_minimo };
+
+  const anterior = EDIT ? ((PRODS.find(x => x.id === EDIT) || {}).foto || null) : null;
+  let foto = anterior;
+  const arch = $("f-foto").files[0];
+  try {
+    if (arch) foto = await subirFoto(arch);
+    else if (FOTO_QUITAR) foto = null;
+  } catch (e) { return msg.textContent = "No se pudo subir la foto: " + (e.message || e); }
+
+  const fila = { codigo, nombre, precio, stock, stock_minimo, foto };
   const { error } = EDIT
     ? await sb.from("productos").update(fila).eq("id", EDIT)
     : await sb.from("productos").insert({ ...fila, negocio_id: NEG.id });
-  if (error) return msg.textContent = error.code === "23505"
-    ? "Ya tienes un producto con ese código." : "No se pudo guardar: " + error.message;
+  if (error) {
+    if (arch) borrarFotoStorage(foto);
+    return msg.textContent = error.code === "23505" ? "Ya tienes un producto con ese código." : "No se pudo guardar: " + error.message;
+  }
+  if (anterior && anterior !== foto && !fotoEnUso(anterior, EDIT)) borrarFotoStorage(anterior);
   limpiarForm();
   cargarProductos();
 }
@@ -127,6 +182,10 @@ async function guardarPrenda(){
   if (!tallas.length) return msg.textContent = "Escribe la cantidad de al menos una talla.";
   for (const t of tallas) if (!(parseInt($("p-" + t).value) >= 0)) return msg.textContent = "Cantidad inválida en la talla " + t + ".";
 
+  let foto = null;
+  const arch = $("p-foto").files[0];
+  if (arch) { try { foto = await subirFoto(arch); } catch (e) { return msg.textContent = "No se pudo subir la foto: " + (e.message || e); } }
+
   const filas = [];
   for (const t of tallas) {
     // siguiente número libre de esa talla: XS0006 -> XS0007
@@ -137,22 +196,24 @@ async function guardarPrenda(){
       negocio_id: NEG.id,
       codigo: t + String(max + 1).padStart(6 - t.length, "0"),
       nombre: `${modelo} ${color}`,
-      precio, stock: parseInt($("p-" + t).value), stock_minimo: min
+      precio, stock: parseInt($("p-" + t).value), stock_minimo: min, foto
     });
   }
   const { error } = await sb.from("productos").insert(filas);
-  if (error) return msg.textContent = "No se pudo guardar: " + error.message;
+  if (error) { if (foto) borrarFotoStorage(foto); return msg.textContent = "No se pudo guardar: " + error.message; }
   msg.style.color = "var(--ok,#16a34a)";
   msg.textContent = `Listo: ${filas.length} tallas registradas (${filas.map(f => f.codigo).join(", ")}).`;
-  ["p-modelo", "p-color", "p-precio", "p-min", "p-XS", "p-S", "p-M", "p-L"].forEach(i => $(i).value = "");
+  ["p-modelo", "p-color", "p-precio", "p-min", "p-XS", "p-S", "p-M", "p-L", "p-foto"].forEach(i => $(i).value = "");
   if (typeof cargarProductos === "function") cargarProductos();
 }
 
 async function borrar(id){
   if (!confirm("¿Borrar este producto?")) return;
+  const p = PRODS.find(x => x.id === id);
   const { data, error } = await sb.from("productos").delete().eq("id", id).eq("negocio_id", NEG.id).select();
   if (error) return $("pr-msg").textContent = "No se pudo borrar: " + error.message;
   if (!data.length) return $("pr-msg").textContent = "No se pudo borrar: el producto no es de tu negocio o tu plan no lo permite.";
+  if (p && p.foto && !fotoEnUso(p.foto, id)) borrarFotoStorage(p.foto);
   cargarProductos();
 }
 
