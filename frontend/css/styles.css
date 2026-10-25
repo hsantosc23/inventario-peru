@@ -330,7 +330,6 @@ html[data-tema="oscuro"] .card .modos button.act{background:#2f6df6;color:#fff}
 /* Celular */
 @media (max-width:700px){
   /* "Agregar sede" sale de la barra inferior y queda en Configuración */
-  .tabs:has(> #tab-inv) > #tab-sede{display:none}
   #tab-caja::before{content:"🧾"}
   .tabs:has(> #tab-inv) > button{font-size:10.5px;letter-spacing:-.2px;white-space:nowrap}
 
@@ -377,4 +376,8 @@ html[data-tema="oscuro"] .card .modos button.act{background:#2f6df6;color:#fff}
   header .logo{flex:0 0 auto !important;margin:0 !important;display:flex;align-items:center}
   header nav{flex:0 0 auto !important;margin:0 !important;display:flex;align-items:center;justify-content:center;gap:6px}
   header nav button{padding:8px 11px !important;font-size:14px}
+}
+
+@media (max-width:700px){
+  #tab-sede::before{content:"➕"}
 }
