@@ -35,7 +35,7 @@ function enterVenta(ev){
   if (/^mod-/.test(q) && abrirModelo(q)) return;
   const p = PRODS.find(x => x.codigo.toLowerCase() === q);
   if (p && p.stock > 0) agregarAlCarrito(p.id);
-}
+} 
 
 // Unidades de un producto que ya están en otras líneas del carrito
 const usado = (id, k) => CARRITO.filter(c => c.id === id && c.k !== k).reduce((s, c) => s + c.cant, 0);
@@ -618,7 +618,7 @@ async function pintarUsoComprobantes(){
   el.textContent = u && u.en_prueba ? `Prueba: ${u.usados} de ${u.limite} boletas o facturas usadas` : "";
 }
 
-// Misma prenda en otra talla: botones con el stock de cada talla
+// Misma prenda en otra talla o en otro color: botones con el stock de cada opción
 function pintarTallasCambio(){
   const caja = $("cp-tallas"); if (!caja) return;
   const it = CP.v.venta_items.find(i => i.id === $("cp-item").value);
@@ -626,12 +626,27 @@ function pintarTallasCambio(){
   const nombre = it ? String(it.nombre).trim().toLowerCase() : "";
   const talla = c => { const m = String(c).match(/^(XS|S|M|L)\d+$/i); return m ? m[1].toUpperCase() : c; };
   const orden = { XS: 0, S: 1, M: 2, L: 3 };
+  const precio = it ? Number(it.precio_unitario) : 0;
+
+  // Otras tallas del mismo producto
   const otras = PRODS.filter(p => p.nombre.trim().toLowerCase() === nombre && (!actual || p.id !== actual.id))
     .sort((a, b) => (orden[talla(a.codigo)] ?? 9) - (orden[talla(b.codigo)] ?? 9));
-  caja.innerHTML = otras.length
-    ? `<label>Cambiar solo la talla (mismo precio)</label><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">` +
-      otras.map(p => `<button ${p.stock > 0 ? "" : "disabled"} onclick="elegirCambio('${p.id}', ${Number(it.precio_unitario)}, true)">${esc(talla(p.codigo))} <small>(stock ${p.stock})</small></button>`).join("") + `</div>`
-      : (CP.soloTalla ? `<p class="gr">No hay otras tallas de esta prenda en el inventario.</p>` : "");
+
+  // Otros colores del mismo modelo, en la misma talla (solo si la venta no tiene comprobante emitido)
+  let colores = [];
+  if (actual && !CP.soloTalla) {
+    const mod = slugM(modeloDe(actual)), t = talla(actual.codigo);
+    colores = PRODS.filter(p => p.id !== actual.id && slugM(modeloDe(p)) === mod && talla(p.codigo) === t
+      && p.nombre.trim().toLowerCase() !== nombre);
+  }
+
+  let h = "";
+  if (otras.length) h += `<label>Cambiar solo la talla (mismo precio)</label><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">` +
+    otras.map(p => `<button ${p.stock > 0 ? "" : "disabled"} onclick="elegirCambio('${p.id}', ${precio}, true)">${esc(talla(p.codigo))} <small>(stock ${p.stock})</small></button>`).join("") + `</div>`;
+  if (colores.length) h += `<label>Cambiar solo el color (misma talla y precio)</label><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">` +
+    colores.map(p => `<button ${p.stock > 0 ? "" : "disabled"} onclick="elegirCambio('${p.id}', ${precio}, true)">${esc(p.color || p.nombre)} <small>(stock ${p.stock})</small></button>`).join("") + `</div>`;
+  if (!h && CP.soloTalla) h = `<p class="gr">No hay otras tallas de esta prenda en el inventario.</p>`;
+  caja.innerHTML = h;
 }
 
 function syncCantCambio(){ if (CP && CP.mismo) $("cp-cant").value = $("cp-cdev").value || 1; }

@@ -503,3 +503,8 @@ html[data-tema="oscuro"] input,html[data-tema="oscuro"] select,html[data-tema="o
 .mod-bts button small{display:block;font-weight:400;font-size:11px;opacity:.75}
 .em-fila{display:flex;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--bd);cursor:pointer;margin:0}
 .em-fila input{width:auto !important;flex:none}
+
+/* Ventanas emergentes: fondo sólido */
+#md-ov .card,.modal-caja.card{background:#fff !important;opacity:1}
+html[data-tema="oscuro"] #md-ov .card,html[data-tema="oscuro"] .modal-caja.card{background:#131b31 !important;border-color:#2b3556}
+#md-ov{background:rgba(5,8,18,.78) !important;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
