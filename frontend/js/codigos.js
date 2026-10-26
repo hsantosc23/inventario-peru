@@ -112,9 +112,9 @@ function alLeerCodigo(cod){
   const m = $("es-msg"); if (!m) return;
   if (!p) { m.style.color = "#ef4444"; m.textContent = "El código " + cod + " no está en tu inventario."; return; }
   if (p.stock <= 0) { m.style.color = "#ef4444"; m.textContent = p.nombre + " no tiene stock."; return; }
+  cerrarEscaner();                 // se lee una sola vez y se cierra la cámara
   agregarAlCarrito(p.id);
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-  m.style.color = "#166534"; m.textContent = "Agregado: " + p.codigo + " · " + p.nombre;
   if (navigator.vibrate) navigator.vibrate(60);
 }
 
