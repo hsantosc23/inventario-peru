@@ -43,3 +43,36 @@
     };
   });
 })();
+
+// ---------- Ojo para ver/ocultar la contraseña en todos los campos ----------
+(function(){
+  function ponerOjo(inp){
+    if (inp.dataset.ojo) return;
+    inp.dataset.ojo = "1";
+    const tenia = document.activeElement === inp;
+    const w = document.createElement("div");
+    w.className = "pw-wrap";
+    w.style.margin = getComputedStyle(inp).margin;
+    inp.style.margin = "0";
+    inp.parentNode.insertBefore(w, inp);
+    w.appendChild(inp);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "pw-ojo";
+    b.tabIndex = -1;
+    b.title = "Mostrar contraseña";
+    b.textContent = "👁";
+    b.onclick = () => {
+      const ver = inp.type === "password";
+      inp.type = ver ? "text" : "password";
+      b.textContent = ver ? "🙈" : "👁";
+      b.title = ver ? "Ocultar contraseña" : "Mostrar contraseña";
+      inp.focus();
+    };
+    w.appendChild(b);
+    if (tenia) inp.focus();
+  }
+  function revisar(){ document.querySelectorAll('input[type="password"]').forEach(ponerOjo); }
+  revisar();
+  new MutationObserver(revisar).observe(document.body, { childList: true, subtree: true });
+})();

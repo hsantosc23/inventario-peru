@@ -417,3 +417,7 @@ html[data-tema="oscuro"] .card .modos button.act{background:#2f6df6;color:#fff}
 
 /* Ventas: cantidad y producto centrados verticalmente, igual que la hora y el total */
 table.tv td{vertical-align:middle !important}
+
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:46px !important}
+.pw-ojo{position:absolute !important;right:4px;top:50%;transform:translateY(-50%);width:38px !important;height:38px;padding:0 !important;margin:0 !important;border:0 !important;background:none !important;box-shadow:none !important;font-size:18px;line-height:1;cursor:pointer}
