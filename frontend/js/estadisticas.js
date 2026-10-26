@@ -1,79 +1,77 @@
 // estadisticas.js — panel de estadísticas con Chart.js: día, semana, mes o año
 // ---------- Estilo moderno para todos los gráficos ----------
 (function(){
-  if (!window.Chart) return;
-  const PAL = ["#6366f1", "#22d3ee", "#34d399", "#fbbf24", "#fb7185", "#a78bfa", "#38bdf8", "#f97316"];
-  const rgba = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
-  const oscuro = () => document.documentElement.dataset.tema === "oscuro";
+  try {
+    if (!window.Chart) return;
+    const PAL = ["#6366f1", "#22d3ee", "#34d399", "#fbbf24", "#fb7185", "#a78bfa", "#38bdf8", "#f97316"];
+    const rgba = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+    const oscuro = () => document.documentElement.dataset.tema === "oscuro";
+    const t = f => { try { f(); } catch (e) {} };   // cada ajuste va aislado: si uno falla, no rompe nada
 
-  function ajustarDefaults(){
-    const d = Chart.defaults, osc = oscuro();
-    d.font.family = "Inter, system-ui, sans-serif";
-    d.font.size = 12;
-    d.color = osc ? "#aab4d4" : "#64748b";
-    d.borderColor = osc ? "rgba(255,255,255,.06)" : "rgba(15,23,42,.06)";
-    d.animation.duration = 700;
-    d.animation.easing = "easeOutQuart";
-    d.maintainAspectRatio = false;
-    d.scale.border.display = false;
-    d.scale.grid.color = osc ? "rgba(255,255,255,.06)" : "rgba(15,23,42,.06)";
-    d.scales.category.grid.display = false;
-    d.elements.bar.borderRadius = 8;
-    d.elements.bar.borderSkipped = false;
-    d.elements.line.tension = .38;
-    d.elements.line.borderWidth = 2.5;
-    d.elements.point.radius = 0;
-    d.elements.point.hoverRadius = 5;
-    d.datasets.bar.maxBarThickness = 42;
-    d.datasets.bar.categoryPercentage = .72;
-    d.plugins.legend.labels.usePointStyle = true;
-    d.plugins.legend.labels.boxWidth = 8;
-    d.plugins.legend.labels.boxHeight = 8;
-    Object.assign(d.plugins.tooltip, {
-      backgroundColor: "rgba(10,15,31,.94)", titleColor: "#fff", bodyColor: "#dbe3ff",
-      padding: 12, cornerRadius: 12, boxPadding: 5, borderColor: "rgba(255,255,255,.1)", borderWidth: 1
-    });
-  }
-  ajustarDefaults();
-
-  // Colores con degradado según la paleta
-  Chart.register({
-    id: "temaModerno",
-    beforeUpdate(){ ajustarDefaults(); },
-    beforeDatasetsUpdate(chart){
-      const tipo = chart.config.type, ca = chart.chartArea, horiz = chart.options.indexAxis === "y";
-      chart.data.datasets.forEach((ds, i) => {
-        const t = ds.type || tipo, base = PAL[i % PAL.length];
-        if (t === "pie" || t === "doughnut" || t === "polarArea") {
-          ds.backgroundColor = (ds.data || []).map((_, k) => PAL[k % PAL.length]);
-          ds.borderWidth = 0; ds.hoverOffset = 8;
-        } else if (t === "bar") {
-          const multi = (chart.data.datasets.length === 1);  // una serie: cada barra con su color
-          const mk = c => {
-            if (!ca) return c;
-            const g = horiz ? chart.ctx.createLinearGradient(ca.left, 0, ca.right, 0)
-                            : chart.ctx.createLinearGradient(0, ca.top, 0, ca.bottom);
-            horiz ? (g.addColorStop(0, rgba(c, .35)), g.addColorStop(1, c)) : (g.addColorStop(0, c), g.addColorStop(1, rgba(c, .35)));
-            return g;
-          };
-          ds.backgroundColor = multi ? (ds.data || []).map((_, k) => mk(PAL[k % PAL.length])) : mk(base);
-        } else if (t === "line") {
-          ds.borderColor = base;
-          ds.fill = true;
-          if (ca) {
-            const g = chart.ctx.createLinearGradient(0, ca.top, 0, ca.bottom);
-            g.addColorStop(0, rgba(base, .35)); g.addColorStop(1, rgba(base, 0));
-            ds.backgroundColor = g;
-          }
-          ds.pointBackgroundColor = base;
-        } else if (t === "scatter" || t === "bubble") {
-          ds.backgroundColor = rgba(base, .55);
-          ds.borderColor = base;
-          ds.pointRadius = 6; ds.pointHoverRadius = 8;
-        }
-      });
+    function ajustarDefaults(){
+      const d = Chart.defaults, osc = oscuro();
+      const grid = osc ? "rgba(255,255,255,.06)" : "rgba(15,23,42,.06)";
+      t(() => d.font.family = "Inter, system-ui, sans-serif");
+      t(() => d.font.size = 12);
+      t(() => d.color = osc ? "#aab4d4" : "#64748b");
+      t(() => d.borderColor = grid);
+      t(() => d.scale.grid.color = grid);
+      t(() => d.scale.border.display = false);
+      t(() => d.elements.bar.borderRadius = 8);
+      t(() => d.elements.bar.borderSkipped = false);
+      t(() => d.elements.line.tension = .38);
+      t(() => d.elements.line.borderWidth = 2.5);
+      t(() => d.elements.point.radius = 0);
+      t(() => d.elements.point.hoverRadius = 5);
+      t(() => d.datasets.bar.maxBarThickness = 42);
+      t(() => d.plugins.legend.labels.usePointStyle = true);
+      t(() => d.plugins.legend.labels.boxWidth = 8);
+      t(() => d.plugins.legend.labels.boxHeight = 8);
+      t(() => Object.assign(d.plugins.tooltip, {
+        backgroundColor: "rgba(10,15,31,.94)", titleColor: "#fff", bodyColor: "#dbe3ff",
+        padding: 12, cornerRadius: 12, boxPadding: 5, borderColor: "rgba(255,255,255,.1)", borderWidth: 1
+      }));
     }
-  });
+    ajustarDefaults();
+
+    Chart.register({
+      id: "temaModerno",
+      beforeUpdate(){ ajustarDefaults(); },
+      beforeDatasetsUpdate(chart){
+        try {
+          const tipo = chart.config.type, ca = chart.chartArea, horiz = chart.options.indexAxis === "y";
+          chart.data.datasets.forEach((ds, i) => {
+            const ty = ds.type || tipo, base = PAL[i % PAL.length];
+            if (ty === "pie" || ty === "doughnut" || ty === "polarArea") {
+              ds.backgroundColor = (ds.data || []).map((_, k) => PAL[k % PAL.length]);
+              ds.borderWidth = 0;
+            } else if (ty === "bar") {
+              const una = chart.data.datasets.length === 1;
+              const mk = c => {
+                if (!ca) return c;
+                const g = horiz ? chart.ctx.createLinearGradient(ca.left, 0, ca.right, 0)
+                                : chart.ctx.createLinearGradient(0, ca.top, 0, ca.bottom);
+                if (horiz) { g.addColorStop(0, rgba(c, .35)); g.addColorStop(1, c); }
+                else { g.addColorStop(0, c); g.addColorStop(1, rgba(c, .35)); }
+                return g;
+              };
+              ds.backgroundColor = una ? (ds.data || []).map((_, k) => mk(PAL[k % PAL.length])) : mk(base);
+            } else if (ty === "line") {
+              ds.borderColor = base;
+              if (ca) {
+                const g = chart.ctx.createLinearGradient(0, ca.top, 0, ca.bottom);
+                g.addColorStop(0, rgba(base, .30)); g.addColorStop(1, rgba(base, 0));
+                ds.backgroundColor = g; ds.fill = true;
+              }
+            } else if (ty === "scatter" || ty === "bubble") {
+              ds.backgroundColor = rgba(base, .55);
+              ds.borderColor = base;
+            }
+          });
+        } catch (e) {}
+      }
+    });
+  } catch (e) { console.warn("Tema de gráficos no aplicado:", e); }
 })();
 
 let EST = null, GRAFICOS = {};
