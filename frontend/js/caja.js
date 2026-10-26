@@ -32,15 +32,21 @@ async function calcularCaja(){
   const msg = $("ca-msg"); msg.style.color = ""; msg.textContent = "";
   const f = $("ca-fecha").value || hoyLima(), ini = f + "T00:00:00-05:00", fin = diaSig(f) + "T00:00:00-05:00";
   try {
-    const ventas = await estFilas(() => sb.from("ventas").select("total,anulada,medio_pago").eq("negocio_id", NEG.id).gte("fecha", ini).lt("fecha", fin));
+    const ventas = await estFilas(() => sb.from("ventas").select("total,anulada,medio_pago,cobrado_antes").eq("negocio_id", NEG.id).gte("fecha", ini).lt("fecha", fin));
     const gastos = await estFilas(() => sb.from("gastos").select("monto").eq("negocio_id", NEG.id).eq("fecha", f));
-    const { data: pp } = await sb.from("pagos_pendientes").select("abonos").eq("negocio_id", NEG.id).or(`estado.eq.pendiente,pagado_en.gte.${ini}`);
+    const { data: pp } = await sb.from("pagos_pendientes").select("abonos,convertido_en").eq("negocio_id", NEG.id).or(`estado.eq.pendiente,pagado_en.gte.${ini}`);
     const medios = { efectivo: 0, yape_plin: 0, tarjeta: 0, transferencia: 0 };
     let n = 0, anul = 0;
-    ventas.forEach(v => { if (v.anulada) { anul++; return; } n++; medios[v.medio_pago] = (medios[v.medio_pago] || 0) + Number(v.total); });
+    // de una venta que viene de un pago pendiente solo cuenta lo cobrado ese día (lo anterior ya entró en su día)
+    ventas.forEach(v => { if (v.anulada) { anul++; return; } n++; medios[v.medio_pago] = (medios[v.medio_pago] || 0) + Number(v.total) - Number(v.cobrado_antes || 0); });
     const t0 = new Date(ini).getTime(), t1 = new Date(fin).getTime();
     let cobros = 0;
-    (pp || []).forEach(p => (p.abonos || []).forEach(a => { const t = new Date(a.fecha).getTime(); if (t >= t0 && t < t1) cobros += Number(a.monto); }));
+    (pp || []).forEach(p => {
+      const conv = p.convertido_en ? new Date(p.convertido_en).getTime() : null;
+      const yaEnVenta = conv !== null && conv >= t0 && conv < t1;   // se completó hoy: ya está en la venta
+      if (yaEnVenta) return;
+      (p.abonos || []).forEach(a => { const t = new Date(a.fecha).getTime(); if (t >= t0 && t < t1) cobros += Number(a.monto); });
+    });
     CAJA = { fecha: f, n, anul, medios, cobros: r2(cobros), gastos: r2(gastos.reduce((s, g) => s + Number(g.monto), 0)) };
   } catch (e) { return msg.textContent = "No se pudieron cargar los datos: " + e.message; }
 

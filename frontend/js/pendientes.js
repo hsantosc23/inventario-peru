@@ -1,5 +1,5 @@
-// Pagos pendientes: separados con adelanto o clientes que prometieron comprar. Conserva el historial de pagos.
-let PEND = [], PE_PROD = null;
+// Pagos pendientes: separados con adelanto o clientes que prometieron comprar. Al completarse generan la venta.
+let PEND = [], PE_PROD = null, PC = null;
 
 const peFalta = p => Math.max(0, Math.round((Number(p.total) - Number(p.adelanto)) * 100) / 100);
 const peFecha = f => new Date(f).toLocaleDateString("es-PE", { timeZone: "America/Lima", day: "2-digit", month: "2-digit", year: "2-digit" });
@@ -51,10 +51,11 @@ function listarPendientes(){
     return `<div class="pend${pagado ? " pagado" : ""}"><div class="pend-top"><b>${esc(p.cliente)}</b><span class="chip ${pagado ? "ok" : "pen"}">${pagado ? "Pagado" : "Pendiente"}</span></div>
       <div class="gr">${esc(p.detalle || "")}${p.celular ? " · " + esc(p.celular) : ""}</div>
       <div class="pend-nums">Total ${sol(p.total)} · Pagado ${sol(p.adelanto)}${pagado ? "" : ` · <b>Falta ${sol(peFalta(p))}</b>`}</div>
-      <small class="gr">Registrado el ${peFecha(p.creado)}${pagado && p.pagado_en ? " · Completado el " + peFecha(p.pagado_en) : ""}</small>
+      <small class="gr">Registrado el ${peFecha(p.creado)}${pagado && p.pagado_en ? " · Completado el " + peFecha(p.pagado_en) : ""}${p.venta_id ? " · Venta registrada" : ""}</small>
       ${pagos ? `<div class="pend-hist"><b>Pagos:</b> ${pagos}</div>` : ""}
-      ${pagado ? "" : `<button onclick="abonarPendiente('${p.id}')">Registrar abono</button>
-      <button class="pri" onclick="pagarPendiente('${p.id}')">Pago completo</button>
+      ${pagado ? (p.venta_id ? "" : `<button class="pri" onclick="abrirCobro('${p.id}')">Generar venta</button>`)
+        : `<button onclick="abonarPendiente('${p.id}')">Registrar abono</button>
+      <button class="pri" onclick="abrirCobro('${p.id}')">Pago completo</button>
       ${p.celular ? `<button onclick="avisarPendiente('${p.id}')">WhatsApp</button>` : ""}`}
       <button onclick="borrarPendiente('${p.id}')">Borrar</button></div>`;
   }).join("") : `<p class="gr">No hay registros.</p>`;
@@ -96,17 +97,134 @@ async function abonarPendiente(id){
   let m = Math.round(parseFloat(v.replace(",", ".")) * 100) / 100;
   if (!(m > 0)) return alert("Escribe un monto válido.");
   m = Math.min(m, peFalta(p));
-  const adelanto = Math.round((Number(p.adelanto) + m) * 100) / 100, completo = adelanto >= Number(p.total), ahora = new Date().toISOString();
-  await actualizarPend(id, {
-    adelanto, abonos: [...(p.abonos || []), { fecha: ahora, monto: m }],
-    estado: completo ? "pagado" : "pendiente", pagado_en: completo ? ahora : null });
+  const adelanto = Math.round((Number(p.adelanto) + m) * 100) / 100, ahora = new Date().toISOString();
+  if (adelanto >= Number(p.total)) return abrirCobro(id, m);   // con este abono queda completo: se genera la venta
+  await actualizarPend(id, { adelanto, abonos: [...(p.abonos || []), { fecha: ahora, monto: m }] });
 }
 
-async function pagarPendiente(id){
+// ---------- Pago completo -> venta (boleta, factura o nota de venta) ----------
+
+function abrirCobro(id){
   const p = PEND.find(x => x.id === id); if (!p) return;
-  if (!confirm(`¿${p.cliente} pagó completo? Se registrarán ${sol(peFalta(p))} restantes y quedará en el historial.`)) return;
-  const ahora = new Date().toISOString();
-  await actualizarPend(id, { adelanto: p.total, abonos: [...(p.abonos || []), { fecha: ahora, monto: peFalta(p) }], estado: "pagado", pagado_en: ahora });
+  const prod = p.producto_id ? PRODS.find(x => x.id === p.producto_id) : null;
+  const formal = NEG.formalidad !== "por_formalizar", pagado = p.estado === "pagado";
+  PC = { p, prod: prod ? prod.id : null };
+  const cant = prod ? Math.max(1, Math.round(Number(p.total) / Number(prod.precio))) : 1;
+  const ov = document.createElement("div");
+  ov.id = "pc-ov";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow:auto";
+  ov.innerHTML = `<div class="card" style="max-width:440px;width:100%;margin:auto">
+    <b>${pagado ? "Generar venta" : "Pago completo"} · ${esc(p.cliente)}</b>
+    <p class="gr" style="margin:6px 0">${pagado ? "Este pago ya está completo." : "Falta cobrar " + sol(peFalta(p)) + "."} Se registrará una venta por el total de ${sol(p.total)} y se descontará el stock.</p>
+    <label>Producto del inventario</label>
+    <input type="text" id="pc-prod" autocomplete="off" placeholder="Escribe código o nombre" oninput="buscarCobroProd()" value="${prod ? esc(prod.codigo + " · " + prod.nombre) : ""}">
+    <div id="pc-res"></div>
+    <label>Cantidad</label><input type="number" id="pc-cant" min="1" step="1" value="${cant}">
+    <label>Comprobante</label>
+    <select id="pc-tipo" onchange="verTipoCobro()">
+      ${formal ? `<option value="boleta">Boleta electrónica</option><option value="factura">Factura electrónica</option>` : ""}
+      <option value="nota">Nota de venta (sin SUNAT)</option>
+    </select>
+    <div id="pc-b"><label>DNI del cliente (obligatorio si pasa de S/ 700)</label><input type="text" id="pc-dni" inputmode="numeric" maxlength="8">
+      <label>Nombre (si das el DNI)</label><input type="text" id="pc-nombre-b" maxlength="60" value="${esc(p.cliente)}"></div>
+    <div id="pc-f" class="hide"><label>RUC</label><input type="text" id="pc-ruc" inputmode="numeric" maxlength="11">
+      <label>Razón social</label><input type="text" id="pc-razon" maxlength="100">
+      <label>Dirección (opcional)</label><input type="text" id="pc-dir" maxlength="120"></div>
+    <div id="pc-n" class="hide"><label>Nombre del cliente (opcional)</label><input type="text" id="pc-nombre-n" maxlength="60" value="${esc(p.cliente)}">
+      <label>Celular (opcional)</label><input type="tel" id="pc-cel" inputmode="numeric" maxlength="9" value="${esc(p.celular || "")}"></div>
+    <label>Medio de pago${pagado ? "" : " del saldo"}</label>
+    <select id="pc-medio"><option value="efectivo">Efectivo</option><option value="yape_plin">Yape / Plin</option><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option></select>
+    <label class="opt" style="padding:10px"><input type="checkbox" id="pc-imprimir" checked> Imprimir comprobante</label>
+    <div class="msg" id="pc-msg"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button style="flex:1" onclick="cerrarCobro()">Cancelar</button>
+      <button class="pri" style="flex:2" id="pc-ok" onclick="confirmarCobro()">Confirmar y generar venta</button>
+    </div></div>`;
+  document.body.appendChild(ov);
+  verTipoCobro();
+}
+
+function cerrarCobro(){ const o = $("pc-ov"); if (o) o.remove(); PC = null; }
+
+function verTipoCobro(){
+  const t = $("pc-tipo").value;
+  $("pc-b").classList.toggle("hide", t !== "boleta");
+  $("pc-f").classList.toggle("hide", t !== "factura");
+  $("pc-n").classList.toggle("hide", t !== "nota");
+}
+
+function buscarCobroProd(){
+  PC.prod = null;
+  const q = $("pc-prod").value.trim().toLowerCase(), box = $("pc-res");
+  if (!q) { box.className = ""; box.innerHTML = ""; return; }
+  const r = PRODS.filter(p => p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)).slice(0, 6);
+  box.className = "res";
+  box.innerHTML = r.length ? r.map(p => p.stock > 0
+    ? `<div onclick="elegirCobroProd('${p.id}')"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)} · S/ ${Number(p.precio).toFixed(2)} <small class="gr">(stock ${p.stock})</small></div>`
+    : `<div class="gr"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)} · sin stock</div>`).join("")
+    : `<div class="gr">No está en tu inventario. Regístralo primero en Inventario.</div>`;
+}
+
+function elegirCobroProd(id){
+  const p = PRODS.find(x => x.id === id); if (!p) return;
+  PC.prod = p.id;
+  $("pc-prod").value = `${p.codigo} · ${p.nombre}`;
+  $("pc-cant").value = Math.max(1, Math.round(Number(PC.p.total) / Number(p.precio)));
+  $("pc-res").className = ""; $("pc-res").innerHTML = "";
+}
+
+async function confirmarCobro(){
+  const msg = $("pc-msg"); msg.style.color = ""; msg.textContent = "";
+  const p = PC.p, prod = PRODS.find(x => x.id === PC.prod);
+  if (!prod) return msg.textContent = "Elige el producto del inventario.";
+  const cant = parseInt($("pc-cant").value, 10);
+  if (!(cant >= 1)) return msg.textContent = "La cantidad no es válida.";
+  if (cant > prod.stock) return msg.textContent = `Stock insuficiente de ${prod.nombre} (quedan ${prod.stock}).`;
+  const total = Number(p.total), pu = Math.round(total / cant * 100) / 100;
+  if (pu > Number(prod.precio)) return msg.textContent = `El precio por unidad (S/ ${pu.toFixed(2)}) supera el de lista (S/ ${Number(prod.precio).toFixed(2)}). Sube la cantidad.`;
+
+  const tipo = $("pc-tipo").value, fac = tipo === "factura", nota = tipo === "nota";
+  const doc = nota ? "" : (fac ? $("pc-ruc") : $("pc-dni")).value.trim();
+  const nombre = (fac ? $("pc-razon") : $("pc-nombre-b")).value.trim(), dir = fac ? $("pc-dir").value.trim() : "";
+  if (fac) {
+    if (!/^[0-9]{11}$/.test(doc)) return msg.textContent = "La factura necesita un RUC de 11 dígitos.";
+    if (!nombre) return msg.textContent = "La factura necesita la razón social.";
+  } else if (!nota) {
+    if (doc && !/^[0-9]{8}$/.test(doc)) return msg.textContent = "El DNI debe tener 8 dígitos.";
+    if (doc && !nombre) return msg.textContent = "Si das el DNI, escribe también el nombre.";
+    if (total > 700 && !doc) return msg.textContent = "Una boleta mayor a S/ 700 necesita el DNI del cliente.";
+  } else {
+    const cel = $("pc-cel").value.trim();
+    if (cel && !/^[0-9]{9}$/.test(cel)) return msg.textContent = "El celular debe tener 9 dígitos.";
+  }
+  if (!nota) {
+    const { data: uso } = await sb.rpc("mi_uso_comprobantes");
+    if (uso && uso.en_prueba && uso.usados >= uso.limite)
+      return msg.textContent = `En tu semana de prueba puedes emitir hasta ${uso.limite} boletas o facturas y ya las usaste. Usa Nota de venta o activa tu plan.`;
+  }
+
+  const btn = $("pc-ok"); btn.disabled = true;
+  const falla = t => { msg.textContent = t; btn.disabled = false; };
+  const { data: id, error } = await sb.rpc("registrar_venta", { p_items: [{ producto_id: prod.id, cantidad: cant, precio: pu }] });
+  if (error) return falla("No se pudo registrar la venta: " + error.message);
+  await sb.rpc("fijar_datos_venta", {
+    p_venta: id, p_medio: $("pc-medio").value,
+    p_nombre: nota ? ($("pc-nombre-n").value.trim() || null) : null,
+    p_celular: nota ? ($("pc-cel").value.trim() || null) : null });
+  const { error: e3 } = await sb.rpc("enlazar_pendiente", { p_pend: p.id, p_venta: id });
+  if (e3) return falla("La venta se creó, pero no se pudo cerrar el pendiente: " + e3.message);
+
+  let r = null, e2 = null;
+  if (!nota) {
+    ({ error: e2 } = await sb.rpc("datos_comprobante", { p_venta: id, p_tipo: tipo, p_doc: doc, p_nombre: nombre, p_direccion: dir }));
+    if (!e2) r = await emitirComprobante(id, tipo, doc, nombre);
+  }
+  const imprimir = $("pc-imprimir").checked;
+  cerrarCobro();
+  await Promise.all([cargarPendientes(), cargarProductos()]);
+  if (e2) alert("Venta registrada, pero no se pudo preparar el comprobante: " + e2.message + "\nPuedes reintentar desde Ventas.");
+  else if (r && !r.ok) alert("Venta registrada, pero SUNAT no aceptó el comprobante: " + (r.mensaje || r.error) + "\nPuedes reintentar desde Ventas.");
+  else if (imprimir) imprimirComprobante(id);
 }
 
 function avisarPendiente(id){
