@@ -123,7 +123,7 @@ function abrirCobro(id){
     <label>Comprobante</label>
     <select id="pc-tipo" onchange="verTipoCobro()">
       ${formal ? `<option value="boleta">Boleta electrónica</option><option value="factura">Factura electrónica</option>` : ""}
-      <option value="nota">Nota de venta (sin SUNAT)</option>
+      ${formal ? "" : `<option value="nota">Nota de venta (sin SUNAT)</option>`}
     </select>
     <div id="pc-b"><label>DNI del cliente (obligatorio si pasa de S/ 700)</label><input type="text" id="pc-dni" inputmode="numeric" maxlength="8">
       <label>Nombre (si das el DNI)</label><input type="text" id="pc-nombre-b" maxlength="60" value="${esc(p.cliente)}"></div>
