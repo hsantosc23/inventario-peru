@@ -401,3 +401,11 @@ html[data-tema="oscuro"] .card .modos button.act{background:#2f6df6;color:#fff}
 @media (max-width:380px){
   .tabs:has(> #tab-inv) > button{font-size:11px !important}
 }
+
+/* Encabezado alineado con el contenido (solo computadora) */
+@media (min-width:701px){
+  header{
+    padding-left:max(20px, calc((100% - 1100px) / 2 + 20px));
+    padding-right:max(20px, calc((100% - 1100px) / 2 + 20px));
+  }
+}
