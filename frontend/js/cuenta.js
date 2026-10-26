@@ -1,5 +1,14 @@
 // Configuración de la cuenta: estado, nombre de la empresa, contraseña y modalidad
-
+// Ventana emergente simple (si ventas.js ya la define, se usa esa)
+window.modalBase = window.modalBase || function(html, ancho){
+  window.cerrarModal();
+  const ov = document.createElement("div");
+  ov.id = "md-ov";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow:auto";
+  ov.innerHTML = `<div class="card" style="max-width:${ancho || 440}px;width:100%;margin:auto">${html}</div>`;
+  document.body.appendChild(ov);
+};
+window.cerrarModal = window.cerrarModal || function(){ const o = document.getElementById("md-ov"); if (o) o.remove(); };
 // Círculo de usuario de la cabecera: nombre de la empresa y borde según el estado de la cuenta
 function actualizarPerfil(){
   const n = NEG, activo = PUEDE && n.estado === "activo", prueba = PUEDE && n.estado === "prueba";
