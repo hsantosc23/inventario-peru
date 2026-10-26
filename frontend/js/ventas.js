@@ -506,7 +506,7 @@ async function imprimirComprobante(id){
   const fac = v.tipo_doc === "factura", d = new Date(v.fecha), total = Number(v.total);
   const emitido = v.cpe_estado === "aceptado";
   const titulo = emitido ? (fac ? "FACTURA ELECTRÓNICA" : "BOLETA DE VENTA ELECTRÓNICA")
-    : fac ? "FACTURA" : v.tipo_doc === "boleta" ? "BOLETA DE VENTA" : "Boleta (sin SUNAT)";
+        : fac ? "FACTURA" : v.tipo_doc === "boleta" ? "BOLETA DE VENTA" : "TICKET DE VENTA";
   const num = emitido ? v.cpe_serie + "-" + v.cpe_numero : (v.numero ? "N.º " + String(v.numero).padStart(6, "0") : "");
   const aviso = !emitido ? AVISO_COMPROBANTE
     : CPE_PRODUCCION ? "Representación impresa del comprobante electrónico"
