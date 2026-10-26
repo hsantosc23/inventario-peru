@@ -1,5 +1,7 @@
 // Pagos pendientes: separados con adelanto o clientes que prometieron comprar. Al completarse generan la venta.
 let PEND = [], PE_ITEMS = [], PC = null;
+let PE_K = 0;
+const usadoPend = (id, k) => PE_ITEMS.filter(i => i.producto_id === id && i.k !== k).reduce((s, i) => s + i.cantidad, 0);
 
 const peFalta = p => Math.max(0, Math.round((Number(p.total) - Number(p.adelanto)) * 100) / 100);
 const peFecha = f => new Date(f).toLocaleDateString("es-PE", { timeZone: "America/Lima", day: "2-digit", month: "2-digit", year: "2-digit" });
@@ -19,24 +21,42 @@ function cajaItemsPend(){
 
 function pintarItemsPend(){
   const box = cajaItemsPend();
-  box.innerHTML = PE_ITEMS.map((i, k) => {
+  box.innerHTML = PE_ITEMS.map(i => {
     const p = PRODS.find(x => x.id === i.producto_id);
-    const stock = p ? p.stock : i.cantidad;
-    return `<div class="fila carro"><div class="info"><b>${esc(i.codigo)}</b> · ${esc(i.nombre)}<small>S/ ${Number(i.precio).toFixed(2)} c/u · stock ${stock}</small></div>
-      <input type="number" class="cant" min="1" max="${stock}" value="${i.cantidad}" onchange="pendCant(${k}, this.value)">
-      <div class="pre">S/ ${(Number(i.precio) * i.cantidad).toFixed(2)}</div>
-      <button onclick="pendQuitar(${k})">Quitar</button></div>`;
+    const stock = p ? p.stock : i.cantidad, lista = p ? Number(p.precio) : Number(i.precio);
+    const desc = Number(i.precio) < lista - 0.004 ? ` · <b style="color:#b45309">descuento (lista S/ ${lista.toFixed(2)})</b>` : "";
+    return `<div class="fila carro"><div class="info"><b>${esc(i.codigo)}</b> · ${esc(i.nombre)}<small>S/ ${Number(i.precio).toFixed(2)} c/u · stock ${stock}${desc}</small></div>
+      <input type="number" class="cant" min="1" max="${Math.max(1, stock - usadoPend(i.producto_id, i.k))}" value="${i.cantidad}" onchange="pendCant(${i.k}, this.value)">
+      <div class="pre">S/ ${(Number(i.precio) * i.cantidad).toFixed(2)}<small>${i.cantidad} × S/ ${Number(i.precio).toFixed(2)}</small></div>
+      <button onclick="pendPrecio(${i.k})">Editar</button><button onclick="pendQuitar(${i.k})">Quitar</button></div>`;
   }).join("");
   if (PE_ITEMS.length) $("pe-total").value = PE_ITEMS.reduce((s, i) => s + Number(i.precio) * i.cantidad, 0).toFixed(2);
   calcFaltaPend();
 }
 
 function pendCant(k, v){
-  const i = PE_ITEMS[k], p = i && PRODS.find(x => x.id === i.producto_id); if (!i) return;
-  i.cantidad = Math.max(1, Math.min(parseInt(v, 10) || 1, p ? p.stock : 9999));
+  const i = PE_ITEMS.find(x => x.k === k), p = i && PRODS.find(x => x.id === i.producto_id); if (!i) return;
+  i.cantidad = Math.max(1, Math.min(parseInt(v, 10) || 1, p ? p.stock - usadoPend(i.producto_id, k) : 9999));
   pintarItemsPend();
 }
-function pendQuitar(k){ PE_ITEMS.splice(k, 1); pintarItemsPend(); if (!PE_ITEMS.length) { $("pe-total").value = ""; calcFaltaPend(); } }
+
+function pendPrecio(k){
+  const i = PE_ITEMS.find(x => x.k === k), p = i && PRODS.find(x => x.id === i.producto_id); if (!i || !p) return;
+  const lista = Number(p.precio);
+  const txt = prompt("Precio por unidad (S/). Precio de lista: " + lista.toFixed(2), Number(i.precio).toFixed(2));
+  if (txt === null) return;
+  const v = Math.round(parseFloat(txt.replace(",", ".")) * 100) / 100;
+  if (isNaN(v) || v < 0) return alert("Escribe un precio válido.");
+  if (v > lista) return alert("El precio no puede ser mayor al de lista (S/ " + lista.toFixed(2) + ").");
+  i.precio = v;
+  pintarItemsPend();
+}
+
+function pendQuitar(k){
+  PE_ITEMS = PE_ITEMS.filter(x => x.k !== k);
+  pintarItemsPend();
+  if (!PE_ITEMS.length) { $("pe-total").value = ""; calcFaltaPend(); }
+}
 
 // Al escribir el producto salen las opciones del inventario, como en una venta
 function buscarPendProd(){
@@ -52,9 +72,10 @@ function buscarPendProd(){
 
 function elegirPendProd(id){
   const p = PRODS.find(x => x.id === id); if (!p) return;
-  const ya = PE_ITEMS.find(i => i.producto_id === p.id);
-  if (ya) ya.cantidad = Math.min(ya.cantidad + 1, p.stock);
-  else PE_ITEMS.push({ producto_id: p.id, codigo: p.codigo, nombre: p.nombre, cantidad: 1, precio: Number(p.precio) });
+  if (usadoPend(id, -1) >= p.stock) return alert("Ya agregaste todo el stock disponible de este producto.");
+  const linea = { k: ++PE_K, producto_id: p.id, codigo: p.codigo, nombre: p.nombre, cantidad: 1, precio: Number(p.precio) };
+  const pos = PE_ITEMS.map(x => x.producto_id).lastIndexOf(id);
+  if (pos < 0) PE_ITEMS.push(linea); else PE_ITEMS.splice(pos + 1, 0, linea);
   $("pe-detalle").value = "";
   $("pe-res").className = ""; $("pe-res").innerHTML = "";
   pintarItemsPend();
@@ -220,6 +241,7 @@ async function confirmarCobro(){
   const p = PC.p, total = Number(p.total);
 
   // Productos de la venta: varias prendas (items) o un solo producto (pendientes anteriores)
+  const usoStock = {};
   let itemsVenta = [];
   if (PC.items) {
     const base = PC.items.reduce((s, i) => s + Number(i.precio) * i.cantidad, 0);
@@ -227,7 +249,8 @@ async function confirmarCobro(){
     for (const i of PC.items) {
       const pr = PRODS.find(x => x.id === i.producto_id);
       if (!pr) return msg.textContent = `${i.nombre} ya no está en el inventario.`;
-      if (i.cantidad > pr.stock) return msg.textContent = `Stock insuficiente de ${pr.nombre} (quedan ${pr.stock}).`;
+            usoStock[pr.id] = (usoStock[pr.id] || 0) + i.cantidad;
+      if (usoStock[pr.id] > pr.stock) return msg.textContent = `Stock insuficiente de ${pr.nombre} (quedan ${pr.stock}).`;
       const pu = Math.min(Math.round(Number(i.precio) * f * 100) / 100, Number(pr.precio));
       itemsVenta.push({ producto_id: pr.id, cantidad: i.cantidad, precio: pu });
     }
