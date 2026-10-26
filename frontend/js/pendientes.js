@@ -16,6 +16,10 @@ function calcFaltaPend(){
 function cajaItemsPend(){
   let b = $("pe-items");
   if (!b) { b = document.createElement("div"); b.id = "pe-items"; $("pe-res").after(b); }
+  if (!$("pe-medio") && $("pe-adelanto")) {
+    $("pe-adelanto").closest(".f2").insertAdjacentHTML("afterend",
+      `<label>Medio de pago del adelanto</label><select id="pe-medio">${Object.entries(MEDIOS).map(([k, t]) => `<option value="${k}">${t}</option>`).join("")}</select>`);
+  }
   return b;
 }
 
@@ -99,7 +103,7 @@ function listarPendientes(){
   $("pe-resumen").textContent = `${lista.length} registro(s) · Por cobrar: ${sol(porCobrar)}`;
   $("pe-lista").innerHTML = lista.length ? lista.map(p => {
     const pagado = p.estado === "pagado", dev = p.estado === "devuelto";
-    const pagos = (p.abonos || []).map(a => `${peFecha(a.fecha)}: ${sol(a.monto)}`).join(" · ");
+        const pagos = (p.abonos || []).map(a => `${peFecha(a.fecha)}: ${sol(a.monto)}${a.medio ? " (" + MEDIOS[a.medio] + ")" : ""}`).join(" · ");
     const chip = dev ? `<span class="chip">Devuelto</span>` : `<span class="chip ${pagado ? "ok" : "pen"}">${pagado ? "Pagado" : "Pendiente"}</span>`;
     const acciones = dev ? "" : pagado ? (p.venta_id ? "" : `<button class="pri" onclick="abrirCobro('${p.id}')">Generar venta</button>`)
       : `<button onclick="abonarPendiente('${p.id}')">Registrar abono</button>
@@ -117,14 +121,24 @@ function listarPendientes(){
 }
 
 // Devolución de dinero: solo para separados que todavía no se convirtieron en venta
-async function devolverDinero(id){
+function devolverDinero(id){
   const p = PEND.find(x => x.id === id); if (!p) return;
-  const monto = Number(p.adelanto);
-  if (!confirm(`¿Devolver ${sol(monto)} a ${p.cliente}? El separado se cancela y ese dinero sale de la caja de hoy.`)) return;
+  modalBase(`<b>Devolver dinero a ${esc(p.cliente)}</b>
+    <p class="gr" style="margin:6px 0">Se devuelven ${sol(p.adelanto)} y el separado se cancela.</p>
+    <label>¿Con qué medio se le devuelve?</label>
+    <select id="dv-medio">${Object.entries(MEDIOS).map(([k, t]) => `<option value="${k}">${t}</option>`).join("")}</select>
+    <div class="msg" id="dv-msg"></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><button style="flex:1" onclick="cerrarModal()">Cancelar</button>
+    <button class="peligro" style="flex:2" onclick="confirmarDevolucion('${id}')">Devolver dinero</button></div>`);
+}
+
+async function confirmarDevolucion(id){
+  const p = PEND.find(x => x.id === id); if (!p) return;
   const { error } = await sb.from("pagos_pendientes")
-    .update({ estado: "devuelto", devuelto_en: new Date().toISOString(), devuelto_monto: monto })
+    .update({ estado: "devuelto", devuelto_en: new Date().toISOString(), devuelto_monto: Number(p.adelanto), devuelto_medio: $("dv-medio").value })
     .eq("id", id).eq("estado", "pendiente");
-  if (error) return alert("No se pudo registrar la devolución: " + error.message);
+  if (error) return $("dv-msg").textContent = "No se pudo registrar la devolución: " + error.message;
+  cerrarModal();
   await cargarPendientes();
 }
 
@@ -148,12 +162,13 @@ async function guardarPendiente(){
   const { error } = await sb.from("pagos_pendientes").insert({
     negocio_id: NEG.id, cliente, detalle, celular: celular || null,
     producto_id: items.length === 1 ? items[0].producto_id : null, items: items.length ? items : null,
-    total, adelanto, abonos: adelanto > 0 ? [{ fecha: ahora, monto: adelanto }] : [],
+        total, adelanto, abonos: adelanto > 0 ? [{ fecha: ahora, monto: adelanto, medio: $("pe-medio").value }] : [],
     estado: completo ? "pagado" : "pendiente", pagado_en: completo ? ahora : null,
   });
   if (error) return msg.textContent = "No se pudo guardar: " + error.message;
   ["pe-cliente", "pe-detalle", "pe-total", "pe-adelanto", "pe-cel"].forEach(i => $(i).value = "");
   PE_ITEMS = []; $("pe-res").className = ""; $("pe-res").innerHTML = "";
+    $("pe-medio").value = "efectivo";
   pintarItemsPend(); calcFaltaPend();
   msg.style.color = "#166534"; msg.textContent = "Guardado.";
   await cargarPendientes();
@@ -165,16 +180,35 @@ async function actualizarPend(id, cambios){
   await cargarPendientes();
 }
 
-async function abonarPendiente(id){
+function abonarPendiente(id){
   const p = PEND.find(x => x.id === id); if (!p) return;
-  const v = prompt(`Abono de ${p.cliente}. Falta ${sol(peFalta(p))}.\n¿Cuánto paga ahora? (S/)`);
-  if (v === null) return;
-  let m = Math.round(parseFloat(v.replace(",", ".")) * 100) / 100;
-  if (!(m > 0)) return alert("Escribe un monto válido.");
+  modalBase(`<b>Abono de ${esc(p.cliente)}</b>
+    <p class="gr" style="margin:6px 0">Falta ${sol(peFalta(p))}.</p>
+    <label>¿Cuánto paga ahora? (S/)</label><input type="number" id="ab-monto" min="0" step="0.01" inputmode="decimal">
+    <label>Medio de pago</label>
+    <select id="ab-medio">${Object.entries(MEDIOS).map(([k, t]) => `<option value="${k}">${t}</option>`).join("")}</select>
+    <div class="msg" id="ab-msg"></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><button style="flex:1" onclick="cerrarModal()">Cancelar</button>
+    <button class="pri" style="flex:2" onclick="guardarAbono('${id}')">Registrar abono</button></div>`);
+}
+
+async function guardarAbono(id){
+  const p = PEND.find(x => x.id === id); if (!p) return;
+  const msg = $("ab-msg"), medio = $("ab-medio").value;
+  let m = Math.round(parseFloat($("ab-monto").value) * 100) / 100;
+  if (!(m > 0)) return msg.textContent = "Escribe un monto válido.";
   m = Math.min(m, peFalta(p));
-  const adelanto = Math.round((Number(p.adelanto) + m) * 100) / 100, ahora = new Date().toISOString();
-  if (adelanto >= Number(p.total)) return abrirCobro(id);   // con este abono queda completo: se genera la venta
-  await actualizarPend(id, { adelanto, abonos: [...(p.abonos || []), { fecha: ahora, monto: m }] });
+  const adelanto = Math.round((Number(p.adelanto) + m) * 100) / 100;
+  if (adelanto >= Number(p.total)) {      // con este abono queda completo: se genera la venta
+    cerrarModal(); abrirCobro(id);
+    $("pc-medio").value = medio;
+    return;
+  }
+  const { error } = await sb.from("pagos_pendientes")
+    .update({ adelanto, abonos: [...(p.abonos || []), { fecha: new Date().toISOString(), monto: m, medio }] }).eq("id", id);
+  if (error) return msg.textContent = "No se pudo guardar: " + error.message;
+  cerrarModal();
+  await cargarPendientes();
 }
 
 // ---------- Pago completo -> venta (boleta o factura; nota de venta solo en negocios por formalizar) ----------

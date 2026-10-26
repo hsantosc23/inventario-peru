@@ -32,29 +32,39 @@ async function calcularCaja(){
   const msg = $("ca-msg"); msg.style.color = ""; msg.textContent = "";
   const f = $("ca-fecha").value || hoyLima(), ini = f + "T00:00:00-05:00", fin = diaSig(f) + "T00:00:00-05:00";
   try {
-    const ventas = await estFilas(() => sb.from("ventas").select("total,anulada,medio_pago,cobrado_antes,ajustes").eq("negocio_id", NEG.id).gte("fecha", ini).lt("fecha", fin));
+    const ventas = await estFilas(() => sb.from("ventas").select("id,total,anulada,medio_pago,cobrado_antes,ajustes").eq("negocio_id", NEG.id).gte("fecha", ini).lt("fecha", fin));
     const gastos = await estFilas(() => sb.from("gastos").select("monto").eq("negocio_id", NEG.id).eq("fecha", f));
-    const { data: pp } = await sb.from("pagos_pendientes").select("abonos,convertido_en,devuelto_en,devuelto_monto").eq("negocio_id", NEG.id)
+    const { data: pp } = await sb.from("pagos_pendientes").select("venta_id,abonos,convertido_en,devuelto_en,devuelto_monto,devuelto_medio").eq("negocio_id", NEG.id)
       .or(`estado.eq.pendiente,pagado_en.gte.${ini},devuelto_en.gte.${ini}`);
     const { data: conAj } = await sb.from("ventas").select("anulada,ajustes").eq("negocio_id", NEG.id).not("ajustes", "is", null).limit(2000);
-    const medios = { efectivo: 0, yape_plin: 0, tarjeta: 0, transferencia: 0 };
+    const cero = () => ({ efectivo: 0, yape_plin: 0, tarjeta: 0, transferencia: 0 });
+    const medios = cero(), cobrosM = cero(), devolM = cero(), medioVenta = {};
     const t0 = new Date(ini).getTime(), t1 = new Date(fin).getTime(), enDia = x => { const t = new Date(x).getTime(); return t >= t0 && t < t1; };
     let n = 0, anul = 0;
     // de una venta solo cuenta lo cobrado ese día: sin lo ya cobrado antes ni las diferencias de cambios (esas entran el día del cambio)
     ventas.forEach(v => {
+      medioVenta[v.id] = v.medio_pago;
       if (v.anulada) { anul++; return; }
       n++;
       const aj = (v.ajustes || []).reduce((s, a) => s + Number(a.monto), 0);
       medios[v.medio_pago] = (medios[v.medio_pago] || 0) + Number(v.total) - Number(v.cobrado_antes || 0) - aj;
     });
     (conAj || []).forEach(v => { if (!v.anulada) (v.ajustes || []).forEach(a => { if (enDia(a.fecha)) medios[a.medio] = (medios[a.medio] || 0) + Number(a.monto); }); });
-    let cobros = 0, devol = 0;
     (pp || []).forEach(p => {
-      if (p.devuelto_en && enDia(p.devuelto_en)) devol += Number(p.devuelto_monto || 0);
-      if (p.convertido_en && enDia(p.convertido_en)) return;   // se completó hoy: ya está en la venta
-      (p.abonos || []).forEach(a => { if (enDia(a.fecha)) cobros += Number(a.monto); });
+      if (p.devuelto_en && enDia(p.devuelto_en)) devolM[p.devuelto_medio || "efectivo"] += Number(p.devuelto_monto || 0);
+      const hoyVenta = p.convertido_en && enDia(p.convertido_en);
+      (p.abonos || []).forEach(a => {
+        if (!enDia(a.fecha)) return;
+        const monto = Number(a.monto), m = a.medio || "efectivo";
+        if (!hoyVenta) { cobrosM[m] += monto; return; }
+        // completado hoy: ya está dentro de la venta; si ese abono fue por otro medio, se pasa a su medio
+        const mv = medioVenta[p.venta_id];
+        if (mv && a.medio && a.medio !== mv) { medios[mv] -= monto; medios[a.medio] = (medios[a.medio] || 0) + monto; }
+      });
     });
-    CAJA = { fecha: f, n, anul, medios, cobros: r2(cobros), devol: r2(devol), gastos: r2(gastos.reduce((s, g) => s + Number(g.monto), 0)) };
+    const suma = o => r2(Object.values(o).reduce((s, x) => s + x, 0));
+    CAJA = { fecha: f, n, anul, medios, cobrosM, devolM, cobros: suma(cobrosM), devol: suma(devolM),
+      gastos: r2(gastos.reduce((s, g) => s + Number(g.monto), 0)) };
   } catch (e) { return msg.textContent = "No se pudieron cargar los datos: " + e.message; }
 
   const ya = CIERRES.find(c => c.fecha === f);
@@ -69,11 +79,16 @@ async function calcularCaja(){
   pintarCaja();
 }
 
+// Solo el efectivo cuenta para el efectivo esperado en caja
 function calculosCaja(){
   const ap = num("ca-apertura"), ret = num("ca-retiro"), vacio = $("ca-contado").value === "", ct = num("ca-contado");
-  const esperado = r2(ap + CAJA.medios.efectivo + CAJA.cobros - CAJA.devol - CAJA.gastos);
+  const esperado = r2(ap + CAJA.medios.efectivo + CAJA.cobrosM.efectivo - CAJA.devolM.efectivo - CAJA.gastos);
   return { ap, ret, ct, vacio, esperado, dif: vacio ? null : r2(ct - esperado) };
 }
+
+// Detalle por medio de pago (solo los que tienen monto)
+const detalleMedios = o => Object.entries(o).filter(([, v]) => v > 0.004)
+  .map(([k, v]) => `<div class="caja-linea"><span>· ${MEDIOS[k]}</span><b>${sol(v)}</b></div>`).join("");
 
 function pintarCaja(){
   if (!CAJA) return;
@@ -90,8 +105,8 @@ function pintarCaja(){
     L(`Ventas (${CAJA.n}${CAJA.anul ? ", " + CAJA.anul + " anuladas" : ""})`, sol(totalVentas), "fuerte") +
     L("· Efectivo", sol(m.efectivo)) + L("· Yape / Plin", sol(m.yape_plin)) +
     L("· Tarjeta", sol(m.tarjeta)) + L("· Transferencia", sol(m.transferencia)) +
-    L("Cobros de pagos pendientes", sol(CAJA.cobros)) +
-    L("Devoluciones de separados", "− " + sol(CAJA.devol)) +
+    L("Cobros de pagos pendientes", sol(CAJA.cobros)) + detalleMedios(CAJA.cobrosM) +
+    L("Devoluciones de separados", "− " + sol(CAJA.devol)) + detalleMedios(CAJA.devolM) +
     L("Gastos del día", "− " + sol(CAJA.gastos)) +
     L("Fondo inicial", sol(c.ap)) +
     L("Efectivo esperado en caja", sol(c.esperado), "fuerte") + dif;
@@ -110,7 +125,7 @@ async function cerrarCaja(){
   const { error } = await sb.from("cierres_caja").upsert({
     negocio_id: NEG.id, fecha: CAJA.fecha, apertura: c.ap,
     ventas_efectivo: r2(m.efectivo), ventas_yape: r2(m.yape_plin), ventas_tarjeta: r2(m.tarjeta), ventas_transf: r2(m.transferencia),
-    cobros_pendientes: CAJA.cobros, gastos: CAJA.gastos, esperado: c.esperado, contado: c.ct, diferencia: c.dif, retiro: c.ret,
+    cobros_pendientes: r2(CAJA.cobros - CAJA.devol), gastos: CAJA.gastos, esperado: c.esperado, contado: c.ct, diferencia: c.dif, retiro: c.ret,
     n_ventas: CAJA.n, n_anuladas: CAJA.anul, observacion: $("ca-obs").value.trim() || null,
   }, { onConflict: "negocio_id,fecha" });
   if (error) return msg.textContent = "No se pudo guardar: " + error.message;
