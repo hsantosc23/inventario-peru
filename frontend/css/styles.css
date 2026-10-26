@@ -452,3 +452,22 @@ html[data-tema="oscuro"] .pri,html[data-tema="oscuro"] .tabs button.act,html[dat
 html[data-tema="oscuro"] .tabs{background:rgba(255,255,255,.05)}
 html[data-tema="oscuro"] .tabs button{background:transparent;border:0}
 html[data-tema="oscuro"] input,html[data-tema="oscuro"] select,html[data-tema="oscuro"] textarea{background:#0d1328;border-color:#242c47}
+
+/* Barra inferior del celular: ocupa todo el ancho y se desplaza si hay muchas pestañas */
+@media (max-width:700px){
+  :has(> #tab-inv){
+    width:auto !important;
+    max-width:none !important;
+    left:0 !important;
+    right:0 !important;
+    overflow-x:auto !important;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+    scroll-snap-type:x proximity;
+    border-radius:18px 18px 0 0 !important;
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+  }
+  :has(> #tab-inv)::-webkit-scrollbar{display:none}
+  :has(> #tab-inv) > button{scroll-snap-align:center}
+}
