@@ -489,3 +489,19 @@ html[data-tema="oscuro"] input,html[data-tema="oscuro"] select,html[data-tema="o
   }
   .hdr-der>*{margin:0 !important}
 }
+
+/* Botones de período (Día / Semana / Mes / Año): siempre 4 iguales en una fila */
+#e-per-box{
+  display:grid !important;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  width:100%;
+}
+#e-per-box button,
+#e-per-box button.pri{
+  width:100% !important;
+  margin:0 !important;
+  padding:10px 4px !important;
+  font-size:14px;
+  white-space:nowrap;
+}
