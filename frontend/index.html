@@ -243,19 +243,22 @@
       </div>
     </div>
 
-    <div id="t-pen" class="hide">
+        <div id="t-pen" class="hide">
       <div class="inv-grid" id="pen-grid">
         <div class="inv-izq">
           <div class="card">
             <b>Nuevo pago pendiente</b>
-            <label>Nombre del cliente</label><input type="text" id="pe-cliente" maxlength="60">
+            <label>Nombre del cliente</label>
+            <input type="text" id="pe-cliente" maxlength="60">
             <label>Producto o detalle</label>
             <input type="text" id="pe-detalle" maxlength="120" autocomplete="off" placeholder="Escribe y elige un producto de tu inventario" oninput="buscarPendProd()">
             <div id="pe-res"></div>
+            <div class="f2">
               <div><label>Precio total (S/)</label><input type="number" id="pe-total" min="0" step="0.01" inputmode="decimal" oninput="calcFaltaPend()"></div>
               <div><label>Adelanto (S/)</label><input type="number" id="pe-adelanto" min="0" step="0.01" inputmode="decimal" oninput="calcFaltaPend()"></div>
             </div>
-            <label>Celular (opcional)</label><input type="tel" id="pe-cel" inputmode="numeric" maxlength="9" placeholder="987654321">
+            <label>Celular (opcional)</label>
+            <input type="tel" id="pe-cel" inputmode="numeric" maxlength="9" placeholder="987654321">
             <div id="pe-falta" class="pre" style="font-size:18px;margin-top:8px">Falta pagar: S/ 0.00</div>
             <button class="pri full" onclick="guardarPendiente()">Guardar pendiente</button>
             <div class="msg" id="pe-msg"></div>
@@ -263,10 +266,10 @@
         </div>
         <div class="inv-der">
           <input type="text" id="pe-buscar" placeholder="Buscar por nombre, producto o celular" oninput="listarPendientes()">
-            <select id="pe-estado" onchange="listarPendientes()" style="margin-top:8px">
+          <select id="pe-estado" onchange="listarPendientes()" style="margin-top:8px">
             <option value="todos">Todos (pendientes e historial)</option>
-            <option value="pendiente">Solo pendientes de pago</option>
-            <option value="pagado">Solo pagados (historial)</option>
+            <option value="pendiente">Pendientes de pago</option>
+            <option value="pagado">Pagados completos</option>
           </select>
           <div id="pe-resumen" style="margin:10px 0;font-weight:600;color:var(--gr)"></div>
           <div id="pe-lista"></div>
