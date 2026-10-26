@@ -103,6 +103,12 @@ async function registrarVenta(){
     if (total > 700 && !doc) return msg.textContent = "Una boleta mayor a S/ 700 necesita el DNI del cliente.";
   }
 
+  // Nota de venta: nombre y celular del cliente son opcionales
+  if (nota) {
+    const cel = $("v-cel-n").value.trim();
+    if (cel && !/^[0-9]{9}$/.test(cel)) return msg.textContent = "El celular debe tener 9 dígitos.";
+  }
+
   if (!nota) {
     const { data: uso } = await sb.rpc("mi_uso_comprobantes");
     if (uso && uso.en_prueba && uso.usados >= uso.limite)
@@ -112,8 +118,11 @@ async function registrarVenta(){
   const items = CARRITO.map(c => ({ producto_id: c.id, cantidad: c.cant, precio: c.precio }));
   const { data: id, error } = await sb.rpc("registrar_venta", { p_items: items });
   if (error) return msg.textContent = "No se pudo registrar la venta: " + error.message;
-  // el medio de pago se guarda en paralelo, sin hacer esperar al resto
-  const pMedio = sb.rpc("fijar_medio_pago", { p_venta: id, p_medio: $("v-medio").value });
+  // medio de pago y datos opcionales del cliente se guardan en paralelo, sin hacer esperar al resto
+  const pMedio = sb.rpc("fijar_datos_venta", {
+    p_venta: id, p_medio: $("v-medio").value,
+    p_nombre: nota ? ($("v-nombre-n").value.trim() || null) : null,
+    p_celular: nota ? ($("v-cel-n").value.trim() || null) : null });
   let e2 = null, r = null;
   if (!nota) {
     ({ error: e2 } = await sb.rpc("datos_comprobante", { p_venta: id, p_tipo: tipo, p_doc: doc, p_nombre: nombre, p_direccion: dir }));
@@ -121,7 +130,7 @@ async function registrarVenta(){
   }
   await pMedio;
   CARRITO = [];
-  ["v-dni", "v-nombre-b", "v-ruc", "v-razon", "v-dir"].forEach(i => $(i).value = "");
+  ["v-dni", "v-nombre-b", "v-ruc", "v-razon", "v-dir", "v-nombre-n", "v-cel-n"].forEach(i => $(i).value = "");
   $("v-medio").value = "efectivo";
   pintarCarrito();
   await Promise.all([cargarProductos(), cargarVentas()]);
@@ -150,6 +159,7 @@ function verTipoDoc(){
   const t = $("v-tipo").value;
   $("v-cli-b").classList.toggle("hide", t !== "boleta");
   $("v-cli-f").classList.toggle("hide", t !== "factura");
+  $("v-cli-n").classList.toggle("hide", t !== "nota");
 }
 
 // ---------- Historial: diario, semanal y mensual ----------
@@ -368,7 +378,7 @@ function imprimirHTML(html){
 
 async function imprimirComprobante(id){
   const { data: v, error } = await sb.from("ventas")
-    .select("id,fecha,total,anulada,cpe_serie,cpe_numero,cpe_estado,tipo_doc,numero,cliente_doc,cliente_nombre,cliente_direccion,venta_items(codigo,nombre,cantidad,precio_unitario,subtotal)")
+    .select("id,fecha,total,anulada,cpe_serie,cpe_numero,cpe_estado,tipo_doc,numero,cliente_doc,cliente_nombre,cliente_direccion,cliente_celular,venta_items(codigo,nombre,cantidad,precio_unitario,subtotal)")
     .eq("id", id).single();
   if (error) return alert("No se pudo cargar la venta: " + error.message);
   if (v.anulada) return alert("Esta venta está anulada.");
@@ -384,8 +394,8 @@ async function imprimirComprobante(id){
   const fi = fis && fis[0];
   const cliente = fac
     ? `RUC: ${esc(v.cliente_doc)}<br>Razón social: ${esc(v.cliente_nombre)}${v.cliente_direccion ? "<br>Dirección: " + esc(v.cliente_direccion) : ""}<hr>`
-    : (v.cliente_doc || v.cliente_nombre)
-      ? `${v.cliente_nombre ? "Cliente: " + esc(v.cliente_nombre) + "<br>" : ""}${v.cliente_doc ? "DNI: " + esc(v.cliente_doc) : ""}<hr>` : "";
+    : (v.cliente_doc || v.cliente_nombre || v.cliente_celular)
+      ? `${v.cliente_nombre ? "Cliente: " + esc(v.cliente_nombre) + "<br>" : ""}${v.cliente_doc ? "DNI: " + esc(v.cliente_doc) + "<br>" : ""}${v.cliente_celular ? "Cel: " + esc(v.cliente_celular) : ""}<hr>` : "";
   const filas = v.venta_items.map(i => `<tr><td>${i.cantidad} x ${esc(i.nombre)}<br>&nbsp;&nbsp;S/ ${Number(i.precio_unitario).toFixed(2)} c/u</td>
     <td class="r">S/ ${Number(i.subtotal).toFixed(2)}</td></tr>`).join("");
   // Factura: desglose referencial suponiendo que los precios ya incluyen IGV (18 %)
