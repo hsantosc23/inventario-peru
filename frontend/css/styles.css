@@ -471,3 +471,21 @@ html[data-tema="oscuro"] input,html[data-tema="oscuro"] select,html[data-tema="o
   :has(> #tab-inv)::-webkit-scrollbar{display:none}
   :has(> #tab-inv) > button{scroll-snap-align:center}
 }
+
+@media (max-width:700px){
+  /* Barra inferior: esquinas apenas redondeadas */
+  :has(> #tab-inv){ border-radius:8px 8px 0 0 !important; }
+
+  /* Cabecera: logo y botones centrados */
+  header,.hdr{
+    justify-content:center !important;
+    align-items:center !important;
+    gap:12px !important;
+  }
+  .hdr-der{
+    width:auto !important;
+    justify-content:center !important;
+    align-items:center !important;
+  }
+  .hdr-der>*{margin:0 !important}
+}
