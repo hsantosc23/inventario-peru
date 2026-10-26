@@ -485,16 +485,66 @@ const AVISO_COMPROBANTE = "Documento interno. No es comprobante de pago electró
 const CPE_PRODUCCION = false;
 
 function imprimirHTML(html){
-  let f = document.getElementById("print-frame");
-  if (!f) {
-    f = document.createElement("iframe");
-    f.id = "print-frame";
-    f.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
-    document.body.appendChild(f);
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const esIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  // Reglas de la boleta limitadas a la zona de impresión
+  let css = "";
+  doc.querySelectorAll("style").forEach(s => {
+    const tmp = document.createElement("style");
+    tmp.media = "not all";
+    tmp.textContent = s.textContent;
+    document.head.appendChild(tmp);
+    for (const r of tmp.sheet.cssRules) {
+      if (r.type === 1) {
+        const sel = r.selectorText.split(",").map(x => {
+          x = x.trim();
+          return /^(html|body)$/i.test(x) ? "#print-area" : "#print-area " + x;
+        }).join(",");
+        css += sel + "{" + r.style.cssText + "}";
+      } else css += r.cssText;   // @page y similares
+    }
+    tmp.remove();
+  });
+
+  ["print-prev", "print-style"].forEach(id => { const o = document.getElementById(id); if (o) o.remove(); });
+
+  const st = document.createElement("style");
+  st.id = "print-style";
+  st.textContent = css + `
+    #print-prev{display:none}
+    #print-prev.ver{display:block;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.65);overflow:auto;padding:16px}
+    #print-prev .pp-bts{display:flex;gap:8px;max-width:340px;margin:0 auto 10px}
+    #print-prev .pp-bts button{flex:1;margin:0;width:auto}
+    #print-prev .pp-caja{background:#fff;color:#000;max-width:340px;margin:0 auto;padding:14px;border-radius:12px;overflow:auto}
+    @media print{
+      html,body{background:#fff!important;padding:0!important;margin:0!important}
+      body>*:not(#print-prev){display:none!important}
+      #print-prev,#print-prev.ver{display:block!important;position:static!important;background:none!important;padding:0!important;overflow:visible!important}
+      #print-prev .pp-bts{display:none!important}
+      #print-prev .pp-caja{padding:0!important;border-radius:0!important;max-width:none!important;margin:0!important;overflow:visible!important}
+    }`;
+
+  const prev = document.createElement("div");
+  prev.id = "print-prev";
+  prev.innerHTML = `<div class="pp-bts"><button class="pri" id="pp-imp">Imprimir</button><button id="pp-cerrar">Cerrar</button></div>
+    <div class="pp-caja"><div id="print-area">${doc.body.innerHTML}</div></div>`;
+
+  const tituloAnterior = document.title;
+  if (doc.title) document.title = doc.title;
+  document.head.appendChild(st);
+  document.body.appendChild(prev);
+
+  const cerrar = () => { prev.remove(); st.remove(); document.title = tituloAnterior; };
+  document.getElementById("pp-cerrar").onclick = cerrar;
+  document.getElementById("pp-imp").onclick = () => window.print();   // toque directo: Safari sí lo permite
+
+  if (esIOS) {
+    prev.classList.add("ver");            // iPhone: vista previa y botón Imprimir
+  } else {
+    window.addEventListener("afterprint", cerrar, { once: true });
+    setTimeout(() => window.print(), 250);
   }
-  const d = f.contentWindow.document;
-  d.open(); d.write(html); d.close();
-  setTimeout(() => { f.contentWindow.focus(); f.contentWindow.print(); }, 250);
 }
 
 async function imprimirComprobante(id){
