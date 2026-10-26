@@ -490,18 +490,10 @@ html[data-tema="oscuro"] input,html[data-tema="oscuro"] select,html[data-tema="o
   .hdr-der>*{margin:0 !important}
 }
 
-/* Botones de período (Día / Semana / Mes / Año): siempre 4 iguales en una fila */
-#e-per-box{
-  display:grid !important;
-  grid-template-columns:repeat(4,1fr);
-  gap:8px;
-  width:100%;
-}
-#e-per-box button,
-#e-per-box button.pri{
-  width:100% !important;
-  margin:0 !important;
-  padding:10px 4px !important;
-  font-size:14px;
-  white-space:nowrap;
-}
+/* Selector de período en Estadísticas */
+#e-per-box{display:block !important;width:100%;max-width:520px}
+.est-per-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.est-per-btns button{width:100% !important;margin:0 !important;padding:10px 4px !important;font-size:14px;white-space:nowrap}
+.est-per-nav{display:grid;grid-template-columns:46px 1fr 46px;gap:8px;align-items:center;margin-top:8px}
+.est-per-nav button{width:100% !important;margin:0 !important;padding:10px 0 !important}
+.est-per-nav input{width:100%;min-width:0;margin:0}

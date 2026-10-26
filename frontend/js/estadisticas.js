@@ -109,11 +109,11 @@ function pintarControlesEst(){
     viejo.classList.add("hide");
     const box = document.createElement("div");
     box.id = "e-per-box";
-    box.innerHTML = `<label>Periodo</label>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        box.innerHTML = `<label>Periodo</label>
+      <div class="est-per-btns">
         ${[["dia", "Día"], ["semana", "Semana"], ["mes", "Mes"], ["anio", "Año"]].map(([k, t]) => `<button id="e-p-${k}" onclick="estPeriodo('${k}')">${t}</button>`).join("")}
       </div>
-      <div style="display:flex;gap:6px;align-items:center;margin-top:8px">
+      <div class="est-per-nav">
         <button onclick="estMover(-1)" aria-label="Anterior">‹</button>
         <input id="e-fecha" onchange="estIrA(this.value)">
         <button onclick="estMover(1)" aria-label="Siguiente">›</button>
