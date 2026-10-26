@@ -425,7 +425,7 @@ async function cargarVentas(){
 
   VDATA = [];
   const { data, error } = await sb.from("ventas")
-  .select("id,fecha,total,anulada,cliente_doc,cliente_nombre,cpe_nc_estado,cpe_serie,cpe_numero,cpe_estado,tipo_doc,numero,medio_pago,venta_items(id,codigo,nombre,cantidad,precio_unitario,subtotal)")
+  .select("id,fecha,total,anulada,cliente_doc,cliente_nombre,cpe_nc_estado,cpe_serie,cpe_numero,cpe_estado,tipo_doc,numero,medio_pago,venta_items(id,producto_id,codigo,nombre,cantidad,precio_unitario,subtotal)")
   .eq("negocio_id", NEG.id).gte("fecha", a.toISOString()).lt("fecha", b.toISOString()).order("fecha", { ascending: false });
   if (error) return $("v-lista").innerHTML = `<p class="msg">No se pudieron cargar: ${esc(error.message)}</p>`;
   VDATA = data;
@@ -622,7 +622,7 @@ async function pintarUsoComprobantes(){
 function pintarTallasCambio(){
   const caja = $("cp-tallas"); if (!caja) return;
   const it = CP.v.venta_items.find(i => i.id === $("cp-item").value);
-  const actual = it && PRODS.find(p => p.id === it.producto_id);
+  const actual = it && (PRODS.find(p => p.id === it.producto_id) || PRODS.find(p => p.codigo === it.codigo));
   const nombre = it ? String(it.nombre).trim().toLowerCase() : "";
   const talla = c => { const m = String(c).match(/^(XS|S|M|L)\d+$/i); return m ? m[1].toUpperCase() : c; };
   const conTalla = p => /^(XS|S|M|L)\d+$/i.test(p.codigo);
