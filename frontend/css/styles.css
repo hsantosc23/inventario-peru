@@ -409,3 +409,11 @@ html[data-tema="oscuro"] .card .modos button.act{background:#2f6df6;color:#fff}
     padding-right:max(20px, calc((100% - 1100px) / 2 + 20px));
   }
 }
+
+/* Pagos pendientes: botones en cuadrícula (2 columnas; Pago completo ocupa todo el ancho) */
+.pend-acc{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.pend .pend-acc button{margin:0;width:100%}
+.pend-acc .pri{grid-column:1 / -1}
+
+/* Ventas: cantidad y producto centrados verticalmente, igual que la hora y el total */
+table.tv td{vertical-align:middle !important}

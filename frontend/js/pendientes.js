@@ -4,7 +4,7 @@ let PE_K = 0;
 const usadoPend = (id, k) => PE_ITEMS.filter(i => i.producto_id === id && i.k !== k).reduce((s, i) => s + i.cantidad, 0);
 
 const peFalta = p => Math.max(0, Math.round((Number(p.total) - Number(p.adelanto)) * 100) / 100);
-const peFecha = f => new Date(f).toLocaleDateString("es-PE", { timeZone: "America/Lima", day: "2-digit", month: "2-digit", year: "2-digit" });
+const peFecha = f => new Date(f).toLocaleString("es-PE", { timeZone: "America/Lima", day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit", hour12: true });
 
 function calcFaltaPend(){
   const t = parseFloat($("pe-total").value) || 0, a = parseFloat($("pe-adelanto").value) || 0;
@@ -103,11 +103,11 @@ function listarPendientes(){
   $("pe-resumen").textContent = `${lista.length} registro(s) · Por cobrar: ${sol(porCobrar)}`;
   $("pe-lista").innerHTML = lista.length ? lista.map(p => {
     const pagado = p.estado === "pagado", dev = p.estado === "devuelto";
-        const pagos = (p.abonos || []).map(a => `${peFecha(a.fecha)}: ${sol(a.monto)}${a.medio ? " (" + MEDIOS[a.medio] + ")" : ""}`).join(" · ");
+    const pagos = (p.abonos || []).map(a => `${peFecha(a.fecha)}: ${sol(a.monto)}${a.medio ? " (" + MEDIOS[a.medio] + ")" : ""}`).join("<br>");
     const chip = dev ? `<span class="chip">Devuelto</span>` : `<span class="chip ${pagado ? "ok" : "pen"}">${pagado ? "Pagado" : "Pendiente"}</span>`;
-    const acciones = dev ? "" : pagado ? (p.venta_id ? "" : `<button class="pri" onclick="abrirCobro('${p.id}')">Generar venta</button>`)
-      : `<button onclick="abonarPendiente('${p.id}')">Registrar abono</button>
-         <button class="pri" onclick="abrirCobro('${p.id}')">Pago completo</button>
+        const acciones = dev ? "" : pagado ? (p.venta_id ? "" : `<button class="pri" onclick="abrirCobro('${p.id}')">Generar venta</button>`)
+      : `<button class="pri" onclick="abrirCobro('${p.id}')">Pago completo</button>
+         <button onclick="abonarPendiente('${p.id}')">Registrar abono</button>
          ${p.celular ? `<button onclick="avisarPendiente('${p.id}')">WhatsApp</button>` : ""}
          ${Number(p.adelanto) > 0 ? `<button class="peligro" onclick="devolverDinero('${p.id}')">Devolver dinero</button>` : ""}`;
     return `<div class="pend${pagado || dev ? " pagado" : ""}"><div class="pend-top"><b>${esc(p.cliente)}</b>${chip}</div>
@@ -115,8 +115,7 @@ function listarPendientes(){
       <div class="pend-nums">Total ${sol(p.total)} · Pagado ${sol(dev ? p.devuelto_monto : p.adelanto)}${pagado || dev ? "" : ` · <b>Falta ${sol(peFalta(p))}</b>`}${dev ? " · <b>Dinero devuelto</b>" : ""}</div>
       <small class="gr">Registrado el ${peFecha(p.creado)}${pagado && p.pagado_en ? " · Completado el " + peFecha(p.pagado_en) : ""}${dev && p.devuelto_en ? " · Devuelto el " + peFecha(p.devuelto_en) : ""}${p.venta_id ? " · Venta registrada" : ""}</small>
       ${pagos ? `<div class="pend-hist"><b>Pagos:</b> ${pagos}</div>` : ""}
-      ${acciones}
-      <button onclick="borrarPendiente('${p.id}')">Borrar</button></div>`;
+            <div class="pend-acc">${acciones}<button onclick="borrarPendiente('${p.id}')">Borrar</button></div></div>`;
   }).join("") : `<p class="gr">No hay registros.</p>`;
 }
 
