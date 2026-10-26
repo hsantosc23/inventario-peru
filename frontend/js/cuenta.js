@@ -52,12 +52,36 @@ async function cambiarClave(){
   msg.style.color = "#166534"; msg.textContent = "Contraseña actualizada.";
 }
 
+// Pide la contraseña de la cuenta antes de una acción delicada; si es correcta, ejecuta alConfirmar()
+function pedirClave(motivo, alConfirmar){
+  modalBase(`<b>Confirma tu contraseña</b>
+    <p class="gr" style="margin:6px 0">${esc(motivo)}</p>
+    <input type="password" id="pk-clave" autocomplete="current-password" placeholder="Contraseña de tu cuenta">
+    <div class="msg" id="pk-msg"></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><button style="flex:1" id="pk-no">Cancelar</button>
+    <button class="pri" style="flex:2" id="pk-si">Confirmar</button></div>`);
+  const verificar = async () => {
+    const clave = $("pk-clave").value;
+    if (!clave) return $("pk-msg").textContent = "Escribe tu contraseña.";
+    $("pk-si").disabled = true;
+    const { data: { user } } = await sb.auth.getUser();
+    const { error } = await sb.auth.signInWithPassword({ email: user.email, password: clave });
+    if (error) { $("pk-si").disabled = false; $("pk-msg").textContent = "La contraseña no es correcta."; $("pk-clave").select(); return; }
+    cerrarModal();
+    alConfirmar();
+  };
+  $("pk-no").onclick = cerrarModal;
+  $("pk-si").onclick = verificar;
+  $("pk-clave").onkeydown = e => { if (e.key === "Enter") verificar(); };
+  $("pk-clave").focus();
+}
+
 function verTipoConfig(){
   const t = document.querySelector('input[name="c-tipo"]:checked');
   $("c-rubro-box").classList.toggle("hide", !t || t.value === "hotel");
 }
 
-async function cambiarModalidad(){
+function cambiarModalidad(){
   const msg = $("c-msg-tipo"); msg.style.color = ""; msg.textContent = "";
   const t = document.querySelector('input[name="c-tipo"]:checked');
   if (!t) return msg.textContent = "Elige el tipo de negocio.";
@@ -69,6 +93,11 @@ async function cambiarModalidad(){
   const cambios = hotel
     ? { tipo: "hostal", formalidad: null, rubro: null, modalidades: null }
     : { tipo: "tienda", formalidad: t.value, rubro, modalidades: null };
+  pedirClave("Para cambiar el tipo de negocio, confirma tu contraseña.", () => aplicarCambioTipo(cambios));
+}
+
+async function aplicarCambioTipo(cambios){
+  const msg = $("c-msg-tipo");
   const { error } = await sb.from("negocios").update(cambios).eq("id", NEG.id);
   if (error) return msg.textContent = "No se pudo cambiar: " + error.message;
   await irSegunNegocio();
@@ -242,10 +271,17 @@ async function invocarFn(nombre, cuerpo){
   return r || { ok: false, error: "Sin respuesta del servidor" };
 }
 
-async function gestionarSede(id, accion){
+function gestionarSede(id, accion){
   const s = SEDES.find(x => x.id === id); if (!s) return;
   if (accion === "desactivar" && !confirm(`¿Desactivar "${s.nombre}"? Nadie podrá entrar con su usuario. Sus datos se conservan y puedes reactivarla cuando quieras.`)) return;
-  if (accion === "eliminar" && prompt(`Se borrarán el inventario, las ventas y los gastos de "${s.nombre}" y no se puede deshacer.\nPara confirmar escribe ELIMINAR`) !== "ELIMINAR") return;
+  if (accion === "eliminar") {
+    if (prompt(`Se borrarán el inventario, las ventas y los gastos de "${s.nombre}" y no se puede deshacer.\nPara confirmar escribe ELIMINAR`) !== "ELIMINAR") return;
+    return pedirClave("Para eliminar la sede, confirma tu contraseña.", () => ejecutarSede(id, accion));
+  }
+  ejecutarSede(id, accion);
+}
+
+async function ejecutarSede(id, accion){
   const r = await invocarFn("gestionar-sede", { sede_id: id, accion });
   if (!r.ok) return alert(r.error || "No se pudo completar la acción.");
   if (NEG.id === id) return irSegunNegocio();
@@ -266,11 +302,15 @@ async function gestionarSede(id, accion){
   ref.after(c);
 })();
 
-async function reiniciarCuenta(){
-  const msg = $("rei-msg"); msg.style.color = ""; msg.textContent = "";
+function reiniciarCuenta(){
   const inv = $("rei-inv").checked;
   const aviso = `Se borrarán TODAS las ventas, gastos, pagos pendientes y cierres de caja de "${NEG.nombre}"${inv ? " y también todo el inventario" : ""}.\nEsto no se puede deshacer.\n\nPara confirmar escribe EMPEZAR`;
   if (prompt(aviso) !== "EMPEZAR") return;
+  pedirClave("Para borrar los datos de tu negocio, confirma tu contraseña.", () => ejecutarReinicio(inv));
+}
+
+async function ejecutarReinicio(inv){
+  const msg = $("rei-msg"); msg.style.color = ""; msg.textContent = "";
   const { data, error } = await sb.rpc("reiniciar_cuenta", { p_inventario: inv });
   if (error) return msg.textContent = error.message;
   msg.style.color = "#166534";
