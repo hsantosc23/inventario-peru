@@ -278,7 +278,7 @@ function botonesVenta(v) {
   let h = `<button onclick="imprimirComprobante('${v.id}')">Imprimir</button>`;
   if (PUEDE) {
     h += `<button onclick="cambiarMedio('${v.id}')">Medio de pago</button>`;
-    if (!emitida) h += `<button onclick="cambiarPrenda('${v.id}')">Cambio de prenda</button>`;
+        h += `<button onclick="cambiarPrenda('${v.id}')">${emitida ? "Cambio de talla" : "Cambio de prenda"}</button>`;
     if (v.tipo_doc && !emitida) h += `<button class="aviso" onclick="reintentarEmision('${v.id}')">Reintentar emisión</button>`;
     if (emitida && v.cpe_nc_estado !== "aceptado") {
       // con comprobante aceptado solo hay nota de crédito, y solo desde el negocio principal
@@ -320,12 +320,13 @@ let CP = null;
 
 function cambiarPrenda(id){
   const v = VDATA.find(x => x.id === id); if (!v) return;
-  CP = { v, prod: null };
+    CP = { v, prod: null, soloTalla: v.cpe_estado === "aceptado" };
   const opts = v.venta_items.map(i => `<option value="${i.id}">${i.cantidad} × ${esc(i.nombre)} (S/ ${Number(i.precio_unitario).toFixed(2)} c/u)</option>`).join("");
   modalBase(`<b>Cambio de prenda</b>
     <p class="gr" style="margin:6px 0">La prenda que devuelve vuelve al stock y la nueva se descuenta. No se devuelve dinero: la nueva debe valer lo mismo o más, y la diferencia se cobra.</p>
-    <label>Prenda que devuelve</label><select id="cp-item" onchange="calcCambio()">${opts}</select>
-    <label>Cantidad que devuelve</label><input type="number" id="cp-cdev" min="1" value="1" oninput="calcCambio()">
+    <label>Prenda que devuelve</label><select id="cp-item" onchange="pintarTallasCambio(); calcCambio()">${opts}</select>
+    <label>Cantidad que devuelve</label><input type="number" id="cp-cdev" min="1" value="1" oninput="syncCantCambio(); calcCambio()">
+    <div id="cp-tallas"></div>
     <label>Prenda nueva</label><input type="text" id="cp-prod" autocomplete="off" placeholder="Escribe código o nombre" oninput="buscarCambio()">
     <div id="cp-res"></div>
     <div class="f2"><div><label>Cantidad nueva</label><input type="number" id="cp-cant" min="1" value="1" oninput="calcCambio()"></div>
@@ -335,7 +336,16 @@ function cambiarPrenda(id){
       <select id="cp-medio">${Object.entries(MEDIOS).map(([k, t]) => `<option value="${k}">${t}</option>`).join("")}</select></div>
     <div class="msg" id="cp-msg"></div>
     <div style="display:flex;gap:8px;margin-top:8px"><button style="flex:1" onclick="cerrarModal()">Cancelar</button>
-    <button class="pri" style="flex:2" id="cp-ok" onclick="confirmarCambio()">Confirmar cambio</button></div>`);
+        <button class="pri" style="flex:2" id="cp-ok" onclick="confirmarCambio()">Confirmar cambio</button></div>`);
+    pintarTallasCambio();
+  if (CP.soloTalla) {
+    // con comprobante emitido solo se cambia la talla: se oculta el buscador y el precio
+    $("cp-prod").previousElementSibling.classList.add("hide");
+    $("cp-prod").classList.add("hide"); $("cp-res").classList.add("hide");
+    $("cp-precio").closest(".f2").classList.add("hide");
+    $("cp-dif").textContent = "Elige la talla nueva";
+    $("cp-dif").insertAdjacentHTML("beforebegin", `<p class="gr" style="margin:6px 0">Esta venta tiene comprobante emitido: solo se puede cambiar la talla (misma prenda y mismo precio). El comprobante no cambia.</p>`);
+  }
 }
 
 function calcCambio(){
@@ -363,11 +373,11 @@ function buscarCambio(){
   calcCambio();
 }
 
-function elegirCambio(id){
+function elegirCambio(id, precio, mismo){
   const p = PRODS.find(x => x.id === id); if (!p) return;
-  CP.prod = p.id;
+  CP.prod = p.id; CP.mismo = !!mismo;
   $("cp-prod").value = `${p.codigo} · ${p.nombre}`;
-  $("cp-precio").value = Number(p.precio).toFixed(2);
+  $("cp-precio").value = (precio != null ? Math.min(Number(precio), Number(p.precio)) : Number(p.precio)).toFixed(2);
   $("cp-cant").value = $("cp-cdev").value || 1;
   $("cp-res").className = ""; $("cp-res").innerHTML = "";
   calcCambio();
@@ -377,6 +387,7 @@ async function confirmarCambio(){
   const msg = $("cp-msg"); msg.style.color = ""; msg.textContent = "";
   const c = calcCambio(), p = PRODS.find(x => x.id === CP.prod);
   if (!p) return msg.textContent = "Elige la prenda nueva.";
+  if (CP.soloTalla && !CP.mismo) return msg.textContent = "Elige una de las tallas disponibles.";
   if (!(c.cdev >= 1 && c.cdev <= c.it.cantidad)) return msg.textContent = "La cantidad que devuelve debe estar entre 1 y " + c.it.cantidad + ".";
   if (!(c.cant >= 1)) return msg.textContent = "La cantidad nueva no es válida.";
   if (isNaN(c.pr) || c.pr < 0) return msg.textContent = "El precio no es válido.";
@@ -554,3 +565,21 @@ async function pintarUsoComprobantes(){
   const { data: u } = await sb.rpc("mi_uso_comprobantes");
   el.textContent = u && u.en_prueba ? `Prueba: ${u.usados} de ${u.limite} boletas o facturas usadas` : "";
 }
+
+// Misma prenda en otra talla: botones con el stock de cada talla
+function pintarTallasCambio(){
+  const caja = $("cp-tallas"); if (!caja) return;
+  const it = CP.v.venta_items.find(i => i.id === $("cp-item").value);
+  const actual = it && PRODS.find(p => p.id === it.producto_id);
+  const nombre = it ? String(it.nombre).trim().toLowerCase() : "";
+  const talla = c => { const m = String(c).match(/^(XS|S|M|L)\d+$/i); return m ? m[1].toUpperCase() : c; };
+  const orden = { XS: 0, S: 1, M: 2, L: 3 };
+  const otras = PRODS.filter(p => p.nombre.trim().toLowerCase() === nombre && (!actual || p.id !== actual.id))
+    .sort((a, b) => (orden[talla(a.codigo)] ?? 9) - (orden[talla(b.codigo)] ?? 9));
+  caja.innerHTML = otras.length
+    ? `<label>Cambiar solo la talla (mismo precio)</label><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">` +
+      otras.map(p => `<button ${p.stock > 0 ? "" : "disabled"} onclick="elegirCambio('${p.id}', ${Number(it.precio_unitario)}, true)">${esc(talla(p.codigo))} <small>(stock ${p.stock})</small></button>`).join("") + `</div>`
+      : (CP.soloTalla ? `<p class="gr">No hay otras tallas de esta prenda en el inventario.</p>` : "");
+}
+
+function syncCantCambio(){ if (CP && CP.mismo) $("cp-cant").value = $("cp-cdev").value || 1; }
