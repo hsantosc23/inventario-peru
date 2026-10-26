@@ -46,8 +46,7 @@ async function cargarEstRopa(){
   const box = armarEstRopa();
   box.classList.toggle("hide", !NEG || NEG.tipo !== "tienda");
   if (!NEG || NEG.tipo !== "tienda" || typeof Chart === "undefined") return;
-  const ids = estIds(), mes = $("e-mes").value, [y, m] = mes.split("-").map(Number);
-  const ini = mes + "-01", sig = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
+  const ids = estIds(), { ini, fin: sig } = rangoEst();
   const corte = new Date(Date.now() - 60 * 864e5).toISOString();
   let items, recientes, prods;
   try {
