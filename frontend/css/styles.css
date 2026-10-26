@@ -497,3 +497,9 @@ html[data-tema="oscuro"] input,html[data-tema="oscuro"] select,html[data-tema="o
 .est-per-nav{display:grid;grid-template-columns:46px 1fr 46px;gap:8px;align-items:center;margin-top:8px}
 .est-per-nav button{width:100% !important;margin:0 !important;padding:10px 0 !important}
 .est-per-nav input{width:100%;min-width:0;margin:0}
+
+.mod-bts{display:flex;flex-wrap:wrap;gap:8px;padding:6px 10px 10px}
+.mod-bts button{min-width:76px;padding:8px 12px;text-align:center}
+.mod-bts button small{display:block;font-weight:400;font-size:11px;opacity:.75}
+.em-fila{display:flex;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--bd);cursor:pointer;margin:0}
+.em-fila input{width:auto !important;flex:none}

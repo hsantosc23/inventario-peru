@@ -111,7 +111,7 @@ function listar(){
 
 function limpiarForm(){
   EDIT = null;
-  ["f-codigo","f-nombre","f-precio","f-stock","f-min"].forEach(i => $(i).value = "");
+  ["f-codigo","f-nombre","f-color","f-precio","f-stock","f-min"].forEach(i => $(i).value = "");
   $("f-foto").value = ""; FOTO_QUITAR = false; pintarPrevia(null);
   $("f-titulo").textContent = "Agregar producto";
   $("f-btn").textContent = "Guardar producto";
@@ -123,7 +123,7 @@ function editar(id){
   const p = PRODS.find(x => x.id === id); if (!p) return;
   if (typeof verModo === "function") verModo("uno");
   EDIT = id;
-  $("f-codigo").value = p.codigo; $("f-nombre").value = p.nombre;
+  $("f-codigo").value = p.codigo; $("f-nombre").value = p.modelo || p.nombre; $("f-color").value = p.color || "";
   $("f-precio").value = p.precio; $("f-stock").value = p.stock; $("f-min").value = p.stock_minimo;
   $("f-talla").value = (p.codigo.match(/^(XS|S|M|L)\d+$/) || [])[1] || "";
   $("f-foto").value = ""; FOTO_QUITAR = false; pintarPrevia(fotoUrl(p.foto) || null);
@@ -135,10 +135,11 @@ function editar(id){
 
 async function guardarProducto(){
   const msg = $("pr-msg"); msg.textContent = "";
-  const codigo = $("f-codigo").value.trim(), nombre = $("f-nombre").value.trim(),
+  const codigo = $("f-codigo").value.trim(), modelo = $("f-nombre").value.trim(), color = $("f-color").value.trim(),
+        nombre = color ? modelo + " " + color : modelo,
         precio = parseFloat($("f-precio").value), stock = parseInt($("f-stock").value || "0", 10),
         stock_minimo = parseInt($("f-min").value || "0", 10);
-  if (!codigo || !nombre) return msg.textContent = "Escribe el código y el nombre.";
+  if (!codigo || !modelo) return msg.textContent = "Escribe el código y el nombre.";
   if (isNaN(precio) || precio < 0) return msg.textContent = "Escribe un precio válido.";
   if (isNaN(stock)) return msg.textContent = "Escribe un stock válido.";
   if (isNaN(stock_minimo) || stock_minimo < 0) return msg.textContent = "Escribe un aviso de stock válido.";
@@ -151,7 +152,7 @@ async function guardarProducto(){
     else if (FOTO_QUITAR) foto = null;
   } catch (e) { return msg.textContent = "No se pudo subir la foto: " + (e.message || e); }
 
-  const fila = { codigo, nombre, precio, stock, stock_minimo, foto };
+    const fila = { codigo, nombre, modelo, color: color || null, precio, stock, stock_minimo, foto };
   const { error } = EDIT
     ? await sb.from("productos").update(fila).eq("id", EDIT)
     : await sb.from("productos").insert({ ...fila, negocio_id: NEG.id });
@@ -196,6 +197,7 @@ async function guardarPrenda(){
       negocio_id: NEG.id,
       codigo: t + String(max + 1).padStart(6 - t.length, "0"),
       nombre: `${modelo} ${color}`,
+      modelo, color,
       precio, stock: parseInt($("p-" + t).value), stock_minimo: min, foto
     });
   }

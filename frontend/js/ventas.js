@@ -19,6 +19,7 @@ function verTab(t){
 function buscarVenta(){
   const q = $("v-buscar").value.trim().toLowerCase(), box = $("v-res");
   if (!q) { box.className = ""; box.innerHTML = ""; return; }
+  if (/^mod-/.test(q) && abrirModelo(q)) return;
   const r = PRODS.filter(p => p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)).slice(0, 6);
   box.className = "res";
   box.innerHTML = r.length ? r.map(p => p.stock > 0
@@ -31,6 +32,7 @@ function buscarVenta(){
 function enterVenta(ev){
   if (ev.key !== "Enter") return;
   const q = $("v-buscar").value.trim().toLowerCase();
+  if (/^mod-/.test(q) && abrirModelo(q)) return;
   const p = PRODS.find(x => x.codigo.toLowerCase() === q);
   if (p && p.stock > 0) agregarAlCarrito(p.id);
 }
