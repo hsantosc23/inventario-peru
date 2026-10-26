@@ -138,8 +138,8 @@ async function aplicarContexto(){
   CTX = c || { es_sede: false };
   if (a && NEG && a.id !== NEG.id) NEG = { ...NEG, ...a };
   const b = $("tab-sede"); if (b) b.classList.toggle("hide", CTX.es_sede || !NEG || NEG.tipo !== "tienda");
-  ["card-clave", "card-tipo", "card-fiscal", "sedes-card"].forEach(id => {
-    const e = $(id); if (e) e.classList.toggle("hide", CTX.es_sede || (id === "sedes-card" && (!NEG || NEG.tipo !== "tienda")));
+    ["card-clave", "card-tipo", "card-fiscal", "sedes-card", "card-reinicio"].forEach(id => {
+  const e = $(id); if (e) e.classList.toggle("hide", CTX.es_sede || (id === "sedes-card" && (!NEG || NEG.tipo !== "tienda")));
   });
   await cargarSedes();
 }
@@ -250,4 +250,30 @@ async function gestionarSede(id, accion){
   if (!r.ok) return alert(r.error || "No se pudo completar la acción.");
   if (NEG.id === id) return irSegunNegocio();
   await cargarSedes();
+}
+
+// ---------- Empezar desde cero ----------
+(function(){
+  const ref = document.getElementById("card-clave");
+  if (!ref || document.getElementById("card-reinicio")) return;
+  const c = document.createElement("div");
+  c.id = "card-reinicio"; c.className = "card";
+  c.innerHTML = `<b>Empezar desde cero</b>
+    <p class="gr" style="margin:6px 0">Borra las ventas, gastos, pagos pendientes y cierres de caja de este negocio, por ejemplo después de hacer pruebas. No se puede deshacer.</p>
+    <label class="opt" style="padding:10px"><input type="checkbox" id="rei-inv"> Borrar también el inventario</label>
+    <button class="peligro full" onclick="reiniciarCuenta()">Empezar desde cero</button>
+    <div class="msg" id="rei-msg"></div>`;
+  ref.after(c);
+})();
+
+async function reiniciarCuenta(){
+  const msg = $("rei-msg"); msg.style.color = ""; msg.textContent = "";
+  const inv = $("rei-inv").checked;
+  const aviso = `Se borrarán TODAS las ventas, gastos, pagos pendientes y cierres de caja de "${NEG.nombre}"${inv ? " y también todo el inventario" : ""}.\nEsto no se puede deshacer.\n\nPara confirmar escribe EMPEZAR`;
+  if (prompt(aviso) !== "EMPEZAR") return;
+  const { data, error } = await sb.rpc("reiniciar_cuenta", { p_inventario: inv });
+  if (error) return msg.textContent = error.message;
+  msg.style.color = "#166534";
+  msg.textContent = `Listo: ${data.ventas} ventas, ${data.gastos} gastos y ${data.pendientes} pendientes borrados${inv ? ", " + data.productos + " productos" : ""}. Recargando...`;
+  setTimeout(() => location.reload(), 1500);
 }
