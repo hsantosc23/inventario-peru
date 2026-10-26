@@ -625,6 +625,12 @@ function pintarTallasCambio(){
   const actual = it && PRODS.find(p => p.id === it.producto_id);
   const nombre = it ? String(it.nombre).trim().toLowerCase() : "";
   const talla = c => { const m = String(c).match(/^(XS|S|M|L)\d+$/i); return m ? m[1].toUpperCase() : c; };
+  const conTalla = p => /^(XS|S|M|L)\d+$/i.test(p.codigo);
+  const norm = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  // Modelo y color: los campos guardados o, si faltan, "modelo color" separado por la última palabra
+  const modeloP = p => p.modelo ? norm(p.modelo) : (conTalla(p) ? norm(p.nombre).replace(/\s+\S+$/, "") : norm(p.nombre));
+  const colorP = p => p.color ? norm(p.color) : (conTalla(p) && /\s/.test(p.nombre.trim()) ? norm(p.nombre).split(/\s+/).pop() : "");
+  const nomColor = p => p.color ? p.color : (conTalla(p) && /\s/.test(p.nombre.trim()) ? p.nombre.trim().split(/\s+/).pop() : p.nombre);
   const orden = { XS: 0, S: 1, M: 2, L: 3 };
   const precio = it ? Number(it.precio_unitario) : 0;
 
@@ -632,19 +638,23 @@ function pintarTallasCambio(){
   const otras = PRODS.filter(p => p.nombre.trim().toLowerCase() === nombre && (!actual || p.id !== actual.id))
     .sort((a, b) => (orden[talla(a.codigo)] ?? 9) - (orden[talla(b.codigo)] ?? 9));
 
-  // Otros colores del mismo modelo, en la misma talla (solo si la venta no tiene comprobante emitido)
+  // Otros colores del mismo modelo, en la misma talla
   let colores = [];
   if (actual && !CP.soloTalla) {
-    const mod = slugM(modeloDe(actual)), t = talla(actual.codigo);
-    colores = PRODS.filter(p => p.id !== actual.id && slugM(modeloDe(p)) === mod && talla(p.codigo) === t
-      && p.nombre.trim().toLowerCase() !== nombre);
+    const mod = modeloP(actual), t = talla(actual.codigo), col = colorP(actual);
+    colores = PRODS.filter(p => p.id !== actual.id && modeloP(p) === mod && talla(p.codigo) === t && colorP(p) !== col);
   }
 
   let h = "";
   if (otras.length) h += `<label>Cambiar solo la talla (mismo precio)</label><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">` +
     otras.map(p => `<button ${p.stock > 0 ? "" : "disabled"} onclick="elegirCambio('${p.id}', ${precio}, true)">${esc(talla(p.codigo))} <small>(stock ${p.stock})</small></button>`).join("") + `</div>`;
-  if (colores.length) h += `<label>Cambiar solo el color (misma talla y precio)</label><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">` +
-    colores.map(p => `<button ${p.stock > 0 ? "" : "disabled"} onclick="elegirCambio('${p.id}', ${precio}, true)">${esc(p.color || p.nombre)} <small>(stock ${p.stock})</small></button>`).join("") + `</div>`;
+  if (!CP.soloTalla) {
+    h += `<label>Cambiar solo el color (misma talla y precio)</label>`;
+    h += colores.length
+      ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">` +
+        colores.map(p => `<button ${p.stock > 0 ? "" : "disabled"} onclick="elegirCambio('${p.id}', ${precio}, true)">${esc(nomColor(p))} <small>(stock ${p.stock})</small></button>`).join("") + `</div>`
+      : `<p class="gr" style="margin:2px 0 8px">No hay otros colores de este modelo en esta talla.</p>`;
+  }
   if (!h && CP.soloTalla) h = `<p class="gr">No hay otras tallas de esta prenda en el inventario.</p>`;
   caja.innerHTML = h;
 }
