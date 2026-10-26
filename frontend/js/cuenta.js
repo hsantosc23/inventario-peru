@@ -65,7 +65,7 @@ async function cambiarClave(){
 function pedirClave(motivo, alConfirmar){
   modalBase(`<b>Confirma tu contraseña</b>
     <p class="gr" style="margin:6px 0">${esc(motivo)}</p>
-    <input type="password" id="pk-clave" autocomplete="current-password" placeholder="Contraseña de tu cuenta">
+    <input type="password" id="pk-clave" autocomplete="new-password" name="pk-clave-confirmar" data-lpignore="true" data-1p-ignore data-bwignore="true" readonly onfocus="this.removeAttribute('readonly')" placeholder="Contraseña de tu cuenta">
     <div class="msg" id="pk-msg"></div>
     <div style="display:flex;gap:8px;margin-top:8px"><button style="flex:1" id="pk-no">Cancelar</button>
     <button class="pri" style="flex:2" id="pk-si">Confirmar</button></div>`);
