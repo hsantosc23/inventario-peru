@@ -100,6 +100,7 @@ async function cargarEstadisticas(){
   $("e-k-n").textContent = EST.nV;
   $("e-k-ticket").textContent = sol(EST.promedio);
   dibujarEstadisticas();
+  cargarEstRopa();
 }
 
 function graficar(id, config){

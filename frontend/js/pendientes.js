@@ -98,19 +98,34 @@ function listarPendientes(){
   const porCobrar = lista.filter(p => p.estado === "pendiente").reduce((a, p) => a + peFalta(p), 0);
   $("pe-resumen").textContent = `${lista.length} registro(s) · Por cobrar: ${sol(porCobrar)}`;
   $("pe-lista").innerHTML = lista.length ? lista.map(p => {
-    const pagado = p.estado === "pagado";
+    const pagado = p.estado === "pagado", dev = p.estado === "devuelto";
     const pagos = (p.abonos || []).map(a => `${peFecha(a.fecha)}: ${sol(a.monto)}`).join(" · ");
-    return `<div class="pend${pagado ? " pagado" : ""}"><div class="pend-top"><b>${esc(p.cliente)}</b><span class="chip ${pagado ? "ok" : "pen"}">${pagado ? "Pagado" : "Pendiente"}</span></div>
+    const chip = dev ? `<span class="chip">Devuelto</span>` : `<span class="chip ${pagado ? "ok" : "pen"}">${pagado ? "Pagado" : "Pendiente"}</span>`;
+    const acciones = dev ? "" : pagado ? (p.venta_id ? "" : `<button class="pri" onclick="abrirCobro('${p.id}')">Generar venta</button>`)
+      : `<button onclick="abonarPendiente('${p.id}')">Registrar abono</button>
+         <button class="pri" onclick="abrirCobro('${p.id}')">Pago completo</button>
+         ${p.celular ? `<button onclick="avisarPendiente('${p.id}')">WhatsApp</button>` : ""}
+         ${Number(p.adelanto) > 0 ? `<button class="peligro" onclick="devolverDinero('${p.id}')">Devolver dinero</button>` : ""}`;
+    return `<div class="pend${pagado || dev ? " pagado" : ""}"><div class="pend-top"><b>${esc(p.cliente)}</b>${chip}</div>
       <div class="gr">${esc(p.detalle || "")}${p.celular ? " · " + esc(p.celular) : ""}</div>
-      <div class="pend-nums">Total ${sol(p.total)} · Pagado ${sol(p.adelanto)}${pagado ? "" : ` · <b>Falta ${sol(peFalta(p))}</b>`}</div>
-      <small class="gr">Registrado el ${peFecha(p.creado)}${pagado && p.pagado_en ? " · Completado el " + peFecha(p.pagado_en) : ""}${p.venta_id ? " · Venta registrada" : ""}</small>
+      <div class="pend-nums">Total ${sol(p.total)} · Pagado ${sol(dev ? p.devuelto_monto : p.adelanto)}${pagado || dev ? "" : ` · <b>Falta ${sol(peFalta(p))}</b>`}${dev ? " · <b>Dinero devuelto</b>" : ""}</div>
+      <small class="gr">Registrado el ${peFecha(p.creado)}${pagado && p.pagado_en ? " · Completado el " + peFecha(p.pagado_en) : ""}${dev && p.devuelto_en ? " · Devuelto el " + peFecha(p.devuelto_en) : ""}${p.venta_id ? " · Venta registrada" : ""}</small>
       ${pagos ? `<div class="pend-hist"><b>Pagos:</b> ${pagos}</div>` : ""}
-      ${pagado ? (p.venta_id ? "" : `<button class="pri" onclick="abrirCobro('${p.id}')">Generar venta</button>`)
-        : `<button onclick="abonarPendiente('${p.id}')">Registrar abono</button>
-      <button class="pri" onclick="abrirCobro('${p.id}')">Pago completo</button>
-      ${p.celular ? `<button onclick="avisarPendiente('${p.id}')">WhatsApp</button>` : ""}`}
+      ${acciones}
       <button onclick="borrarPendiente('${p.id}')">Borrar</button></div>`;
   }).join("") : `<p class="gr">No hay registros.</p>`;
+}
+
+// Devolución de dinero: solo para separados que todavía no se convirtieron en venta
+async function devolverDinero(id){
+  const p = PEND.find(x => x.id === id); if (!p) return;
+  const monto = Number(p.adelanto);
+  if (!confirm(`¿Devolver ${sol(monto)} a ${p.cliente}? El separado se cancela y ese dinero sale de la caja de hoy.`)) return;
+  const { error } = await sb.from("pagos_pendientes")
+    .update({ estado: "devuelto", devuelto_en: new Date().toISOString(), devuelto_monto: monto })
+    .eq("id", id).eq("estado", "pendiente");
+  if (error) return alert("No se pudo registrar la devolución: " + error.message);
+  await cargarPendientes();
 }
 
 async function guardarPendiente(){

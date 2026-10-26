@@ -32,22 +32,29 @@ async function calcularCaja(){
   const msg = $("ca-msg"); msg.style.color = ""; msg.textContent = "";
   const f = $("ca-fecha").value || hoyLima(), ini = f + "T00:00:00-05:00", fin = diaSig(f) + "T00:00:00-05:00";
   try {
-    const ventas = await estFilas(() => sb.from("ventas").select("total,anulada,medio_pago,cobrado_antes").eq("negocio_id", NEG.id).gte("fecha", ini).lt("fecha", fin));
+    const ventas = await estFilas(() => sb.from("ventas").select("total,anulada,medio_pago,cobrado_antes,ajustes").eq("negocio_id", NEG.id).gte("fecha", ini).lt("fecha", fin));
     const gastos = await estFilas(() => sb.from("gastos").select("monto").eq("negocio_id", NEG.id).eq("fecha", f));
-    const { data: pp } = await sb.from("pagos_pendientes").select("abonos,convertido_en").eq("negocio_id", NEG.id).or(`estado.eq.pendiente,pagado_en.gte.${ini}`);
+    const { data: pp } = await sb.from("pagos_pendientes").select("abonos,convertido_en,devuelto_en,devuelto_monto").eq("negocio_id", NEG.id)
+      .or(`estado.eq.pendiente,pagado_en.gte.${ini},devuelto_en.gte.${ini}`);
+    const { data: conAj } = await sb.from("ventas").select("anulada,ajustes").eq("negocio_id", NEG.id).not("ajustes", "is", null).limit(2000);
     const medios = { efectivo: 0, yape_plin: 0, tarjeta: 0, transferencia: 0 };
+    const t0 = new Date(ini).getTime(), t1 = new Date(fin).getTime(), enDia = x => { const t = new Date(x).getTime(); return t >= t0 && t < t1; };
     let n = 0, anul = 0;
-    // de una venta que viene de un pago pendiente solo cuenta lo cobrado ese día (lo anterior ya entró en su día)
-    ventas.forEach(v => { if (v.anulada) { anul++; return; } n++; medios[v.medio_pago] = (medios[v.medio_pago] || 0) + Number(v.total) - Number(v.cobrado_antes || 0); });
-    const t0 = new Date(ini).getTime(), t1 = new Date(fin).getTime();
-    let cobros = 0;
-    (pp || []).forEach(p => {
-      const conv = p.convertido_en ? new Date(p.convertido_en).getTime() : null;
-      const yaEnVenta = conv !== null && conv >= t0 && conv < t1;   // se completó hoy: ya está en la venta
-      if (yaEnVenta) return;
-      (p.abonos || []).forEach(a => { const t = new Date(a.fecha).getTime(); if (t >= t0 && t < t1) cobros += Number(a.monto); });
+    // de una venta solo cuenta lo cobrado ese día: sin lo ya cobrado antes ni las diferencias de cambios (esas entran el día del cambio)
+    ventas.forEach(v => {
+      if (v.anulada) { anul++; return; }
+      n++;
+      const aj = (v.ajustes || []).reduce((s, a) => s + Number(a.monto), 0);
+      medios[v.medio_pago] = (medios[v.medio_pago] || 0) + Number(v.total) - Number(v.cobrado_antes || 0) - aj;
     });
-    CAJA = { fecha: f, n, anul, medios, cobros: r2(cobros), gastos: r2(gastos.reduce((s, g) => s + Number(g.monto), 0)) };
+    (conAj || []).forEach(v => { if (!v.anulada) (v.ajustes || []).forEach(a => { if (enDia(a.fecha)) medios[a.medio] = (medios[a.medio] || 0) + Number(a.monto); }); });
+    let cobros = 0, devol = 0;
+    (pp || []).forEach(p => {
+      if (p.devuelto_en && enDia(p.devuelto_en)) devol += Number(p.devuelto_monto || 0);
+      if (p.convertido_en && enDia(p.convertido_en)) return;   // se completó hoy: ya está en la venta
+      (p.abonos || []).forEach(a => { if (enDia(a.fecha)) cobros += Number(a.monto); });
+    });
+    CAJA = { fecha: f, n, anul, medios, cobros: r2(cobros), devol: r2(devol), gastos: r2(gastos.reduce((s, g) => s + Number(g.monto), 0)) };
   } catch (e) { return msg.textContent = "No se pudieron cargar los datos: " + e.message; }
 
   const ya = CIERRES.find(c => c.fecha === f);
@@ -64,7 +71,7 @@ async function calcularCaja(){
 
 function calculosCaja(){
   const ap = num("ca-apertura"), ret = num("ca-retiro"), vacio = $("ca-contado").value === "", ct = num("ca-contado");
-  const esperado = r2(ap + CAJA.medios.efectivo + CAJA.cobros - CAJA.gastos);
+  const esperado = r2(ap + CAJA.medios.efectivo + CAJA.cobros - CAJA.devol - CAJA.gastos);
   return { ap, ret, ct, vacio, esperado, dif: vacio ? null : r2(ct - esperado) };
 }
 
@@ -84,6 +91,7 @@ function pintarCaja(){
     L("· Efectivo", sol(m.efectivo)) + L("· Yape / Plin", sol(m.yape_plin)) +
     L("· Tarjeta", sol(m.tarjeta)) + L("· Transferencia", sol(m.transferencia)) +
     L("Cobros de pagos pendientes", sol(CAJA.cobros)) +
+    L("Devoluciones de separados", "− " + sol(CAJA.devol)) +
     L("Gastos del día", "− " + sol(CAJA.gastos)) +
     L("Fondo inicial", sol(c.ap)) +
     L("Efectivo esperado en caja", sol(c.esperado), "fuerte") + dif;

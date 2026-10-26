@@ -270,16 +270,126 @@ function irAFecha(v){
   cargarVentas();
 }
 
+const MEDIOS = { efectivo: "Efectivo", yape_plin: "Yape / Plin", tarjeta: "Tarjeta", transferencia: "Transferencia" };
+
 function botonesVenta(v) {
   if (v.anulada) return "<b>Anulada</b>";
+  const emitida = v.cpe_estado === "aceptado";
   let h = `<button onclick="imprimirComprobante('${v.id}')">Imprimir</button>`;
-  if (PUEDE && v.tipo_doc && v.cpe_estado !== "aceptado")
-    h += `<button class="aviso" onclick="reintentarEmision('${v.id}')">Reintentar emisión</button>`;
-  if (PUEDE)
-    h += (v.cpe_estado === "aceptado" && v.cpe_nc_estado !== "aceptado")
-      ? `<button class="peligro" onclick="devolverVenta('${v.id}')">Devolución</button>`
-      : `<button class="peligro" onclick="anularVenta('${v.id}')">Anular</button>`;
+  if (PUEDE) {
+    h += `<button onclick="cambiarMedio('${v.id}')">Medio de pago</button>`;
+    if (!emitida) h += `<button onclick="cambiarPrenda('${v.id}')">Cambio de prenda</button>`;
+    if (v.tipo_doc && !emitida) h += `<button class="aviso" onclick="reintentarEmision('${v.id}')">Reintentar emisión</button>`;
+    if (emitida && v.cpe_nc_estado !== "aceptado") {
+      // con comprobante aceptado solo hay nota de crédito, y solo desde el negocio principal
+      if (!CTX.es_sede) h += `<button class="peligro" onclick="devolverVenta('${v.id}')">Devolución (NC)</button>`;
+    } else h += `<button class="peligro" onclick="anularVenta('${v.id}')">Anular</button>`;
+  }
   return `<div class="bts">${h}</div>`;
+}
+
+// ---------- Ventana emergente simple ----------
+function modalBase(html, ancho){
+  cerrarModal();
+  const ov = document.createElement("div");
+  ov.id = "md-ov";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow:auto";
+  ov.innerHTML = `<div class="card" style="max-width:${ancho || 440}px;width:100%;margin:auto">${html}</div>`;
+  document.body.appendChild(ov);
+}
+function cerrarModal(){ const o = document.getElementById("md-ov"); if (o) o.remove(); }
+
+// ---------- Cambiar el medio de pago ----------
+function cambiarMedio(id){
+  const v = VDATA.find(x => x.id === id); if (!v) return;
+  modalBase(`<b>Medio de pago de la venta</b>
+    <p class="gr" style="margin:6px 0">Total ${sol(v.total)}. Elige cómo pagó realmente el cliente.</p>
+    <select id="md-medio">${Object.entries(MEDIOS).map(([k, t]) => `<option value="${k}"${k === v.medio_pago ? " selected" : ""}>${t}</option>`).join("")}</select>
+    <div class="msg" id="md-msg"></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><button style="flex:1" onclick="cerrarModal()">Cancelar</button>
+    <button class="pri" style="flex:2" onclick="guardarMedio('${id}')">Guardar</button></div>`);
+}
+async function guardarMedio(id){
+  const { error } = await sb.rpc("fijar_medio_pago", { p_venta: id, p_medio: $("md-medio").value });
+  if (error) return $("md-msg").textContent = "No se pudo cambiar: " + error.message;
+  cerrarModal(); cargarVentas();
+}
+
+// ---------- Cambio de prenda (sin devolución de dinero) ----------
+let CP = null;
+
+function cambiarPrenda(id){
+  const v = VDATA.find(x => x.id === id); if (!v) return;
+  CP = { v, prod: null };
+  const opts = v.venta_items.map(i => `<option value="${i.id}">${i.cantidad} × ${esc(i.nombre)} (S/ ${Number(i.precio_unitario).toFixed(2)} c/u)</option>`).join("");
+  modalBase(`<b>Cambio de prenda</b>
+    <p class="gr" style="margin:6px 0">La prenda que devuelve vuelve al stock y la nueva se descuenta. No se devuelve dinero: la nueva debe valer lo mismo o más, y la diferencia se cobra.</p>
+    <label>Prenda que devuelve</label><select id="cp-item" onchange="calcCambio()">${opts}</select>
+    <label>Cantidad que devuelve</label><input type="number" id="cp-cdev" min="1" value="1" oninput="calcCambio()">
+    <label>Prenda nueva</label><input type="text" id="cp-prod" autocomplete="off" placeholder="Escribe código o nombre" oninput="buscarCambio()">
+    <div id="cp-res"></div>
+    <div class="f2"><div><label>Cantidad nueva</label><input type="number" id="cp-cant" min="1" value="1" oninput="calcCambio()"></div>
+    <div><label>Precio c/u (S/)</label><input type="number" id="cp-precio" min="0" step="0.01" oninput="calcCambio()"></div></div>
+    <div id="cp-dif" class="pre" style="font-size:16px;margin:8px 0">Elige la prenda nueva</div>
+    <div id="cp-medio-box" class="hide"><label>Medio de pago de la diferencia</label>
+      <select id="cp-medio">${Object.entries(MEDIOS).map(([k, t]) => `<option value="${k}">${t}</option>`).join("")}</select></div>
+    <div class="msg" id="cp-msg"></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><button style="flex:1" onclick="cerrarModal()">Cancelar</button>
+    <button class="pri" style="flex:2" id="cp-ok" onclick="confirmarCambio()">Confirmar cambio</button></div>`);
+}
+
+function calcCambio(){
+  const it = CP.v.venta_items.find(i => i.id === $("cp-item").value); if (!it) return null;
+  $("cp-cdev").max = it.cantidad;
+  const cdev = parseInt($("cp-cdev").value, 10) || 0, cant = parseInt($("cp-cant").value, 10) || 0, pr = parseFloat($("cp-precio").value);
+  const viejo = Math.round(Number(it.precio_unitario) * cdev * 100) / 100;
+  const nuevo = isNaN(pr) ? 0 : Math.round(pr * cant * 100) / 100;
+  const dif = Math.round((nuevo - viejo) * 100) / 100;
+  $("cp-dif").textContent = !CP.prod ? "Elige la prenda nueva"
+    : dif >= 0 ? "Diferencia a cobrar: " + sol(dif) : "Faltan " + sol(-dif) + " para igualar el valor";
+  $("cp-medio-box").classList.toggle("hide", !(CP.prod && dif > 0));
+  return { it, cdev, cant, pr, dif };
+}
+
+function buscarCambio(){
+  CP.prod = null;
+  const q = $("cp-prod").value.trim().toLowerCase(), box = $("cp-res");
+  if (!q) { box.className = ""; box.innerHTML = ""; calcCambio(); return; }
+  const r = PRODS.filter(p => p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)).slice(0, 6);
+  box.className = "res";
+  box.innerHTML = r.length ? r.map(p =>
+    `<div onclick="elegirCambio('${p.id}')"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)} · S/ ${Number(p.precio).toFixed(2)} <small class="gr">(stock ${p.stock})</small></div>`).join("")
+    : `<div class="gr">No se encontró esa prenda.</div>`;
+  calcCambio();
+}
+
+function elegirCambio(id){
+  const p = PRODS.find(x => x.id === id); if (!p) return;
+  CP.prod = p.id;
+  $("cp-prod").value = `${p.codigo} · ${p.nombre}`;
+  $("cp-precio").value = Number(p.precio).toFixed(2);
+  $("cp-cant").value = $("cp-cdev").value || 1;
+  $("cp-res").className = ""; $("cp-res").innerHTML = "";
+  calcCambio();
+}
+
+async function confirmarCambio(){
+  const msg = $("cp-msg"); msg.style.color = ""; msg.textContent = "";
+  const c = calcCambio(), p = PRODS.find(x => x.id === CP.prod);
+  if (!p) return msg.textContent = "Elige la prenda nueva.";
+  if (!(c.cdev >= 1 && c.cdev <= c.it.cantidad)) return msg.textContent = "La cantidad que devuelve debe estar entre 1 y " + c.it.cantidad + ".";
+  if (!(c.cant >= 1)) return msg.textContent = "La cantidad nueva no es válida.";
+  if (isNaN(c.pr) || c.pr < 0) return msg.textContent = "El precio no es válido.";
+  if (c.pr > Number(p.precio)) return msg.textContent = "El precio no puede ser mayor al de lista (S/ " + Number(p.precio).toFixed(2) + ").";
+  if (c.dif < 0) return msg.textContent = "No se devuelve dinero: elige una prenda de igual o mayor valor.";
+  const btn = $("cp-ok"); btn.disabled = true;
+  const { error } = await sb.rpc("cambiar_prenda", {
+    p_item: c.it.id, p_producto: p.id, p_cantidad: c.cant, p_precio: c.pr, p_cant_cambio: c.cdev, p_medio: $("cp-medio").value });
+  if (error) { btn.disabled = false; return msg.textContent = "No se pudo hacer el cambio: " + error.message; }
+  cerrarModal();
+  await Promise.all([cargarProductos(), cargarVentas()]);
+  const m = $("v-msg"); m.style.color = "#166534";
+  m.textContent = "Cambio registrado. El stock se actualizó" + (c.dif > 0 ? ". Cobra " + sol(c.dif) + " de diferencia." : ".");
 }
 
 async function cargarVentas(){
@@ -302,8 +412,8 @@ async function cargarVentas(){
 
   VDATA = [];
   const { data, error } = await sb.from("ventas")
-    .select("id,fecha,total,anulada,cliente_doc,cliente_nombre,cpe_nc_estado,cpe_serie,cpe_numero,cpe_estado,tipo_doc,numero,venta_items(codigo,nombre,cantidad,precio_unitario,subtotal)")
-    .eq("negocio_id", NEG.id).gte("fecha", a.toISOString()).lt("fecha", b.toISOString()).order("fecha", { ascending: false });
+  .select("id,fecha,total,anulada,cliente_doc,cliente_nombre,cpe_nc_estado,cpe_serie,cpe_numero,cpe_estado,tipo_doc,numero,medio_pago,venta_items(id,codigo,nombre,cantidad,precio_unitario,subtotal)")
+  .eq("negocio_id", NEG.id).gte("fecha", a.toISOString()).lt("fecha", b.toISOString()).order("fecha", { ascending: false });
   if (error) return $("v-lista").innerHTML = `<p class="msg">No se pudieron cargar: ${esc(error.message)}</p>`;
   VDATA = data;
   const validas = data.filter(v => !v.anulada), anuladas = data.length - validas.length;
@@ -316,8 +426,8 @@ async function cargarVentas(){
   const compra = v => {
     const n = v.venta_items.length;
     return `<tbody class="compra${v.anulada ? " anulada" : ""}">` + v.venta_items.map((i, k) => `<tr>
-      ${k === 0 ? `<td rowspan="${n}">${hora(v)}${v.tipo_doc ? `<small class="gr"><br>${v.tipo_doc === "factura" ? "Factura" : "Boleta"} ${v.cpe_estado === "aceptado" ? v.cpe_serie + "-" + v.cpe_numero : String(v.numero).padStart(6, "0")}</small>` : ""}</td>` : ""}
-      <td class="c">${i.cantidad}</td>
+    ${k === 0 ? `<td rowspan="${n}">${hora(v)}${v.tipo_doc ? `<small class="gr"><br>${v.tipo_doc === "factura" ? "Factura" : "Boleta"} ${v.cpe_estado === "aceptado" ? v.cpe_serie + "-" + v.cpe_numero : String(v.numero).padStart(6, "0")}</small>` : ""}<small class="gr"><br>${MEDIOS[v.medio_pago] || ""}</small></td>` : ""}
+    <td class="c">${i.cantidad}</td>
       <td>${esc(i.nombre)}${n > 1 ? ` <span class="gr">· S/ ${Number(i.subtotal).toFixed(2)}</span>` : ""}</td>
       ${k === 0 ? `<td rowspan="${n}" class="pre">S/ ${Number(v.total).toFixed(2)}</td>
       <td rowspan="${n}" class="bt">${botonesVenta(v)}</td>` : ""}
@@ -419,6 +529,7 @@ async function imprimirComprobante(id){
 }
 
 async function devolverVenta(id) {
+    if (CTX.es_sede) return alert("Solo la cuenta del negocio principal puede hacer devoluciones con nota de crédito.");
   if (!confirm("Se emitirá una NOTA DE CRÉDITO en SUNAT por el total de la venta y luego se anulará, devolviendo el stock. ¿Continuar?")) return;
   const msg = $("v-msg"); msg.style.color = ""; msg.textContent = "Emitiendo nota de crédito...";
   const { data, error } = await sb.functions.invoke("emitir-comprobante", { body: { accion: "nota_credito", venta_id: id } });
