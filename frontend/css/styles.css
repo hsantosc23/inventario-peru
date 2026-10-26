@@ -421,3 +421,34 @@ table.tv td{vertical-align:middle !important}
 .pw-wrap{position:relative}
 .pw-wrap input{padding-right:46px !important}
 .pw-ojo{position:absolute !important;right:4px;top:50%;transform:translateY(-50%);width:38px !important;height:38px;padding:0 !important;margin:0 !important;border:0 !important;background:none !important;box-shadow:none !important;font-size:18px;line-height:1;cursor:pointer}
+
+/* ===== Tema moderno ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+:root{--az:#4f46e5;--az2:#eef2ff;--tx:#0f172a;--gr:#64748b;--bd:#e5e9f2;--sombra:0 1px 2px rgba(15,23,42,.04),0 8px 24px rgba(15,23,42,.06)}
+body{font-family:Inter,system-ui,"Segoe UI",Arial,sans-serif;background:#f5f7fb;-webkit-font-smoothing:antialiased}
+header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.8);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--bd)}
+.logo{letter-spacing:-.3px}
+.card{background:#fff;border:1px solid var(--bd);border-radius:18px;box-shadow:var(--sombra);transition:transform .15s,box-shadow .15s}
+button{border-radius:12px;font-weight:600;transition:transform .12s,box-shadow .15s,background .15s;border-color:#c7d2fe}
+button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 16px rgba(79,70,229,.18)}
+button:active:not(:disabled){transform:translateY(0)}
+.pri,.tabs button.act{background:linear-gradient(135deg,#6366f1,#4f46e5);border-color:transparent;color:#fff;box-shadow:0 6px 16px rgba(79,70,229,.3)}
+.tabs{gap:6px;background:#eceff7;padding:5px;border-radius:14px;width:fit-content;max-width:100%;overflow:auto}
+.tabs button{border:0;background:transparent;padding:9px 16px}
+.tabs button.act{box-shadow:0 4px 12px rgba(79,70,229,.3)}
+input,select,textarea{border-radius:12px!important;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{outline:0;border-color:#6366f1!important;box-shadow:0 0 0 4px rgba(99,102,241,.15)}
+h2{letter-spacing:-.3px}
+.fila{border-bottom-color:var(--bd)}
+canvas{max-width:100%}
+
+/* modo oscuro */
+html[data-tema="oscuro"]{--az:#818cf8;--az2:#1b2140;--bd:#242c47;--sombra:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.35)}
+html[data-tema="oscuro"] body{background:radial-gradient(1200px 600px at 80% -10%,#1a2150 0%,transparent 60%),#0a0f1f}
+html[data-tema="oscuro"] header{background:rgba(12,17,34,.75);border-bottom-color:#1d2542}
+html[data-tema="oscuro"] .card{background:linear-gradient(160deg,rgba(255,255,255,.045),rgba(255,255,255,.015));border-color:#242c47}
+html[data-tema="oscuro"] button{background:rgba(255,255,255,.04);border-color:#2f3a63;color:#c7d2fe}
+html[data-tema="oscuro"] .pri,html[data-tema="oscuro"] .tabs button.act,html[data-tema="oscuro"] button.pri{background:linear-gradient(135deg,#6366f1,#4f46e5);border-color:transparent;color:#fff}
+html[data-tema="oscuro"] .tabs{background:rgba(255,255,255,.05)}
+html[data-tema="oscuro"] .tabs button{background:transparent;border:0}
+html[data-tema="oscuro"] input,html[data-tema="oscuro"] select,html[data-tema="oscuro"] textarea{background:#0d1328;border-color:#242c47}
