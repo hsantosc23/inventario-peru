@@ -133,6 +133,8 @@ function editar(id){
   window.scrollTo(0, 0);
 }
 
+const normP = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
+
 async function guardarProducto(){
   const msg = $("pr-msg"); msg.textContent = "";
   const codigo = $("f-codigo").value.trim(), modelo = $("f-nombre").value.trim(), color = $("f-color").value.trim(),
@@ -152,7 +154,19 @@ async function guardarProducto(){
     else if (FOTO_QUITAR) foto = null;
   } catch (e) { return msg.textContent = "No se pudo subir la foto: " + (e.message || e); }
 
-    const fila = { codigo, nombre, modelo, color: color || null, precio, stock, stock_minimo, foto };
+    if (!EDIT) {
+    const t = $("f-talla").value.toUpperCase(), clave = normP(nombre);
+    const ya = PRODS.find(p => p.codigo !== codigo && normP(p.nombre) === clave &&
+      ((p.codigo.match(/^(XS|S|M|L)\d+$/i) || [])[1] || "").toUpperCase() === t);
+    if (ya && confirm(`Ya existe ${ya.codigo} · ${ya.nombre}. ¿Sumar ${stock} unidad(es) a ese producto en vez de crear uno nuevo?`)) {
+      const { error: e2 } = await sb.from("productos").update({ stock: ya.stock + stock }).eq("id", ya.id).eq("negocio_id", NEG.id);
+      if (e2) return msg.textContent = "No se pudo sumar el stock: " + e2.message;
+      limpiarForm();
+      return cargarProductos();
+    }
+  }
+
+  const fila = { codigo, nombre, modelo, color: color || null, precio, stock, stock_minimo, foto };
   const { error } = EDIT
     ? await sb.from("productos").update(fila).eq("id", EDIT)
     : await sb.from("productos").insert({ ...fila, negocio_id: NEG.id });
@@ -183,29 +197,40 @@ async function guardarPrenda(){
   if (!tallas.length) return msg.textContent = "Escribe la cantidad de al menos una talla.";
   for (const t of tallas) if (!(parseInt($("p-" + t).value) >= 0)) return msg.textContent = "Cantidad inválida en la talla " + t + ".";
 
-  let foto = null;
-  const arch = $("p-foto").files[0];
-  if (arch) { try { foto = await subirFoto(arch); } catch (e) { return msg.textContent = "No se pudo subir la foto: " + (e.message || e); } }
-
-  const filas = [];
+  const nombre = `${modelo} ${color}`, clave = normP(nombre);
+  const nuevas = [], sumadas = [];
   for (const t of tallas) {
-    // siguiente número libre de esa talla: XS0006 -> XS0007
-    const { data } = await sb.from("productos").select("codigo").eq("negocio_id", NEG.id).like("codigo", t + "%");
+    const cant = parseInt($("p-" + t).value);
+    const { data } = await sb.from("productos").select("id,codigo,nombre,stock,modelo,color").eq("negocio_id", NEG.id).like("codigo", t + "%");
     const re = new RegExp("^" + t + "(\\d+)$");
-    const max = (data || []).reduce((m, r) => { const x = re.exec(r.codigo); return x ? Math.max(m, +x[1]) : m; }, 0);
-    filas.push({
+    const deTalla = (data || []).filter(r => re.test(r.codigo));
+    const ya = deTalla.find(r => normP(r.nombre) === clave);
+    if (ya) {
+      // ya existe ese modelo y color en esa talla: se suma al código que ya tiene
+      const { error } = await sb.from("productos")
+        .update({ stock: ya.stock + cant, modelo: ya.modelo || modelo, color: ya.color || color })
+        .eq("id", ya.id).eq("negocio_id", NEG.id);
+      if (error) return msg.textContent = "No se pudo sumar el stock de " + ya.codigo + ": " + error.message;
+      sumadas.push(`${ya.codigo} (${ya.stock} → ${ya.stock + cant})`);
+      continue;
+    }
+    const max = deTalla.reduce((m, r) => Math.max(m, +re.exec(r.codigo)[1]), 0);
+    nuevas.push({
       negocio_id: NEG.id,
       codigo: t + String(max + 1).padStart(6 - t.length, "0"),
-      nombre: `${modelo} ${color}`,
-      modelo, color,
-      precio, stock: parseInt($("p-" + t).value), stock_minimo: min, foto
+      nombre, modelo, color,
+      precio, stock: cant, stock_minimo: min
     });
   }
-  const { error } = await sb.from("productos").insert(filas);
-  if (error) { if (foto) borrarFotoStorage(foto); return msg.textContent = "No se pudo guardar: " + error.message; }
+  if (nuevas.length) {
+    const { error } = await sb.from("productos").insert(nuevas);
+    if (error) return msg.textContent = "No se pudo guardar: " + error.message;
+  }
   msg.style.color = "var(--ok,#16a34a)";
-  msg.textContent = `Listo: ${filas.length} tallas registradas (${filas.map(f => f.codigo).join(", ")}).`;
-  ["p-modelo", "p-color", "p-precio", "p-min", "p-XS", "p-S", "p-M", "p-L", "p-foto"].forEach(i => $(i).value = "");
+  msg.textContent = "Listo." +
+    (nuevas.length ? ` Nuevos: ${nuevas.map(f => f.codigo).join(", ")}.` : "") +
+    (sumadas.length ? ` Stock sumado en: ${sumadas.join(", ")}.` : "");
+  ["p-modelo", "p-color", "p-precio", "p-min", "p-XS", "p-S", "p-M", "p-L"].forEach(i => $(i).value = "");
   if (typeof cargarProductos === "function") cargarProductos();
 }
 
