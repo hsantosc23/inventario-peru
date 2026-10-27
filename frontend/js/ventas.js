@@ -320,34 +320,100 @@ async function guardarMedio(id){
 // ---------- Cambio de prenda (sin devolución de dinero) ----------
 let CP = null;
 
+const CAMBIO_COLOR_CON_CPE = true;   // pásalo a true cuando actualices cambiar_prenda en SQL
+
+// Ayudas para reconocer modelo, talla y color de un producto
+const cpNorm = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+const cpConTalla = p => /^(XS|S|M|L)\d+$/i.test(p.codigo);
+const cpTalla = p => { const m = String(p.codigo).match(/^(XS|S|M|L)\d+$/i); return m ? m[1].toUpperCase() : "—"; };
+const cpSep = p => cpConTalla(p) && /\s/.test(String(p.nombre).trim());
+const cpModelo = p => p.modelo ? cpNorm(p.modelo) : (cpSep(p) ? cpNorm(p.nombre).replace(/\s+\S+$/, "") : cpNorm(p.nombre));
+const cpColor = p => p.color ? cpNorm(p.color) : (cpSep(p) ? cpNorm(p.nombre).split(/\s+/).pop() : "");
+const cpNomColor = p => p.color || (cpSep(p) ? String(p.nombre).trim().split(/\s+/).pop() : "Único");
+
 function cambiarPrenda(id){
   const v = VDATA.find(x => x.id === id); if (!v) return;
-    CP = { v, prod: null, soloTalla: v.cpe_estado === "aceptado" };
-  const opts = v.venta_items.map(i => `<option value="${i.id}">${i.cantidad} × ${esc(i.nombre)} (S/ ${Number(i.precio_unitario).toFixed(2)} c/u)</option>`).join("");
+  CP = { v, prod: null, mismo: true, soloTalla: v.cpe_estado === "aceptado" };
+  const opts = v.venta_items.map(i => `<option value="${i.id}">${i.cantidad} × ${esc(i.nombre)}</option>`).join("");
+  const otro = CP.soloTalla
+    ? `<p class="gr" style="margin:10px 0 0">Con comprobante emitido a SUNAT solo se cambia la talla${CAMBIO_COLOR_CON_CPE ? " y el color" : ""} de la misma prenda. Para otro modelo hay que emitir una nota de crédito desde la cuenta principal.</p>`
+    : `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)"><p class="gr" style="margin:0 0 8px">¿Quiere un modelo distinto? Se anula este ticket y se hace una venta nueva.</p>
+       <button type="button" class="peligro" onclick="anularYNueva('${v.id}')">Anular y hacer venta nueva</button></div>`;
   modalBase(`<b>Cambio de prenda</b>
-    <p class="gr" style="margin:6px 0">La prenda que devuelve vuelve al stock y la nueva se descuenta. No se devuelve dinero: la nueva debe valer lo mismo o más, y la diferencia se cobra.</p>
-    <label>Prenda que devuelve</label><select id="cp-item" onchange="pintarTallasCambio(); calcCambio()">${opts}</select>
-    <label>Cantidad que devuelve</label><input type="number" id="cp-cdev" min="1" value="1" oninput="syncCantCambio(); calcCambio()">
-    <div id="cp-tallas"></div>
-    <label>Prenda nueva</label><input type="text" id="cp-prod" autocomplete="off" placeholder="Escribe código o nombre" oninput="buscarCambio()">
-    <div id="cp-res"></div>
-    <div class="f2"><div><label>Cantidad nueva</label><input type="number" id="cp-cant" min="1" value="1" oninput="calcCambio()"></div>
-    <div><label>Precio c/u (S/)</label><input type="number" id="cp-precio" min="0" step="0.01" oninput="calcCambio()"></div></div>
-    <div id="cp-dif" class="pre" style="font-size:16px;margin:8px 0">Elige la prenda nueva</div>
+    <p class="gr" style="margin:6px 0">La prenda cambiada vuelve al stock y la nueva se descuenta. No se devuelve dinero.</p>
+    <div class="${v.venta_items.length > 1 ? "" : "hide"}"><label>Prenda a cambiar</label><select id="cp-item" onchange="pintarCambio()">${opts}</select></div>
+    <div id="cp-llevo" style="margin:8px 0"></div>
+    <div class="f2">
+      <div><label>Talla nueva</label><select id="cp-talla" onchange="cpElegir()"></select></div>
+      <div><label>Color nuevo</label><select id="cp-color" onchange="cpElegir()"></select></div>
+    </div>
+    <div id="cp-estado" class="pre" style="font-size:15px;margin:10px 0"></div>
+    <input type="hidden" id="cp-cdev"><input type="hidden" id="cp-cant"><input type="hidden" id="cp-precio">
+    <div id="cp-dif" class="hide"></div>
     <div id="cp-medio-box" class="hide"><label>Medio de pago de la diferencia</label>
       <select id="cp-medio">${Object.entries(MEDIOS).map(([k, t]) => `<option value="${k}">${t}</option>`).join("")}</select></div>
+    ${otro}
     <div class="msg" id="cp-msg"></div>
     <div style="display:flex;gap:8px;margin-top:8px"><button style="flex:1" onclick="cerrarModal()">Cancelar</button>
-        <button class="pri" style="flex:2" id="cp-ok" onclick="confirmarCambio()">Confirmar cambio</button></div>`);
-    pintarTallasCambio();
-  if (CP.soloTalla) {
-    // con comprobante emitido solo se cambia la talla: se oculta el buscador y el precio
-    $("cp-prod").previousElementSibling.classList.add("hide");
-    $("cp-prod").classList.add("hide"); $("cp-res").classList.add("hide");
-    $("cp-precio").closest(".f2").classList.add("hide");
-    $("cp-dif").textContent = "Elige la talla nueva";
-    $("cp-dif").insertAdjacentHTML("beforebegin", `<p class="gr" style="margin:6px 0">Esta venta tiene comprobante emitido: solo se puede cambiar la talla (misma prenda y mismo precio). El comprobante no cambia.</p>`);
+      <button class="pri" style="flex:2" id="cp-ok" onclick="confirmarCambio()">Confirmar cambio</button></div>`);
+  pintarCambio();
+}
+
+// Prepara la prenda que se va a cambiar y sus opciones de talla y color
+function pintarCambio(){
+  const it = CP.v.venta_items.find(i => i.id === $("cp-item").value); if (!it) return;
+  const actual = PRODS.find(p => p.id === it.producto_id) || PRODS.find(p => p.codigo === it.codigo);
+  CP.it = it; CP.actual = actual; CP.prod = null;
+  $("cp-cdev").value = it.cantidad; $("cp-cant").value = it.cantidad;
+  $("cp-llevo").innerHTML = `Llevó: <b>${it.cantidad} × ${esc(it.nombre)}</b> · S/ ${Number(it.precio_unitario).toFixed(2)} c/u`;
+  if (!actual) {
+    $("cp-talla").innerHTML = ""; $("cp-color").innerHTML = "";
+    $("cp-estado").style.color = ""; $("cp-estado").textContent = "Esta prenda ya no está en el inventario.";
+    return;
   }
+  CP.fam = PRODS.filter(p => cpModelo(p) === cpModelo(actual));
+  CP.t = cpTalla(actual); CP.c = cpColor(actual);
+  pintarOpcionesCambio();
+}
+
+function cpElegir(){ CP.t = $("cp-talla").value; CP.c = $("cp-color").value; pintarOpcionesCambio(); }
+
+function pintarOpcionesCambio(){
+  const fam = CP.fam, cant = CP.it.cantidad, act = CP.actual, paid = Number(CP.it.precio_unitario);
+  const orden = { XS: 0, S: 1, M: 2, L: 3 };
+  const mejor = (t, c) => fam.filter(p => p.id !== act.id && cpTalla(p) === t && cpColor(p) === c).sort((a, b) => b.stock - a.stock)[0];
+  const esAct = (t, c) => t === cpTalla(act) && c === cpColor(act);
+  const info = (t, c) => { if (esAct(t, c)) return " · actual"; const m = mejor(t, c); return m ? " · stock " + m.stock : " · no hay"; };
+  const ok = (t, c) => { if (esAct(t, c)) return true; const m = mejor(t, c); return !!m && m.stock >= cant; };
+  const tallas = [...new Set(fam.map(cpTalla))].sort((a, b) => (orden[a] ?? 9) - (orden[b] ?? 9));
+  const colores = new Map(); fam.forEach(p => colores.set(cpColor(p), cpNomColor(p)));
+  const mismoColor = CP.soloTalla && !CAMBIO_COLOR_CON_CPE;
+
+  $("cp-talla").innerHTML = tallas.map(t => `<option value="${esc(t)}" ${ok(t, CP.c) ? "" : "disabled"}>${esc(t)}${info(t, CP.c)}</option>`).join("");
+  $("cp-color").innerHTML = [...colores].filter(([c]) => !mismoColor || c === cpColor(act))
+    .map(([c, n]) => `<option value="${esc(c)}" ${ok(CP.t, c) ? "" : "disabled"}>${esc(n)}${info(CP.t, c)}</option>`).join("");
+  $("cp-talla").value = CP.t; $("cp-color").value = CP.c;
+
+  const est = $("cp-estado"); est.style.color = ""; CP.prod = null; $("cp-precio").value = "";
+  if (esAct(CP.t, CP.c)) { est.textContent = "Elige otra talla u otro color."; return calcCambio(); }
+  const m = mejor(CP.t, CP.c);
+  if (!m) { est.textContent = "Esa combinación no existe en tu inventario."; return calcCambio(); }
+  if (m.stock < cant) { est.textContent = "Solo hay " + m.stock + " en stock y se necesitan " + cant + "."; return calcCambio(); }
+  if (Number(m.precio) < paid) { est.textContent = "Esa prenda cuesta menos (S/ " + Number(m.precio).toFixed(2) + "). No se devuelve dinero."; return calcCambio(); }
+  CP.prod = m.id; CP.mismo = true;
+  $("cp-precio").value = paid.toFixed(2);
+  est.style.color = "#16a34a";
+  est.textContent = "✔ Disponible: " + m.nombre + " · stock " + m.stock;
+  calcCambio();
+}
+
+// Otro modelo: se anula el ticket y se hace una venta nueva
+async function anularYNueva(id){
+  if (!confirm("Se anulará esta venta y el stock volverá al inventario. Después haz la venta nueva. ¿Continuar?")) return;
+  cerrarModal();
+  await anularVenta(id, true);
+  verTab("ven");
+  const b = $("v-buscar"); if (b) b.focus();
 }
 
 function calcCambio(){
@@ -618,45 +684,5 @@ async function pintarUsoComprobantes(){
   el.textContent = u && u.en_prueba ? `Prueba: ${u.usados} de ${u.limite} boletas o facturas usadas` : "";
 }
 
-// Misma prenda en otra talla o en otro color: botones con el stock de cada opción
-function pintarTallasCambio(){
-  const caja = $("cp-tallas"); if (!caja) return;
-  const it = CP.v.venta_items.find(i => i.id === $("cp-item").value);
-  const actual = it && (PRODS.find(p => p.id === it.producto_id) || PRODS.find(p => p.codigo === it.codigo));
-  const nombre = it ? String(it.nombre).trim().toLowerCase() : "";
-  const talla = c => { const m = String(c).match(/^(XS|S|M|L)\d+$/i); return m ? m[1].toUpperCase() : c; };
-  const conTalla = p => /^(XS|S|M|L)\d+$/i.test(p.codigo);
-  const norm = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
-  // Modelo y color: los campos guardados o, si faltan, "modelo color" separado por la última palabra
-  const modeloP = p => p.modelo ? norm(p.modelo) : (conTalla(p) ? norm(p.nombre).replace(/\s+\S+$/, "") : norm(p.nombre));
-  const colorP = p => p.color ? norm(p.color) : (conTalla(p) && /\s/.test(p.nombre.trim()) ? norm(p.nombre).split(/\s+/).pop() : "");
-  const nomColor = p => p.color ? p.color : (conTalla(p) && /\s/.test(p.nombre.trim()) ? p.nombre.trim().split(/\s+/).pop() : p.nombre);
-  const orden = { XS: 0, S: 1, M: 2, L: 3 };
-  const precio = it ? Number(it.precio_unitario) : 0;
 
-  // Otras tallas del mismo producto
-  const otras = PRODS.filter(p => p.nombre.trim().toLowerCase() === nombre && (!actual || p.id !== actual.id))
-    .sort((a, b) => (orden[talla(a.codigo)] ?? 9) - (orden[talla(b.codigo)] ?? 9));
 
-  // Otros colores del mismo modelo, en la misma talla
-  let colores = [];
-  if (actual && !CP.soloTalla) {
-    const mod = modeloP(actual), t = talla(actual.codigo), col = colorP(actual);
-    colores = PRODS.filter(p => p.id !== actual.id && modeloP(p) === mod && talla(p.codigo) === t && colorP(p) !== col);
-  }
-
-  let h = "";
-  if (otras.length) h += `<label>Cambiar solo la talla (mismo precio)</label><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">` +
-    otras.map(p => `<button ${p.stock > 0 ? "" : "disabled"} onclick="elegirCambio('${p.id}', ${precio}, true)">${esc(talla(p.codigo))} <small>(stock ${p.stock})</small></button>`).join("") + `</div>`;
-  if (!CP.soloTalla) {
-    h += `<label>Cambiar solo el color (misma talla y precio)</label>`;
-    h += colores.length
-      ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">` +
-        colores.map(p => `<button ${p.stock > 0 ? "" : "disabled"} onclick="elegirCambio('${p.id}', ${precio}, true)">${esc(nomColor(p))} <small>(stock ${p.stock})</small></button>`).join("") + `</div>`
-      : `<p class="gr" style="margin:2px 0 8px">No hay otros colores de este modelo en esta talla.</p>`;
-  }
-  if (!h && CP.soloTalla) h = `<p class="gr">No hay otras tallas de esta prenda en el inventario.</p>`;
-  caja.innerHTML = h;
-}
-
-function syncCantCambio(){ if (CP && CP.mismo) $("cp-cant").value = $("cp-cdev").value || 1; }
