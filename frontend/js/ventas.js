@@ -335,8 +335,11 @@ function cambiarPrenda(id){
   const v = VDATA.find(x => x.id === id); if (!v) return;
   CP = { v, prod: null, mismo: true, soloTalla: v.cpe_estado === "aceptado" };
   const opts = v.venta_items.map(i => `<option value="${i.id}">${i.cantidad} × ${esc(i.nombre)}</option>`).join("");
-  const otro = CP.soloTalla
-    ? `<p class="gr" style="margin:10px 0 0">Con comprobante emitido a SUNAT solo se cambia la talla${CAMBIO_COLOR_CON_CPE ? " y el color" : ""} de la misma prenda. Para otro modelo hay que emitir una nota de crédito desde la cuenta principal.</p>`
+    const otro = CP.soloTalla
+    ? (CTX.es_sede
+      ? `<p class="gr" style="margin:10px 0 0">Con comprobante emitido a SUNAT solo se cambia talla o color. Para otro modelo, la cuenta principal debe emitir una nota de crédito.</p>`
+      : `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)"><p class="gr" style="margin:0 0 8px">¿Quiere un modelo distinto? Se emite una nota de crédito en SUNAT por esta venta, se anula y haces una venta nueva.</p>
+         <button type="button" class="peligro" onclick="anularYNueva('${v.id}')">Emitir nota de crédito y hacer venta nueva</button></div>`)
     : `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)"><p class="gr" style="margin:0 0 8px">¿Quiere un modelo distinto? Se anula este ticket y se hace una venta nueva.</p>
        <button type="button" class="peligro" onclick="anularYNueva('${v.id}')">Anular y hacer venta nueva</button></div>`;
   modalBase(`<b>Cambio de prenda</b>
@@ -407,13 +410,23 @@ function pintarOpcionesCambio(){
   calcCambio();
 }
 
-// Otro modelo: se anula el ticket y se hace una venta nueva
+// Otro modelo: si hay comprobante aceptado se emite nota de crédito; si no, se anula. Luego va a Ventas.
 async function anularYNueva(id){
-  if (!confirm("Se anulará esta venta y el stock volverá al inventario. Después haz la venta nueva. ¿Continuar?")) return;
-  cerrarModal();
-  await anularVenta(id, true);
-  verTab("ven");
-  const b = $("v-buscar"); if (b) b.focus();
+  const { data: v, error } = await sb.from("ventas").select("anulada,cpe_estado,cpe_nc_estado").eq("id", id).single();
+  if (error) return alert("No se pudo revisar la venta: " + error.message);
+  if (v.anulada) { cerrarModal(); return alert("Esta venta ya está anulada."); }
+
+  if (v.cpe_estado === "aceptado" && v.cpe_nc_estado !== "aceptado") {
+    if (CTX.es_sede) return alert("Solo la cuenta del negocio principal puede emitir notas de crédito.");
+    cerrarModal();
+    await devolverVenta(id);            // pide confirmación, emite la nota de crédito en SUNAT y anula
+  } else {
+    if (!confirm("Se anulará esta venta y el stock volverá al inventario. Después haz la venta nueva. ¿Continuar?")) return;
+    cerrarModal();
+    await anularVenta(id, true);
+  }
+  const x = VDATA.find(z => z.id === id);
+  if (x && x.anulada) { verTab("ven"); const b = $("v-buscar"); if (b) b.focus(); }
 }
 
 function calcCambio(){
