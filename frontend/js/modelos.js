@@ -1,6 +1,16 @@
 // Código por modelo: al escanearlo se elige color y talla. Y etiquetas de modelo.
 const slugM = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-const modeloDe = p => String(p.modelo || p.nombre || "").trim();
+const modeloDe = p => {
+  if (p.modelo) return String(p.modelo).trim();
+  const n = String(p.nombre || "").trim();
+  // sin campo modelo: se quita el color (última palabra) en prendas con talla
+  return /^(XS|S|M|L)\d+$/i.test(p.codigo) && /\s/.test(n) ? n.replace(/\s+\S+$/, "") : n;
+};
+const colorDe = p => {
+  if (p.color) return String(p.color).trim();
+  const n = String(p.nombre || "").trim();
+  return /^(XS|S|M|L)\d+$/i.test(p.codigo) && /\s/.test(n) ? n.split(/\s+/).pop() : "";
+};
 const hashM = s => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return ((h >>> 0) % 60466176).toString(36).toUpperCase().padStart(5, "0"); };
 const codigoModelo = m => "MOD-" + hashM(slugM(m));
 const tallaDe = p => { const m = String(p.codigo).match(/^(XS|S|M|L)\d+$/i); return m ? m[1].toUpperCase() : p.codigo; };
@@ -23,7 +33,7 @@ function pintarModelo(){
   const box = $("v-res");
   const items = PRODS.filter(p => slugM(modeloDe(p)) === MOD.slug);
   const nombre = items.length ? modeloDe(items[0]) : "";
-  const colores = [...new Set(items.map(p => (p.color || "").trim()))];
+  const colores = [...new Set(items.map(colorDe))];
   MOD.lista = colores;
   if (MOD.color == null && colores.length === 1) MOD.color = colores[0];
   box.className = "res";
@@ -32,7 +42,7 @@ function pintarModelo(){
       colores.map((c, i) => `<button type="button" onclick="modColor(${i})">${esc(c || "Sin color")}</button>`).join("") + `</div>`;
     return;
   }
-  const tallas = items.filter(p => (p.color || "").trim() === MOD.color)
+  const tallas = items.filter(p => colorDe(p) === MOD.color)
     .sort((a, b) => (ORD_T[tallaDe(a)] ?? 9) - (ORD_T[tallaDe(b)] ?? 9));
   box.innerHTML = `<div class="gr" style="padding:8px 10px"><b>${esc(nombre + (MOD.color ? " " + MOD.color : ""))}</b> · elige la talla</div><div class="mod-bts">` +
     tallas.map(p => p.stock > 0
