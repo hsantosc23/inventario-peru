@@ -1,7 +1,8 @@
 // Código por modelo: al escanearlo se elige color y talla. Y etiquetas de modelo.
 const slugM = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 const modeloDe = p => String(p.modelo || p.nombre || "").trim();
-const codigoModelo = m => "MOD-" + slugM(m);
+const hashM = s => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return ((h >>> 0) % 60466176).toString(36).toUpperCase().padStart(5, "0"); };
+const codigoModelo = m => "MOD-" + hashM(slugM(m));
 const tallaDe = p => { const m = String(p.codigo).match(/^(XS|S|M|L)\d+$/i); return m ? m[1].toUpperCase() : p.codigo; };
 const ORD_T = { XS: 0, S: 1, M: 2, L: 3 };
 
@@ -9,8 +10,9 @@ const ORD_T = { XS: 0, S: 1, M: 2, L: 3 };
 let MOD = null;
 
 function abrirModelo(codigo){
-  const slug = String(codigo).replace(/^mod-/i, "").toUpperCase();
-  if (!PRODS.some(p => slugM(modeloDe(p)) === slug)) return false;
+  const rest = String(codigo).replace(/^mod-/i, "").toUpperCase();
+  const slug = PRODS.map(p => slugM(modeloDe(p))).find(s => s && (s === rest || hashM(s) === rest));
+  if (!slug) return false;
   MOD = { slug, color: null, lista: [] };
   pintarModelo();
   return true;
@@ -64,7 +66,7 @@ function abrirEtiquetasModelo(){
     <p class="gr" style="margin:6px 0">Un código por modelo. Al escanearlo, la app pregunta el color y la talla.</p>
     <input type="text" id="em-q" placeholder="Buscar modelo" oninput="filtrarEM()">
     <div id="em-lista" style="max-height:44vh;overflow:auto;margin:8px 0">
-      ${mods.map(([s, n]) => `<label class="em-fila" data-n="${esc(n.toLowerCase())}"><input type="checkbox" class="em-chk" value="${esc(s)}"> <span><b>${esc(n)}</b><small class="gr" style="display:block">MOD-${esc(s)}</small></span></label>`).join("") || `<p class="gr">No hay productos.</p>`}
+      ${mods.map(([s, n]) => `<label class="em-fila" data-n="${esc(n.toLowerCase())}"><input type="checkbox" class="em-chk" value="${esc(s)}"> <span><b>${esc(n)}</b><small class="gr" style="display:block">${esc(codigoModelo(n))}</small></span></label>`).join("") || `<p class="gr">No hay productos.</p>`}
     </div>
     <label>Copias por modelo</label><input type="number" id="em-n" min="1" max="100" value="1">
     <div class="msg" id="em-msg"></div>
@@ -86,9 +88,13 @@ async function imprimirEtiquetasModelo(){
   try { await cargarJsB(); } catch (e) { return msg.textContent = e.message; }
   const nombres = new Map(modelosLista());
   let html = "";
-  sel.forEach(s => {
+    sel.forEach(s => {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    JsBarcode(svg, "MOD-" + s, { format: "CODE128", height: 38, width: 1.3, fontSize: 9, margin: 0, displayValue: true });
+    JsBarcode(svg, "MOD-" + hashM(s), { format: "CODE128", height: 40, width: 2, fontSize: 12, margin: 0, displayValue: true });
+    // que escale al ancho de la etiqueta sin cortarse
+    const w = parseFloat(svg.getAttribute("width")), h = parseFloat(svg.getAttribute("height"));
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    svg.removeAttribute("width"); svg.removeAttribute("height");
     const una = `<div class="e"><div class="n">${esc(nombres.get(s) || s)}</div>${svg.outerHTML}</div>`;
     html += una.repeat(copias);
   });
@@ -106,4 +112,20 @@ async function imprimirEtiquetasModelo(){
 (function(){
   const b = $("buscar");
   if (b && !$("btn-em")) b.insertAdjacentHTML("afterend", `<button type="button" id="btn-em" onclick="abrirEtiquetasModelo()" style="margin-top:8px">Etiquetas de modelo (escanear: color y talla)</button>`);
+})();
+
+// El escáner de la cámara también acepta códigos de modelo
+(function(){
+  const orig = window.alLeerCodigo;
+  if (typeof orig !== "function") return;
+  window.alLeerCodigo = function(c){
+    const txt = String(typeof c === "string" ? c : (c && (c.rawValue || c.text)) || "").trim();
+    if (/^mod-/i.test(txt)) {
+      const b = $("v-buscar"); if (b) b.value = txt;
+      if (typeof cerrarEscaner === "function") cerrarEscaner();
+      if (!abrirModelo(txt)) alert("No se encontró ese modelo en tu inventario.");
+      return;
+    }
+    return orig.apply(this, arguments);
+  };
 })();
