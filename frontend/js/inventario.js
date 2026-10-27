@@ -154,11 +154,12 @@ async function guardarProducto(){
     else if (FOTO_QUITAR) foto = null;
   } catch (e) { return msg.textContent = "No se pudo subir la foto: " + (e.message || e); }
 
-    if (!EDIT) {
+      if (!EDIT) {
     const t = $("f-talla").value.toUpperCase(), clave = normP(nombre);
     const ya = PRODS.find(p => p.codigo !== codigo && normP(p.nombre) === clave &&
       ((p.codigo.match(/^(XS|S|M|L)\d+$/i) || [])[1] || "").toUpperCase() === t);
-    if (ya && confirm(`Ya existe ${ya.codigo} · ${ya.nombre}. ¿Sumar ${stock} unidad(es) a ese producto en vez de crear uno nuevo?`)) {
+    if (ya) {
+      if (!confirm(`Ya existe ${ya.codigo} · ${ya.nombre} (stock ${ya.stock}).\n\n¿Sumar ${stock} unidad(es) a ese producto?\n\nSi cancelas, no se crea nada.`)) return;
       const { error: e2 } = await sb.from("productos").update({ stock: ya.stock + stock }).eq("id", ya.id).eq("negocio_id", NEG.id);
       if (e2) return msg.textContent = "No se pudo sumar el stock: " + e2.message;
       limpiarForm();
