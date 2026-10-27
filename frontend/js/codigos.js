@@ -108,8 +108,20 @@ async function abrirEscaner(){
 }
 
 function alLeerCodigo(cod){
-  const p = PRODS.find(x => x.codigo.toLowerCase() === cod.toLowerCase());
   const m = $("es-msg"); if (!m) return;
+
+  // Código de modelo (MOD-...): se cierra la cámara y se eligen color y talla
+  if (/^mod-/i.test(cod)) {
+    if (typeof abrirModelo !== "function" || !abrirModelo(cod)) {
+      m.style.color = "#ef4444"; m.textContent = "El modelo " + cod + " no está en tu inventario."; return;
+    }
+    cerrarEscaner();
+    const r = $("v-res"); if (r && r.scrollIntoView) r.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (navigator.vibrate) navigator.vibrate(60);
+    return;
+  }
+
+  const p = PRODS.find(x => x.codigo.toLowerCase() === cod.toLowerCase());
   if (!p) { m.style.color = "#ef4444"; m.textContent = "El código " + cod + " no está en tu inventario."; return; }
   if (p.stock <= 0) { m.style.color = "#ef4444"; m.textContent = p.nombre + " no tiene stock."; return; }
   cerrarEscaner();                 // se lee una sola vez y se cierra la cámara
