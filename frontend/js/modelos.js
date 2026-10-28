@@ -139,3 +139,15 @@ async function imprimirEtiquetasModelo(){
     return orig.apply(this, arguments);
   };
 })();
+
+// Barra de 3 botones en una sola línea (se desliza en tablet y celular)
+(function(){
+  const b = document.getElementById("buscar"); if (!b) return;
+  let w = document.getElementById("barra-inv");
+  if (!w) { w = document.createElement("div"); w.id = "barra-inv"; b.after(w); }
+  [["btn-em", "Etiquetas de modelo"], ["btn-etiquetas", "Etiqueta código de barras"], ["btn-desc-inv", "Descargar inventario"]]
+    .forEach(([id, texto]) => {
+      const x = document.getElementById(id); if (!x) return;
+      x.textContent = texto; x.style.margin = ""; w.appendChild(x);
+    });
+})();
