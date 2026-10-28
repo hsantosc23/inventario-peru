@@ -91,8 +91,9 @@ async function cargarProductos(){
   PRODS = error ? [] : ordenarProductos(data);
   const b = PRODS.filter(bajo);
   $("alerta").classList.toggle("hide", !b.length);
-  $("alerta").innerHTML = "<b>Stock bajo en " + b.length + " producto(s):</b> " +
-    b.slice(0, 8).map(p => esc(p.nombre) + " (" + p.stock + ")").join(", ") + (b.length > 8 ? "..." : "");
+    $("alerta").innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+    <b>⚠ Stock bajo en ${b.length} producto(s)</b>
+    <button type="button" onclick="verStockBajo()" style="width:auto !important;flex:none;padding:6px 18px">Ver</button></div>`;
   listar();
   codigoPorDefecto();
 }
@@ -286,3 +287,59 @@ async function importar(){
     (malas.length ? ". Filas con error (revisar): " + malas.slice(0, 10).join(", ") : ".");
   cargarProductos();
 }
+
+// ---------- Stock bajo: lista en recuadro y descarga ----------
+const listaBajos = () => PRODS.filter(bajo).sort((x, y) => x.stock - y.stock || x.nombre.localeCompare(y.nombre));
+const hoyArchivo = () => new Date().toLocaleDateString("sv-SE");   // AAAA-MM-DD
+const nombreArchivo = () => String((NEG && NEG.nombre) || "inventario").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w]+/g, "_");
+
+function verStockBajo(){
+  const b = listaBajos();
+  modalBase(`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <b style="font-size:17px">Stock bajo (${b.length})</b>
+      <button type="button" onclick="cerrarModal()" aria-label="Cerrar" style="width:36px;height:36px;padding:0;border-radius:50%;flex:none">✕</button></div>
+    <p class="gr" style="margin:6px 0 8px">Productos que llegaron o bajaron del mínimo que configuraste.</p>
+    <div style="max-height:52vh;overflow:auto;border-top:1px solid var(--bd)">
+      ${b.map(p => `<div style="display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--bd)">
+        <div style="flex:1;min-width:0"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}<small class="gr" style="display:block">Avisar si baja de ${p.stock_minimo}</small></div>
+        <b style="font-size:17px;color:${p.stock <= 0 ? "#ef4444" : "#d97706"}">${p.stock}</b></div>`).join("") || `<p class="gr">No hay productos con stock bajo.</p>`}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="pri" style="flex:1" onclick="descargarStockBajo()">Descargar</button>
+      <button style="flex:1" onclick="cerrarModal()">Volver</button></div>`, 520);
+}
+
+function descargarStockBajo(){
+  const b = listaBajos();
+  if (!b.length) return alert("No hay productos con stock bajo.");
+  const ws = XLSX.utils.json_to_sheet(b.map(p => ({
+    "Código": p.codigo, "Producto": p.nombre, "Stock": p.stock, "Avisar si baja de": p.stock_minimo, "Precio (S/)": Number(p.precio) })));
+  ws["!cols"] = [{ wch: 10 }, { wch: 34 }, { wch: 8 }, { wch: 16 }, { wch: 12 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Stock bajo");
+  XLSX.writeFile(wb, "stock_bajo_" + nombreArchivo() + "_" + hoyArchivo() + ".xlsx");
+}
+
+// ---------- Descargar todo el inventario ----------
+function descargarInventario(){
+  if (!PRODS.length) return alert("No hay productos para descargar.");
+  const talla = c => (String(c).match(/^(XS|S|M|L)\d+$/i) || [])[1] || "";
+  const filas = PRODS.map(p => ({
+    "Código": p.codigo, "Producto": p.nombre, "Modelo": p.modelo || "", "Color": p.color || "", "Talla": talla(p.codigo).toUpperCase(),
+    "Precio (S/)": Number(p.precio), "Stock": p.stock, "Avisar si baja de": p.stock_minimo,
+    "Valor en stock (S/)": Math.round(Number(p.precio) * p.stock * 100) / 100 }));
+  const total = filas.reduce((s, f) => s + f["Valor en stock (S/)"], 0);
+  filas.push({}, { "Producto": "TOTAL", "Stock": PRODS.reduce((s, p) => s + p.stock, 0), "Valor en stock (S/)": Math.round(total * 100) / 100 });
+  const ws = XLSX.utils.json_to_sheet(filas);
+  ws["!cols"] = [{ wch: 10 }, { wch: 34 }, { wch: 20 }, { wch: 14 }, { wch: 7 }, { wch: 12 }, { wch: 8 }, { wch: 16 }, { wch: 18 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Inventario");
+  XLSX.writeFile(wb, "inventario_" + nombreArchivo() + "_" + hoyArchivo() + ".xlsx");
+}
+
+// Botón junto al buscador
+(function(){
+  const b = document.getElementById("buscar");
+  if (b && !document.getElementById("btn-desc-inv"))
+    b.insertAdjacentHTML("afterend", `<button type="button" id="btn-desc-inv" onclick="descargarInventario()" style="margin-top:8px">Descargar inventario (Excel)</button>`);
+})();
