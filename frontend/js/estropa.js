@@ -5,6 +5,7 @@
   const conTalla = c => /^(XS|S|M|L)\d+$/i.test(c);
   const tallaDe = c => { const m = String(c).match(/^(XS|S|M|L)\d+$/i); return m ? m[1].toUpperCase() : "Sin talla"; };
   const ORD = { XS: 0, S: 1, M: 2, L: 3 };
+  let SEL_MOD = "", DET = null;   // modelo elegido en el selector y su detalle
 
   // Modelo y color: los campos guardados o, si faltan, la última palabra del nombre
   function partes(codigo, nombre, modelo, color){
@@ -55,6 +56,7 @@
 
       const M = new Map(), C = new Map(), T = new Map(), P = new Map();
       const porCodigo = new Map(PRODS.map(p => [p.codigo, p]));
+      const D = new Map();
       const registra = (codigo, nombre, modelo, color, unidades, stock) => {
         const x = partes(codigo, nombre, modelo, color), t = tallaDe(codigo);
         const nm = norm(x.modelo), nc = norm(x.color);
@@ -65,6 +67,9 @@
           toca(P, nm + "|" + nc, bonito(x.modelo) + (x.color ? " " + x.color.toLowerCase() : ""))
         ];
         objs.forEach(o => { if (o) { o.u += unidades; o.stock += stock; } });
+                const d = D.get(nm) || D.set(nm, { nombre: bonito(x.modelo), t: new Map(), c: new Map() }).get(nm);
+        const a = toca(d.t, t, t); a.u += unidades; a.stock += stock;
+        const b = toca(d.c, nc || "-", x.color ? bonito(x.color) : "Sin color"); b.u += unidades; b.stock += stock;
       };
       // catálogo (para saber qué existe y cuánto stock hay)
       PRODS.forEach(p => registra(p.codigo, p.nombre, p.modelo, p.color, 0, p.stock));
