@@ -5,7 +5,8 @@
   const conTalla = c => /^(XS|S|M|L)\d+$/i.test(c);
   const tallaDe = c => { const m = String(c).match(/^(XS|S|M|L)\d+$/i); return m ? m[1].toUpperCase() : "Sin talla"; };
   const ORD = { XS: 0, S: 1, M: 2, L: 3 };
-  let SEL_MOD = "", DET = null;   // modelo elegido en el selector y su detalle
+  let SEL_MOD = "", DET = null;   // modelo elegido en el buscador y su detalle
+  let LISTA = [];                 // modelos para el buscador
 
   // Modelo y color: los campos guardados o, si faltan, la última palabra del nombre
   function partes(codigo, nombre, modelo, color){
@@ -35,7 +36,7 @@
     });
   }
 
-  // Detalle del modelo elegido en el selector: sus tallas y sus colores
+  // Detalle del modelo elegido en el buscador: sus tallas y sus colores
   function pintarDet(){
     const box = $("er-det"); if (!box) return;
     const d = DET && DET.get(SEL_MOD);
@@ -52,7 +53,24 @@
         ${hoja("er-d-color", "Colores de " + esc(d.nombre), "Unidades vendidas", total ? colores : [])}</div>`;
     if (total) { barras("er-d-talla", tallas, false); barras("er-d-color", colores, true); }
   }
-  window.estRopaModelo = k => { SEL_MOD = k; pintarDet(); };
+
+  window.estRopaBuscar = v => {
+    const box = $("er-res"); if (!box) return;
+    SEL_MOD = ""; pintarDet();                    // al escribir se limpia la selección anterior
+    const q = norm(v);
+    if (!q) { box.className = ""; box.innerHTML = ""; return; }
+    const r = LISTA.filter(x => norm(x.n).includes(q)).slice(0, 8);
+    box.className = "res";
+    box.innerHTML = r.length
+      ? r.map(x => `<div data-k="${esc(x.k)}" onclick="estRopaModelo(this.dataset.k)">${esc(x.n)}</div>`).join("")
+      : `<div class="gr">No se encontró ese modelo.</div>`;
+  };
+  window.estRopaModelo = k => {
+    SEL_MOD = k;
+    const box = $("er-res"); if (box) { box.className = ""; box.innerHTML = ""; }
+    const d = DET && DET.get(k), q = $("er-q"); if (q && d) q.value = d.nombre;
+    pintarDet();
+  };
 
   window.cargarEstRopa = async function(){
     const cont = $("t-est");
@@ -85,7 +103,7 @@
           toca(P, nm + "|" + nc, bonito(x.modelo) + (x.color ? " " + x.color.toLowerCase() : ""))
         ];
         objs.forEach(o => { if (o) { o.u += unidades; o.stock += stock; } });
-        // detalle por modelo (para el selector)
+        // detalle por modelo (para el buscador)
         const d = D.get(nm) || D.set(nm, { nombre: bonito(x.modelo), t: new Map(), c: new Map() }).get(nm);
         const a = toca(d.t, t, t); a.u += unidades; a.stock += stock;
         const b = toca(d.c, nc || "-", x.color ? bonito(x.color) : "Sin color"); b.u += unidades; b.stock += stock;
@@ -102,15 +120,18 @@
 
       DET = D;
       if (!D.has(SEL_MOD)) SEL_MOD = "";
-      const opciones = [...M.entries()].sort((a, b) => a[1].nombre.localeCompare(b[1].nombre))
-        .map(([k, m]) => `<option value="${esc(k)}"${k === SEL_MOD ? " selected" : ""}>${esc(m.nombre)}</option>`).join("");
+      LISTA = [...M.entries()].map(([k, m]) => ({ k, n: m.nombre })).sort((a, b) => a.n.localeCompare(b.n));
+      const selNombre = SEL_MOD && D.get(SEL_MOD) ? D.get(SEL_MOD).nombre : "";
 
       box.innerHTML = `<h3 style="margin:0 0 4px">Estadísticas de ropa</h3>
         <p class="gr" style="margin:0 0 10px">${esc(textoRango())}</p>
         <div class="card" style="margin-bottom:12px">Prendas vendidas: <b>${total}</b> · Talla que más sale: ${tTop && tTop.u > 0 ? `<b>${esc(tTop.nombre)}</b> (${tTop.u})` : "—"}
           · Color que más sale: ${mejor(top(C, 1))} · Modelo que más sale: ${mejor(top(M, 1))}</div>
         <div class="card" style="margin-bottom:12px"><b>Ver un modelo</b>
-          <select id="er-sel" onchange="estRopaModelo(this.value)" style="margin-top:8px"><option value="">Elige un modelo...</option>${opciones}</select>
+          <input type="text" id="er-q" placeholder="Busca el modelo (ej.: casaca)" autocomplete="off" value="${esc(selNombre)}" style="margin-top:8px"
+            oninput="estRopaBuscar(this.value)"
+            onkeydown="if(event.key==='Enter'){const d=document.querySelector('#er-res [data-k]'); if(d) estRopaModelo(d.dataset.k)}">
+          <div id="er-res"></div>
           <div id="er-det"></div></div>
         <div class="est-grid">
           ${hoja("er-talla", "Tallas que más salen", "Unidades vendidas por talla", tallas.filter(t => t.nombre !== "Sin talla" || t.u > 0), 230)}
