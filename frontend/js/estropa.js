@@ -35,6 +35,25 @@
     });
   }
 
+  // Detalle del modelo elegido en el selector: sus tallas y sus colores
+  function pintarDet(){
+    const box = $("er-det"); if (!box) return;
+    const d = DET && DET.get(SEL_MOD);
+    if (!d) { box.innerHTML = ""; return; }
+    const tallas = [...d.t.values()].sort((a, b) => (ORD[a.nombre] ?? 9) - (ORD[b.nombre] ?? 9));
+    const colores = [...d.c.values()].sort((a, b) => b.u - a.u || a.nombre.localeCompare(b.nombre));
+    const total = tallas.reduce((s, t) => s + t.u, 0);
+    const tt = [...tallas].sort((a, b) => b.u - a.u)[0], cc = colores[0];
+    box.innerHTML = total
+      ? `<p class="gr" style="margin:10px 0">${esc(d.nombre)}: <b>${total}</b> vendida(s) · Talla que más sale: <b>${esc(tt.nombre)}</b> (${tt.u}) · Color que más sale: <b>${esc(cc.nombre)}</b> (${cc.u})</p>`
+      : `<p class="gr" style="margin:10px 0">${esc(d.nombre)} no tiene ventas en este periodo.</p>`;
+    box.innerHTML += `<div class="est-grid">
+        ${hoja("er-d-talla", "Tallas de " + esc(d.nombre), "Unidades vendidas", total ? tallas : [], 230)}
+        ${hoja("er-d-color", "Colores de " + esc(d.nombre), "Unidades vendidas", total ? colores : [])}</div>`;
+    if (total) { barras("er-d-talla", tallas, false); barras("er-d-color", colores, true); }
+  }
+  window.estRopaModelo = k => { SEL_MOD = k; pintarDet(); };
+
   window.cargarEstRopa = async function(){
     const cont = $("t-est");
     let box = $("e-ropa");
@@ -54,9 +73,8 @@
         .gte("ventas.fecha", ini + "T00:00:00-05:00").lt("ventas.fecha", fin + "T00:00:00-05:00")
         .order("id"));
 
-      const M = new Map(), C = new Map(), T = new Map(), P = new Map();
+      const M = new Map(), C = new Map(), T = new Map(), P = new Map(), D = new Map();
       const porCodigo = new Map(PRODS.map(p => [p.codigo, p]));
-      const D = new Map();
       const registra = (codigo, nombre, modelo, color, unidades, stock) => {
         const x = partes(codigo, nombre, modelo, color), t = tallaDe(codigo);
         const nm = norm(x.modelo), nc = norm(x.color);
@@ -67,7 +85,8 @@
           toca(P, nm + "|" + nc, bonito(x.modelo) + (x.color ? " " + x.color.toLowerCase() : ""))
         ];
         objs.forEach(o => { if (o) { o.u += unidades; o.stock += stock; } });
-                const d = D.get(nm) || D.set(nm, { nombre: bonito(x.modelo), t: new Map(), c: new Map() }).get(nm);
+        // detalle por modelo (para el selector)
+        const d = D.get(nm) || D.set(nm, { nombre: bonito(x.modelo), t: new Map(), c: new Map() }).get(nm);
         const a = toca(d.t, t, t); a.u += unidades; a.stock += stock;
         const b = toca(d.c, nc || "-", x.color ? bonito(x.color) : "Sin color"); b.u += unidades; b.stock += stock;
       };
@@ -81,10 +100,18 @@
       const mejor = lista => lista.length && lista[0].u > 0 ? `<b>${esc(lista[0].nombre)}</b> (${lista[0].u})` : "—";
       const tTop = [...tallas].sort((a, b) => b.u - a.u)[0];
 
+      DET = D;
+      if (!D.has(SEL_MOD)) SEL_MOD = "";
+      const opciones = [...M.entries()].sort((a, b) => a[1].nombre.localeCompare(b[1].nombre))
+        .map(([k, m]) => `<option value="${esc(k)}"${k === SEL_MOD ? " selected" : ""}>${esc(m.nombre)}</option>`).join("");
+
       box.innerHTML = `<h3 style="margin:0 0 4px">Estadísticas de ropa</h3>
         <p class="gr" style="margin:0 0 10px">${esc(textoRango())}</p>
         <div class="card" style="margin-bottom:12px">Prendas vendidas: <b>${total}</b> · Talla que más sale: ${tTop && tTop.u > 0 ? `<b>${esc(tTop.nombre)}</b> (${tTop.u})` : "—"}
           · Color que más sale: ${mejor(top(C, 1))} · Modelo que más sale: ${mejor(top(M, 1))}</div>
+        <div class="card" style="margin-bottom:12px"><b>Ver un modelo</b>
+          <select id="er-sel" onchange="estRopaModelo(this.value)" style="margin-top:8px"><option value="">Elige un modelo...</option>${opciones}</select>
+          <div id="er-det"></div></div>
         <div class="est-grid">
           ${hoja("er-talla", "Tallas que más salen", "Unidades vendidas por talla", tallas.filter(t => t.nombre !== "Sin talla" || t.u > 0), 230)}
           ${hoja("er-mod-top", "Modelos que más se venden", "", top(M, 8))}
@@ -99,6 +126,7 @@
       barras("er-mod-top", top(M, 8), true);  barras("er-mod-low", low(M, 8), true);
       barras("er-col-top", top(C, 8), true);  barras("er-col-low", low(C, 8), true);
       barras("er-pre-top", top(P, 8), true);  barras("er-pre-low", low(P, 8), true);
+      pintarDet();
     } catch (e) {
       box.innerHTML = `<h3 style="margin:0 0 6px">Estadísticas de ropa</h3><p class="msg">No se pudieron cargar: ${esc(e.message || e)}</p>`;
     }
