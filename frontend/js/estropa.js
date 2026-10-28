@@ -1,90 +1,101 @@
-// Estadísticas de ropa: tallas, colores, modelos, stock y prendas sin movimiento
-const ER_TALLAS = ["XS", "S", "M", "L"];
-const tallaDe = c => { const m = String(c || "").match(/^(XS|S|M|L)\d+$/i); return m ? m[1].toUpperCase() : "Sin talla"; };
-// El nombre de una prenda es "modelo color": el color es la última palabra
-const partesNombre = n => { const w = String(n || "").trim().split(/\s+/); return w.length > 1 ? { modelo: w.slice(0, -1).join(" "), color: w[w.length - 1].toLowerCase() } : { modelo: w[0] || "—", color: "sin color" }; };
-const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+// estropa.js — estadísticas de ropa: qué modelos, colores, tallas y prendas se venden más y menos
+(function(){
+  const norm = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
+  const bonito = s => { s = String(s || "").trim(); return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; };
+  const conTalla = c => /^(XS|S|M|L)\d+$/i.test(c);
+  const tallaDe = c => { const m = String(c).match(/^(XS|S|M|L)\d+$/i); return m ? m[1].toUpperCase() : "Sin talla"; };
+  const ORD = { XS: 0, S: 1, M: 2, L: 3 };
 
-function armarEstRopa(){
-  let box = $("e-ropa");
-  if (box) return box;
-  box = document.createElement("div");
-  box.id = "e-ropa";
-  box.style.marginTop = "16px";
-  const g = id => `<div class="card"><b id="${id}-t"></b><div style="position:relative;height:260px;margin-top:8px"><canvas id="${id}"></canvas></div><p class="gr hide" id="${id}-v">Sin datos en este mes.</p></div>`;
-  box.innerHTML = `<h3 style="margin:8px 0">Estadísticas de ropa</h3>
-    <div class="card" id="er-res" style="margin-bottom:12px"></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">
-      ${g("er-talla")}${g("er-color")}${g("er-modelo")}${g("er-stock")}
-    </div>
-    <div class="card" id="er-quieta" style="margin-top:12px"></div>`;
-  $("t-est").appendChild(box);
-  return box;
-}
+  // Modelo y color: los campos guardados o, si faltan, la última palabra del nombre
+  function partes(codigo, nombre, modelo, color){
+    nombre = String(nombre || "").trim();
+    if (modelo) return { modelo: String(modelo).trim(), color: String(color || "").trim() };
+    if (conTalla(codigo) && /\s/.test(nombre)) { const w = nombre.split(/\s+/); return { modelo: w.slice(0, -1).join(" "), color: w[w.length - 1] }; }
+    return { modelo: nombre, color: "" };
+  }
+  const toca = (mapa, clave, nombre) => { if (!mapa.has(clave)) mapa.set(clave, { nombre, u: 0, stock: 0 }); return mapa.get(clave); };
+  const top = (mapa, n) => [...mapa.values()].filter(x => x.u > 0).sort((a, b) => b.u - a.u || a.nombre.localeCompare(b.nombre)).slice(0, n);
+  const low = (mapa, n) => [...mapa.values()].filter(x => x.stock > 0).sort((a, b) => a.u - b.u || b.stock - a.stock).slice(0, n);
 
-const agrupar = (items, clave) => {
-  const m = {};
-  items.forEach(i => { const k = clave(i), x = m[k] || (m[k] = { u: 0, s: 0 }); x.u += Number(i.cantidad); x.s += Number(i.subtotal); });
-  return Object.entries(m).sort((a, b) => b[1].u - a[1].u);
-};
+  const hoja = (id, titulo, sub, lista, alto) => `<div class="card est-card"><b>${titulo}</b>${sub ? `<br><small class="gr">${sub}</small>` : ""}
+    ${lista.length ? `<div class="est-lienzo" style="height:${alto || Math.max(170, lista.length * 34 + 50)}px"><canvas id="${id}"></canvas></div>` : `<p class="gr" style="margin-top:10px">Sin datos en este periodo.</p>`}</div>`;
 
-function barraRopa(id, titulo, etiquetas, datos, horizontal){
-  $(id + "-t").textContent = titulo;
-  const vacio = !datos.length || datos.every(x => !x);
-  $(id).parentElement.classList.toggle("hide", vacio);
-  $(id + "-v").classList.toggle("hide", !vacio);
-  if (vacio) return;
-  const eje = horizontal ? "x" : "y";
-  graficar(id, { type: "bar",
-    data: { labels: etiquetas, datasets: [{ data: datos, backgroundColor: EST_COLORES, borderRadius: 6 }] },
-    options: { indexAxis: horizontal ? "y" : "x", responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed[eje] + " unidades" } } },
-      scales: { [eje]: { beginAtZero: true, ticks: { precision: 0 } } } } });
-}
+  function barras(id, lista, horiz){
+    if (!lista.length || !$(id)) return;
+    const eje = horiz ? "x" : "y";
+    graficar(id, {
+      type: "bar",
+      data: { labels: lista.map(x => x.nombre), datasets: [{ label: "Unidades", data: lista.map(x => x.u) }] },
+      options: { indexAxis: horiz ? "y" : "x", responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: {
+          label: c => c.parsed[eje] + " unidad(es) vendida(s)",
+          afterLabel: c => "Stock actual: " + lista[c.dataIndex].stock } } },
+        scales: { [eje]: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+  }
 
-async function cargarEstRopa(){
-  const box = armarEstRopa();
-  box.classList.toggle("hide", !NEG || NEG.tipo !== "tienda");
-  if (!NEG || NEG.tipo !== "tienda" || typeof Chart === "undefined") return;
-  const ids = estIds(), { ini, fin: sig } = rangoEst();
-  const corte = new Date(Date.now() - 60 * 864e5).toISOString();
-  let items, recientes, prods;
-  try {
-    items = await estFilas(() => sb.from("venta_items").select("codigo,nombre,cantidad,subtotal,ventas!inner(fecha,anulada)").in("negocio_id", ids)
-      .eq("ventas.anulada", false).gte("ventas.fecha", ini + "T00:00:00-05:00").lt("ventas.fecha", sig + "T00:00:00-05:00").order("id"));
-    recientes = await estFilas(() => sb.from("venta_items").select("negocio_id,codigo,ventas!inner(fecha,anulada)").in("negocio_id", ids)
-      .eq("ventas.anulada", false).gte("ventas.fecha", corte).order("id"));
-    prods = await estFilas(() => sb.from("productos").select("negocio_id,codigo,nombre,precio,stock,created_at").in("negocio_id", ids).order("id"));
-  } catch (e) { $("er-res").textContent = "No se pudieron cargar las estadísticas de ropa: " + e.message; return; }
+  window.cargarEstRopa = async function(){
+    const cont = $("t-est");
+    let box = $("e-ropa");
+    if (!box && cont) { box = document.createElement("div"); box.id = "e-ropa"; box.style.marginTop = "18px"; cont.appendChild(box); }
+    if (!box) return;
+    const esRopa = NEG && (NEG.rubro === "ropa" || PRODS.some(p => conTalla(p.codigo)));
+    box.classList.toggle("hide", !esRopa);
+    if (!esRopa) return;
+    box.innerHTML = `<h3 style="margin:0 0 6px">Estadísticas de ropa</h3><p class="gr">Cargando...</p>`;
 
-  // Resumen
-  const unidades = items.reduce((s, i) => s + Number(i.cantidad), 0);
-  const porTalla = agrupar(items, i => tallaDe(i.codigo)), porColor = agrupar(items, i => cap(partesNombre(i.nombre).color));
-  const porModelo = agrupar(items, i => cap(partesNombre(i.nombre).modelo));
-  const top = a => a.length ? `<b>${esc(a[0][0])}</b> (${a[0][1].u})` : "—";
-  $("er-res").innerHTML = `Prendas vendidas en el mes: <b>${unidades}</b> · Talla más vendida: ${top(porTalla)} · Color más vendido: ${top(porColor)} · Modelo más vendido: ${top(porModelo)}`;
+    try {
+      const { ini, fin } = rangoEst();
+      const filas = await estFilas(() => sb.from("venta_items")
+        .select("codigo,nombre,cantidad,ventas!inner(fecha,anulada)")
+        .in("negocio_id", estIds())
+        .eq("ventas.anulada", false)
+        .gte("ventas.fecha", ini + "T00:00:00-05:00").lt("ventas.fecha", fin + "T00:00:00-05:00")
+        .order("id"));
 
-  // Ventas por talla (en orden XS, S, M, L)
-  const mt = Object.fromEntries(porTalla);
-  const tallas = [...ER_TALLAS, "Sin talla"].filter(t => mt[t]);
-  barraRopa("er-talla", "Unidades vendidas por talla", tallas, tallas.map(t => mt[t].u));
-  // Colores y modelos (los 8 primeros)
-  barraRopa("er-color", "Unidades vendidas por color", porColor.slice(0, 8).map(x => x[0]), porColor.slice(0, 8).map(x => x[1].u));
-  barraRopa("er-modelo", "Modelos más vendidos", porModelo.slice(0, 8).map(x => x[0]), porModelo.slice(0, 8).map(x => x[1].u), true);
-  // Stock actual por talla
-  const st = {}; prods.forEach(p => { const t = tallaDe(p.codigo); st[t] = (st[t] || 0) + Number(p.stock); });
-  const ts = [...ER_TALLAS, "Sin talla"].filter(t => st[t]);
-  barraRopa("er-stock", "Stock actual por talla (unidades)", ts, ts.map(t => st[t]));
+      const M = new Map(), C = new Map(), T = new Map(), P = new Map();
+      const porCodigo = new Map(PRODS.map(p => [p.codigo, p]));
+      const registra = (codigo, nombre, modelo, color, unidades, stock) => {
+        const x = partes(codigo, nombre, modelo, color), t = tallaDe(codigo);
+        const nm = norm(x.modelo), nc = norm(x.color);
+        const objs = [
+          toca(M, nm, bonito(x.modelo)),
+          x.color ? toca(C, nc, bonito(x.color)) : null,
+          toca(T, t, t),
+          toca(P, nm + "|" + nc, bonito(x.modelo) + (x.color ? " " + x.color.toLowerCase() : ""))
+        ];
+        objs.forEach(o => { if (o) { o.u += unidades; o.stock += stock; } });
+      };
+      // catálogo (para saber qué existe y cuánto stock hay)
+      PRODS.forEach(p => registra(p.codigo, p.nombre, p.modelo, p.color, 0, p.stock));
+      // ventas del periodo
+      filas.forEach(r => { const p = porCodigo.get(r.codigo); registra(r.codigo, r.nombre, p && p.modelo, p && p.color, r.cantidad, 0); });
 
-  // Prendas con stock que no se venden hace 60 días
-  const vendidas = new Set(recientes.map(r => r.negocio_id + "|" + r.codigo));
-  const nuevo = new Date(corte).getTime();
-  const quietas = prods.filter(p => p.stock > 0 && !vendidas.has(p.negocio_id + "|" + p.codigo) && new Date(p.created_at).getTime() < nuevo)
-    .sort((a, b) => b.stock * b.precio - a.stock * a.precio);
-  const valor = prods.reduce((s, p) => s + p.stock * Number(p.precio), 0);
-  const nombreSede = id => { const s = SEDES.find(x => x.id === id); return s ? s.nombre : ""; };
-  $("er-quieta").innerHTML = `<b>Prendas sin movimiento (60 días sin venderse)</b>
-    <p class="gr" style="margin:4px 0">Stock total valorizado a precio de venta: <b>${sol(valor)}</b>. ${quietas.length ? `Tienes <b>${quietas.length}</b> prenda(s) detenidas por <b>${sol(quietas.reduce((s, p) => s + p.stock * p.precio, 0))}</b>.` : "No tienes prendas detenidas."}</p>
-    ${quietas.length ? `<table class="tabla-sedes"><tr><th>Código</th><th>Prenda</th><th>Stock</th><th>Valor</th></tr>` +
-      quietas.slice(0, 15).map(p => `<tr><td>${esc(p.codigo)}</td><td>${esc(p.nombre)}${ids.length > 1 ? ` <small class="gr">· ${esc(nombreSede(p.negocio_id))}</small>` : ""}</td><td>${p.stock}</td><td>${sol(p.stock * p.precio)}</td></tr>`).join("") + `</table>${quietas.length > 15 ? `<small class="gr">Se muestran las 15 de mayor valor.</small>` : ""}` : ""}`;
-}
+      const total = filas.reduce((s, r) => s + r.cantidad, 0);
+      const tallas = [...T.values()].filter(t => t.u > 0 || t.stock > 0).sort((a, b) => (ORD[a.nombre] ?? 9) - (ORD[b.nombre] ?? 9));
+      const mejor = lista => lista.length && lista[0].u > 0 ? `<b>${esc(lista[0].nombre)}</b> (${lista[0].u})` : "—";
+      const tTop = [...tallas].sort((a, b) => b.u - a.u)[0];
+
+      box.innerHTML = `<h3 style="margin:0 0 4px">Estadísticas de ropa</h3>
+        <p class="gr" style="margin:0 0 10px">${esc(textoRango())}</p>
+        <div class="card" style="margin-bottom:12px">Prendas vendidas: <b>${total}</b> · Talla que más sale: ${tTop && tTop.u > 0 ? `<b>${esc(tTop.nombre)}</b> (${tTop.u})` : "—"}
+          · Color que más sale: ${mejor(top(C, 1))} · Modelo que más sale: ${mejor(top(M, 1))}</div>
+        <div class="est-grid">
+          ${hoja("er-talla", "Tallas que más salen", "Unidades vendidas por talla", tallas.filter(t => t.nombre !== "Sin talla" || t.u > 0), 230)}
+          ${hoja("er-mod-top", "Modelos que más se venden", "", top(M, 8))}
+          ${hoja("er-mod-low", "Modelos que menos se venden", "Con stock y pocas o ninguna venta", low(M, 8))}
+          ${hoja("er-col-top", "Colores que más se venden", "", top(C, 8))}
+          ${hoja("er-col-low", "Colores que menos se venden", "Con stock y pocas o ninguna venta", low(C, 8))}
+          ${hoja("er-pre-top", "Prendas que más salen", "Modelo y color", top(P, 8))}
+          ${hoja("er-pre-low", "Prendas que menos salen", "Modelo y color, con stock", low(P, 8))}
+        </div>`;
+
+      barras("er-talla", tallas.filter(t => t.nombre !== "Sin talla" || t.u > 0), false);
+      barras("er-mod-top", top(M, 8), true);  barras("er-mod-low", low(M, 8), true);
+      barras("er-col-top", top(C, 8), true);  barras("er-col-low", low(C, 8), true);
+      barras("er-pre-top", top(P, 8), true);  barras("er-pre-low", low(P, 8), true);
+    } catch (e) {
+      box.innerHTML = `<h3 style="margin:0 0 6px">Estadísticas de ropa</h3><p class="msg">No se pudieron cargar: ${esc(e.message || e)}</p>`;
+    }
+  };
+})();
