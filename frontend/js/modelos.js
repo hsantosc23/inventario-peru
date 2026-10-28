@@ -151,3 +151,15 @@ async function imprimirEtiquetasModelo(){
       x.textContent = texto; x.style.margin = ""; w.appendChild(x);
     });
 })();
+
+// X en las ventanas fijas del index.html (Agregar sede y visor de foto)
+(function(){
+  const c = document.querySelector("#m-sede .modal-caja");
+  if (c && !c.querySelector(".md-x")) {
+    c.style.position = "relative";
+    c.insertAdjacentHTML("afterbegin", `<button type="button" class="md-x" aria-label="Cerrar" onclick="cerrarSede()">✕</button>`);
+  }
+  const f = document.getElementById("m-foto");
+  if (f && !f.querySelector(".md-x"))
+    f.insertAdjacentHTML("afterbegin", `<button type="button" class="md-x" aria-label="Cerrar" style="position:fixed;top:14px;right:14px" onclick="event.stopPropagation();document.getElementById('m-foto').classList.add('hide')">✕</button>`);
+})();

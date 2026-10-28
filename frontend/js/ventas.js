@@ -296,9 +296,17 @@ function modalBase(html, ancho){
   const ov = document.createElement("div");
   ov.id = "md-ov";
   ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow:auto";
-  ov.innerHTML = `<div class="card" style="max-width:${ancho || 440}px;width:100%;margin:auto">${html}</div>`;
+  // si la ventana ya trae su propia X, no se duplica
+  const x = html.includes('aria-label="Cerrar"') ? "" : `<button type="button" class="md-x" aria-label="Cerrar" onclick="cerrarVentana()">✕</button>`;
+  ov.innerHTML = `<div class="card" style="max-width:${ancho || 440}px;width:100%;margin:auto;position:relative">${x}${html}</div>`;
   document.body.appendChild(ov);
 }
+
+// Cierra la ventana abierta (y apaga la cámara si era el escáner)
+function cerrarVentana(){
+  if (typeof ESC !== "undefined" && ESC) cerrarEscaner(); else cerrarModal();
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape" && document.getElementById("md-ov")) cerrarVentana(); });
 function cerrarModal(){ const o = document.getElementById("md-ov"); if (o) o.remove(); }
 
 // ---------- Cambiar el medio de pago ----------
