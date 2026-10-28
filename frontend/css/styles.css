@@ -515,5 +515,16 @@ html[data-tema="oscuro"] #md-ov .card,html[data-tema="oscuro"] .modal-caja.card{
 #barra-inv button{flex:0 0 auto;width:auto !important;margin:0 !important;white-space:nowrap;padding:9px 14px;font-size:14px}
 
 /* X para cerrar ventanas */
-.md-x{position:absolute;top:10px;right:10px;width:34px !important;height:34px;padding:0 !important;margin:0 !important;border-radius:50%;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;z-index:5;flex:none}
+.md-x{
+  position:absolute;top:10px;right:10px;
+  width:36px !important;height:36px !important;
+  min-width:36px !important;min-height:36px !important;
+  max-width:36px !important;max-height:36px !important;
+  aspect-ratio:1/1;box-sizing:border-box;
+  padding:0 !important;margin:0 !important;
+  border-radius:50% !important;
+  font-size:16px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  z-index:5;flex:none;
+}
 #md-ov .card > b:first-of-type{display:block;padding-right:44px}
