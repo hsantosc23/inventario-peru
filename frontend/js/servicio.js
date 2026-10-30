@@ -409,3 +409,13 @@ async function borrarServicio(id){
   b.type = "button"; b.id = "btn-serv"; b.textContent = "Servicios"; b.onclick = abrirServicios;
   barra.id === "barra-inv" ? barra.appendChild(b) : barra.after(b);
 })();
+
+// En Inventario, elegir "Servicio" en Tipo de producto abre el catálogo de servicios
+document.addEventListener("change", e => {
+  if (!e.target || e.target.id !== "fa-familia" || e.target.value !== "Servicio") return;
+  setTimeout(() => {
+    const el = document.getElementById("fa-familia");
+    if (el) { el.value = ""; if (typeof pintarCamposProducto === "function") pintarCamposProducto(); }
+    abrirServicios();
+  }, 0);
+});
