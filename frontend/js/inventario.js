@@ -93,7 +93,7 @@ function ordenarProductos(lista){
 }
 
 async function cargarProductos(){
-    if (!ATRS.length) await cargarAtributos();
+    if (ATRS_RUBRO !== ((NEG && NEG.rubro) || "")) await cargarAtributos();
   const { data, error } = await sb.from("productos").select("*").eq("negocio_id", NEG.id).order("nombre");
   $("pr-msg").textContent = error ? "No se pudo cargar: " + error.message : "";
   PRODS = error ? [] : ordenarProductos(data);

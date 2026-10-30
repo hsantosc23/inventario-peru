@@ -1,5 +1,5 @@
 // atributos.js — los campos del producto salen de la configuración del rubro
-let ATRS = [];
+let ATRS = [], ATRS_RUBRO = null;
 const ATRS_DEFECTO = [{ clave: "nombre", etiqueta: "Nombre", tipo: "texto", columna: "nombre",
   obligatorio: true, en_codigo: false, en_nombre: true, en_estadisticas: false, opciones: null, orden: 1 }];
 
@@ -8,6 +8,7 @@ async function cargarAtributos(){
   let data = null;
   if (rubro) ({ data } = await sb.from("rubro_atributos").select("*").eq("rubro", rubro).order("orden"));
   ATRS = (data && data.length) ? data : ATRS_DEFECTO;
+  ATRS_RUBRO = rubro;
   pintarCamposProducto();
   pintarBloque();
 }
@@ -70,12 +71,11 @@ function pintarBloque(){
   const box = $("p-tallas"), a = atrCodigo();
   if (!box) return;
   const lbl = $("p-lbl-bloque");
+    const btn = document.getElementById("modo-b-bloque");
   if (!a || a.tipo !== "lista") {
-    box.innerHTML = `<p class="gr">Este rubro no usa carga por bloque.</p>`;
-    const b = document.getElementById("modo-b-bloque"); if (b) b.classList.add("hide");
+    box.innerHTML = "";
+    if (btn) btn.classList.add("hide");
+    if (typeof verModo === "function") verModo("uno");
     return;
   }
-  if (lbl) lbl.textContent = `Cantidad por ${a.etiqueta.toLowerCase()} (vacío si no hay)`;
-  box.innerHTML = (a.opciones || []).map(o =>
-    `<div><small>${esc(o)}</small><input type="number" min="0" id="pb-${esc(o)}" inputmode="numeric"></div>`).join("");
-}
+  if (btn) { btn.classList.remove("hide"); btn.textContent = `Por bloque (${a.etiqueta.toLowerCase()})`; }
