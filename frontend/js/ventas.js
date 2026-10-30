@@ -17,16 +17,21 @@ function verTab(t){
   if (bar) bar.scrollTo({ left: b.offsetLeft - (bar.clientWidth - b.offsetWidth) / 2, behavior: "smooth" });
 }
 
+// Un ítem del carrito puede ser un producto o un servicio
+const itemVenta = id => PRODS.find(x => x.id === id) || (typeof SERVS !== "undefined" ? SERVS.find(x => x.id === id) : null);
+
 function buscarVenta(){
   const q = $("v-buscar").value.trim().toLowerCase(), box = $("v-res");
   if (!q) { box.className = ""; box.innerHTML = ""; return; }
-  if (/^mod-/.test(q) && abrirModelo(q)) return;
+  if (/^mod-/.test(q) && typeof abrirModelo === "function" && abrirModelo(q)) return;
+  const servs = (typeof SERVS !== "undefined" ? SERVS : []).filter(s => s.nombre.toLowerCase().includes(q) || String(s.codigo).toLowerCase().includes(q)).slice(0, 3);
   const r = PRODS.filter(p => p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)).slice(0, 6);
   box.className = "res";
-  box.innerHTML = r.length ? r.map(p => p.stock > 0
-    ? `<div onclick="agregarAlCarrito('${p.id}')"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)} · S/ ${Number(p.precio).toFixed(2)} <small class="gr">(stock ${p.stock})</small></div>`
-    : `<div class="gr"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)} · sin stock</div>`).join("")
-    : `<div class="gr">No se encontró ese producto.</div>`;
+  box.innerHTML = (servs.map(s => `<div onclick="agregarAlCarrito('${s.id}')"><b>${esc(s.codigo)}</b> · ${esc(s.nombre)} · S/ ${Number(s.precio).toFixed(2)} <small class="gr">(servicio)</small></div>`).join("")
+    + r.map(p => p.stock > 0
+      ? `<div onclick="agregarAlCarrito('${p.id}')"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)} · S/ ${Number(p.precio).toFixed(2)} <small class="gr">(stock ${p.stock})</small></div>`
+      : `<div class="gr"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)} · sin stock</div>`).join(""))
+    || `<div class="gr">No se encontró ese producto ni servicio.</div>`;
 }
 
 // Enter con un código exacto agrega el producto sin tocar nada más
@@ -42,9 +47,8 @@ function enterVenta(ev){
 const usado = (id, k) => CARRITO.filter(c => c.id === id && c.k !== k).reduce((s, c) => s + c.cant, 0);
 
 function agregarAlCarrito(id){
-  const p = PRODS.find(x => x.id === id); if (!p) return;
-  if (usado(id, -1) >= p.stock) return alert("Ya agregaste todo el stock disponible de este producto.");
-  // Cada toque agrega un recuadro nuevo (junto a los del mismo producto) para poder editar el precio de uno solo
+  const p = itemVenta(id); if (!p) return;
+  if (!p.es_servicio && usado(id, -1) >= p.stock) return alert("Ya agregaste todo el stock disponible de este producto.");
   const linea = { k: ++LINEA, id, cant: 1, precio: null };
   const i = CARRITO.map(x => x.id).lastIndexOf(id);
   if (i < 0) CARRITO.push(linea); else CARRITO.splice(i + 1, 0, linea);
@@ -53,22 +57,23 @@ function agregarAlCarrito(id){
 }
 
 function cambiarCant(k, v){
-  const c = CARRITO.find(x => x.k === k), p = c && PRODS.find(x => x.id === c.id);
+  const c = CARRITO.find(x => x.k === k), p = c && itemVenta(c.id);
   if (!p) return;
-  c.cant = Math.max(1, Math.min(parseInt(v, 10) || 1, p.stock - usado(c.id, k)));
+  const n = Math.max(1, parseInt(v, 10) || 1);
+  c.cant = p.es_servicio ? n : Math.min(n, p.stock - usado(c.id, k));
   pintarCarrito();
 }
 
 // Descuento: baja el precio por unidad de este recuadro (nunca por encima del de lista)
 function editarPrecio(k){
-  const c = CARRITO.find(x => x.k === k), p = c && PRODS.find(x => x.id === c.id);
+  const c = CARRITO.find(x => x.k === k), p = c && itemVenta(c.id);
   if (!p) return;
   const lista = Number(p.precio), actual = c.precio != null ? c.precio : lista;
   const txt = prompt("Precio por unidad (S/). Precio de lista: " + lista.toFixed(2), actual.toFixed(2));
   if (txt === null) return;
   const v = Math.round(parseFloat(txt.replace(",", ".")) * 100) / 100;
   if (isNaN(v) || v < 0) return alert("Escribe un precio válido.");
-  if (v > lista) return alert("El precio no puede ser mayor al de lista (S/ " + lista.toFixed(2) + ").");
+  if (!p.es_servicio && v > lista) return alert("El precio no puede ser mayor al de lista (S/ " + lista.toFixed(2) + ").");
   c.precio = v === lista ? null : v;
   pintarCarrito();
 }
@@ -76,17 +81,19 @@ function editarPrecio(k){
 function quitar(k){ CARRITO = CARRITO.filter(x => x.k !== k); pintarCarrito(); }
 
 function pintarCarrito(){
-  CARRITO = CARRITO.filter(c => PRODS.some(p => p.id === c.id));
+  CARRITO = CARRITO.filter(c => itemVenta(c.id));
   let total = 0;
   $("v-carrito").innerHTML = CARRITO.length ? CARRITO.map(c => {
-    const p = PRODS.find(x => x.id === c.id), pu = c.precio != null ? c.precio : Number(p.precio), sub = pu * c.cant;
+    const p = itemVenta(c.id), pu = c.precio != null ? c.precio : Number(p.precio), sub = pu * c.cant;
     total += sub;
     const desc = c.precio != null ? ` · <b style="color:#b45309">descuento (lista S/ ${Number(p.precio).toFixed(2)})</b>` : "";
-    return `<div class="fila carro"><div class="info"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}<small>S/ ${pu.toFixed(2)} c/u · stock ${p.stock}${desc}</small></div>
-      <input type="number" class="cant" min="1" max="${p.stock - usado(c.id, c.k)}" value="${c.cant}" onchange="cambiarCant(${c.k}, this.value)">
+    const detalle = p.es_servicio ? "servicio" : `stock ${p.stock}`;
+    const max = p.es_servicio ? 99 : p.stock - usado(c.id, c.k);
+    return `<div class="fila carro"><div class="info"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}<small>S/ ${pu.toFixed(2)} c/u · ${detalle}${desc}</small></div>
+      <input type="number" class="cant" min="1" max="${max}" value="${c.cant}" onchange="cambiarCant(${c.k}, this.value)">
         <div class="pre">S/ ${sub.toFixed(2)}<small>${c.cant} × S/ ${pu.toFixed(2)}</small></div>
       <button onclick="editarPrecio(${c.k})">Editar</button><button onclick="quitar(${c.k})">Quitar</button></div>`;
-  }).join("") : `<p class="gr">Busca un producto por código o nombre y tócalo para agregarlo.</p>`;
+  }).join("") : `<p class="gr">Busca un producto o servicio por código o nombre y tócalo para agregarlo.</p>`;
   $("v-total").textContent = "Total: S/ " + total.toFixed(2);
 }
 
@@ -96,7 +103,7 @@ async function registrarVenta(){
   const tipo = $("v-tipo").value, fac = tipo === "factura", nota = tipo === "nota";
   const doc = nota ? "" : (fac ? $("v-ruc") : $("v-dni")).value.trim();
   const nombre = (fac ? $("v-razon") : $("v-nombre-b")).value.trim(), dir = fac ? $("v-dir").value.trim() : "";
-  const total = CARRITO.reduce((s, c) => { const p = PRODS.find(x => x.id === c.id); return s + (c.precio != null ? c.precio : Number(p.precio)) * c.cant; }, 0);
+    const total = CARRITO.reduce((s, c) => { const p = itemVenta(c.id); return s + (c.precio != null ? c.precio : Number(p.precio)) * c.cant; }, 0);
   if (fac) {
     if (!/^[0-9]{11}$/.test(doc)) return msg.textContent = "La factura necesita un RUC de 11 dígitos.";
     if (!nombre) return msg.textContent = "La factura necesita la razón social.";
@@ -118,7 +125,9 @@ async function registrarVenta(){
       return msg.textContent = `En tu semana de prueba puedes emitir hasta ${uso.limite} boletas o facturas y ya las usaste. Registra la venta como Nota de venta o activa tu plan.`;
   }
 
-  const items = CARRITO.map(c => ({ producto_id: c.id, cantidad: c.cant, precio: c.precio }));
+    const items = CARRITO.map(c => itemVenta(c.id).es_servicio
+    ? { servicio_id: c.id, cantidad: c.cant, precio: c.precio }
+    : { producto_id: c.id, cantidad: c.cant, precio: c.precio });
   const { data: id, error } = await sb.rpc("registrar_venta", { p_items: items });
   if (error) return msg.textContent = "No se pudo registrar la venta: " + error.message;
   // medio de pago y datos opcionales del cliente se guardan en paralelo, sin hacer esperar al resto

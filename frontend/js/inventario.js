@@ -105,6 +105,7 @@ async function cargarProductos(){
   listar();
   codigoPorDefecto();
   const ts = document.getElementById("tab-ser"); if (ts) ts.classList.toggle("hide", !esTaller());
+    if (typeof cargarServicios === "function") await cargarServicios();
 }
 
 function listar(){

@@ -350,3 +350,62 @@ function avisarOrden(id){
     : `Hola ${o.cliente}, le escribo por su orden #${String(o.numero).padStart(4,"0")} (${[o.marca,o.modelo].filter(Boolean).join(" ")}). Estado: ${EST_ORD[o.estado]}.`;
   window.open(`https://wa.me/51${o.celular}?text=${encodeURIComponent(t)}`, "_blank");
 }
+
+// ---------- Catálogo de servicios (se venden desde Ventas, sin stock) ----------
+let SERVS = [];
+
+async function cargarServicios(){
+  const { data } = await sb.from("servicios").select("*").eq("negocio_id", NEG.id).eq("activo", true).order("nombre");
+  SERVS = (data || []).map(s => ({ ...s, codigo: s.codigo || "SERV", es_servicio: true }));
+}
+
+function abrirServicios(){
+  modalBase(`<b>Servicios que cobras</b>
+    <p class="gr" style="margin:6px 0">Aparecen en Ventas al buscarlos, igual que un producto, pero no descuentan stock.</p>
+    <div class="f2">
+      <div><label>Nombre del servicio</label><input type="text" id="sv-nombre" maxlength="60" placeholder="Ej.: formateo e instalación"></div>
+      <div><label>Precio (S/)</label><input type="number" id="sv-precio" min="0" step="0.01" inputmode="decimal"></div>
+      <div><label>Código (opcional)</label><input type="text" id="sv-codigo" maxlength="12" placeholder="SERV01"></div>
+      <div><label>Garantía (días)</label><input type="number" id="sv-gar" min="0" step="1" value="0"></div>
+    </div>
+    <button class="pri full" onclick="guardarServicio()">Agregar servicio</button>
+    <div class="msg" id="sv-msg"></div>
+    <div id="sv-lista" style="max-height:40vh;overflow:auto;margin-top:10px"></div>`, 520);
+  listarServicios();
+}
+
+function listarServicios(){
+  $("sv-lista").innerHTML = SERVS.length ? SERVS.map(s =>
+    `<div class="fila"><div style="flex:1;min-width:0"><b>${esc(s.codigo)}</b> · ${esc(s.nombre)}
+      ${s.garantia_dias ? `<small class="gr" style="display:block">Garantía ${s.garantia_dias} día(s)</small>` : ""}</div>
+      <div class="pre">S/ ${Number(s.precio).toFixed(2)}</div>
+      <button class="peligro" onclick="borrarServicio('${s.id}')">Quitar</button></div>`).join("")
+    : `<p class="gr">Todavía no agregaste ningún servicio.</p>`;
+}
+
+async function guardarServicio(){
+  const msg = $("sv-msg"); msg.style.color = ""; msg.textContent = "";
+  const nombre = $("sv-nombre").value.trim(), precio = parseFloat($("sv-precio").value);
+  if (!nombre) return msg.textContent = "Escribe el nombre del servicio.";
+  if (!(precio >= 0)) return msg.textContent = "Escribe un precio válido.";
+  const { error } = await sb.from("servicios").insert({ negocio_id: NEG.id, nombre, precio,
+    codigo: $("sv-codigo").value.trim() || null, garantia_dias: parseInt($("sv-gar").value, 10) || 0 });
+  if (error) return msg.textContent = error.code === "23505" ? "Ya tienes un servicio con ese nombre." : "No se pudo guardar: " + error.message;
+  ["sv-nombre","sv-precio","sv-codigo"].forEach(i => $(i).value = "");
+  await cargarServicios(); listarServicios();
+}
+
+async function borrarServicio(id){
+  if (!confirm("¿Quitar este servicio del catálogo? Las ventas ya hechas no se tocan.")) return;
+  await sb.from("servicios").update({ activo: false }).eq("id", id);
+  await cargarServicios(); listarServicios();
+}
+
+// Botón para abrirlo
+(function(){
+  const barra = document.getElementById("barra-inv") || document.getElementById("buscar");
+  if (!barra || document.getElementById("btn-serv")) return;
+  const b = document.createElement("button");
+  b.type = "button"; b.id = "btn-serv"; b.textContent = "Servicios"; b.onclick = abrirServicios;
+  barra.id === "barra-inv" ? barra.appendChild(b) : barra.after(b);
+})();
