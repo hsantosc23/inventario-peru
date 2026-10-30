@@ -359,18 +359,32 @@ async function cargarServicios(){
   SERVS = (data || []).map(s => ({ ...s, codigo: s.codigo || "SERV", es_servicio: true }));
 }
 
+async function siguienteCodigoServicio(){
+  const { data } = await sb.from("servicios").select("codigo").eq("negocio_id", NEG.id);
+  let n = 0;
+  (data || []).forEach(s => { const m = /^SERV(\d+)$/.exec(s.codigo || ""); if (m) n = Math.max(n, parseInt(m[1], 10)); });
+  return "SERV" + String(n + 1).padStart(4, "0");
+}
+
+async function rellenarCodigoServicio(){
+  const el = $("sv-codigo"); if (!el) return;
+  el.value = await siguienteCodigoServicio();
+}
+
 function abrirServicios(){
   modalBase(`<b>Servicios que cobras</b>
     <p class="gr" style="margin:6px 0">Aparecen en Ventas al buscarlos, igual que un producto, pero no descuentan stock.</p>
     <div class="f2">
       <div><label>Nombre del servicio</label><input type="text" id="sv-nombre" maxlength="60" placeholder="Ej.: formateo e instalación"></div>
       <div><label>Precio (S/)</label><input type="number" id="sv-precio" min="0" step="0.01" inputmode="decimal"></div>
+      <div><label>Código</label><input type="text" id="sv-codigo" maxlength="12"></div>
       <div><label>Garantía (días)</label><input type="number" id="sv-gar" min="0" step="1" value="0"></div>
     </div>
     <button class="pri full" onclick="guardarServicio()">Agregar servicio</button>
     <div class="msg" id="sv-msg"></div>
     <div id="sv-lista" style="max-height:40vh;overflow:auto;margin-top:10px"></div>`, 520);
   listarServicios();
+  rellenarCodigoServicio();
 }
 
 function listarServicios(){
@@ -385,22 +399,24 @@ function listarServicios(){
 async function guardarServicio(){
   const msg = $("sv-msg"); msg.style.color = ""; msg.textContent = "";
   const nombre = $("sv-nombre").value.trim(), precio = parseFloat($("sv-precio").value);
+  let codigo = $("sv-codigo").value.trim();
   if (!nombre) return msg.textContent = "Escribe el nombre del servicio.";
   if (!(precio >= 0)) return msg.textContent = "Escribe un precio válido.";
-
-  // código automático: SERV0001, SERV0002...
-  const { data: todos } = await sb.from("servicios").select("codigo").eq("negocio_id", NEG.id);
-  let n = 0;
-  (todos || []).forEach(s => { const m = /^SERV(\d+)$/.exec(s.codigo || ""); if (m) n = Math.max(n, parseInt(m[1], 10)); });
-  const codigo = "SERV" + String(n + 1).padStart(4, "0");
+  if (!codigo) codigo = await siguienteCodigoServicio();
+  if (PRODS.some(p => p.codigo.toLowerCase() === codigo.toLowerCase()))
+    return msg.textContent = "Ese código ya lo usa un producto del inventario. Usa otro.";
 
   const { error } = await sb.from("servicios").insert({ negocio_id: NEG.id, nombre, precio, codigo,
     garantia_dias: parseInt($("sv-gar").value, 10) || 0 });
-  if (error) return msg.textContent = error.code === "23505" ? "Ya tienes un servicio con ese nombre." : "No se pudo guardar: " + error.message;
+  if (error) return msg.textContent =
+    error.code === "23505" ? "Ya tienes un servicio con ese nombre o ese código." : "No se pudo guardar: " + error.message;
+
   ["sv-nombre","sv-precio"].forEach(i => $(i).value = "");
   $("sv-gar").value = "0";
-  await cargarServicios(); listarServicios();
-  msg.style.color = "#16a34a"; msg.textContent = "Servicio agregado con el código " + codigo + ".";
+  await cargarServicios();
+  listarServicios();
+  await rellenarCodigoServicio();
+  msg.style.color = "#16a34a"; msg.textContent = "Servicio agregado.";
 }
 
 async function borrarServicio(id){
