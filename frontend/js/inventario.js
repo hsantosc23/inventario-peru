@@ -104,6 +104,7 @@ async function cargarProductos(){
     <button type="button" onclick="verStockBajo()" style="width:auto !important;flex:none;padding:6px 18px">Ver</button></div>`;
   listar();
   codigoPorDefecto();
+  const ts = document.getElementById("tab-ser"); if (ts) ts.classList.toggle("hide", !esTaller());
 }
 
 function listar(){

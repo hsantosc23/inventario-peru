@@ -24,26 +24,36 @@ function prefijoDe(codigo){
 
 function pintarCamposProducto(){
   const box = $("f-atrs"); if (!box) return;
-  const dinamicos = ATRS.map(a => {
+  const valores = {};
+  ATRS.forEach(a => { const el = $("fa-" + a.clave); if (el) valores[a.clave] = el.value; });
+  const visible = a => !a.depende_clave || (a.depende_valores || []).includes(valores[a.depende_clave] || "");
+  const manda = ATRS.some(x => x.depende_clave);
+
+  const dinamicos = ATRS.filter(visible).map(a => {
     const id = "fa-" + a.clave, ayuda = a.ayuda ? ` placeholder="${esc(a.ayuda)}"` : "";
+    const recarga = ATRS.some(x => x.depende_clave === a.clave) ? "pintarCamposProducto();" : "";
     const campo = a.tipo === "lista"
-      ? `<select id="${id}"${a.en_codigo ? ' onchange="codigoPorAtributo()"' : ""}><option value="">${a.obligatorio ? "Elige una opción" : "—"}</option>${(a.opciones || []).map(o => `<option>${esc(o)}</option>`).join("")}</select>`
-      : `<input type="${a.tipo === "numero" ? "number" : a.tipo === "fecha" ? "date" : "text"}" id="${id}"${ayuda}>`;
+      ? `<select id="${id}" onchange="${recarga}${a.en_codigo ? "codigoPorAtributo()" : ""}"><option value="">${a.obligatorio ? "Elige una opción" : "—"}</option>${(a.opciones || []).map(o => `<option${valores[a.clave] === o ? " selected" : ""}>${esc(o)}</option>`).join("")}</select>`
+      : `<input type="${a.tipo === "numero" ? "number" : a.tipo === "fecha" ? "date" : "text"}" id="${id}"${ayuda} value="${esc(valores[a.clave] || "")}">`;
     return `<div><label>${esc(a.etiqueta)}${a.obligatorio ? "" : ` <small class="gr">(opcional)</small>`}</label>${campo}</div>`;
   }).join("");
+
+  const v = id => { const el = $(id); return el ? esc(el.value) : ""; };
   box.innerHTML = dinamicos + `
-    <div><label>Código</label><input type="text" id="f-codigo"></div>
-    <div><label>Precio (S/)</label><input type="number" id="f-precio" min="0" step="0.01" inputmode="decimal"></div>
-    <div><label>Stock</label><input type="number" id="f-stock" min="0" step="1" inputmode="numeric"></div>
-    <div><label>Avisar si baja de</label><input type="number" id="f-min" min="0" step="1" inputmode="numeric" placeholder="0 = sin aviso"></div>`;
+    <div><label>Código</label><input type="text" id="f-codigo" value="${v("f-codigo")}"></div>
+    <div><label>Precio (S/)</label><input type="number" id="f-precio" min="0" step="0.01" inputmode="decimal" value="${v("f-precio")}"></div>
+    <div><label>Stock</label><input type="number" id="f-stock" min="0" step="1" inputmode="numeric" value="${v("f-stock")}"></div>
+    <div><label>Avisar si baja de</label><input type="number" id="f-min" min="0" step="1" inputmode="numeric" placeholder="0 = sin aviso" value="${v("f-min")}"></div>`;
+  if (manda && !$("f-codigo").value) codigoPorDefecto();
 }
 
 // Lee el formulario: qué va a columnas reales, qué al jsonb, el nombre y el prefijo
 function atrLeer(){
   const columnas = {}, atributos = {}, partes = [];
   let prefijo = "", falta = null;
-  ATRS.forEach(a => {
-    const el = $("fa-" + a.clave); if (!el) return;
+    ATRS.forEach(a => {
+    const el = $("fa-" + a.clave);
+    if (!el) { if (a.columna) columnas[a.columna] = null; return; }   // campo oculto: se limpia
     const v = String(el.value || "").trim();
     if (a.obligatorio && !v && !falta) falta = a.etiqueta;
     if (a.en_codigo) prefijo = v;

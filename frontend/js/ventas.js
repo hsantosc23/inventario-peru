@@ -3,7 +3,7 @@
 let CARRITO = [], VPER = "dia", VREF = new Date(), LINEA = 0;
 
 function verTab(t){
-  ["inv", "ven", "gas", "caja", "pen", "est"].forEach(x => {
+    ["inv", "ven", "gas", "caja", "pen", "est", "ser"].forEach(x => {
     $("t-" + x).classList.toggle("hide", x !== t);
     $("tab-" + x).classList.toggle("act", x === t);
   });
@@ -12,6 +12,7 @@ function verTab(t){
   if (t === "caja") cargarCaja();
   if (t === "pen") cargarPendientes();
   if (t === "est") cargarEstadisticas();
+  if (t === "ser") cargarOrdenes();
   const b = $("tab-" + t), bar = b && b.parentElement;
   if (bar) bar.scrollTo({ left: b.offsetLeft - (bar.clientWidth - b.offsetWidth) / 2, behavior: "smooth" });
 }
