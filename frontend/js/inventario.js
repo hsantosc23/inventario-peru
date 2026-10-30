@@ -47,45 +47,53 @@ function verFoto(url){ const m = $("m-foto"); m.querySelector("img").src = url; 
 
 // Código = talla + número correlativo de todo el inventario (XS0001, M0002, L0003...).
 // Sin talla, solo el número (0004). Nunca repite un código que ya exista.
-function siguienteCodigo(talla){
+// Código = prefijo del atributo (talla, por ejemplo) + correlativo. Sin prefijo, solo el número.
+function siguienteCodigo(pref){
+  pref = pref || "";
   const usados = new Set(PRODS.map(p => p.codigo));
+  const esc_ = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp("^" + esc_(pref) + "(\\d+)$");
   let n = 0;
-  PRODS.forEach(p => { const m = p.codigo.match(/^(\D*)(\d+)$/); if (m && m[1] === (talla || "")) n = Math.max(n, parseInt(m[2], 10)); });
+  PRODS.forEach(p => {
+    if (!pref && prefijoDe(p.codigo)) return;     // sin prefijo no se cuentan los que sí lo tienen
+    const m = re.exec(p.codigo); if (m) n = Math.max(n, parseInt(m[1], 10));
+  });
   let c;
-    do { n++; c = (talla || "") + String(n).padStart(6 - (talla || "").length, "0"); } while (usados.has(c));
+  do { n++; c = pref + String(n).padStart(Math.max(6 - pref.length, 3), "0"); } while (usados.has(c));
   return c;
 }
 
-// Rellena el código solo si está vacío o si todavía tiene el código automático
 function codigoPorDefecto(){
   if (!PUEDE || EDIT) return;
-  const campo = $("f-codigo"), v = campo.value.trim();
-  if (v === "" || v === AUTO) { AUTO = siguienteCodigo($("f-talla").value); campo.value = AUTO; }
+  const campo = $("f-codigo"); if (!campo) return;
+  const v = campo.value.trim();
+  const a = atrCodigo(), el = a && $("fa-" + a.clave);
+  if (v === "" || v === AUTO) { AUTO = siguienteCodigo(el ? el.value : ""); campo.value = AUTO; }
 }
 
-// Al elegir una talla se genera el código con esa talla
-function codigoPorTalla(){
+function codigoPorAtributo(){
   if (EDIT) return;
-  AUTO = siguienteCodigo($("f-talla").value);
+  const a = atrCodigo(), el = a && $("fa-" + a.clave);
+  AUTO = siguienteCodigo(el ? el.value : "");
   $("f-codigo").value = AUTO;
 }
 
-// Orden de la lista: tallas XS, S, M, L (de arriba hacia abajo) y, dentro de cada talla, de menor a mayor número.
-// Los códigos sin talla van al final.
-const ORDEN_TALLA = { XS: 0, S: 1, M: 2, L: 3 };
-
+// Orden de la lista: según el orden de las opciones del atributo del código, y dentro, por número
 function ordenarProductos(lista){
+  const a = atrCodigo(), ops = (a && a.opciones) || [];
   const clave = p => {
-    const m = p.codigo.match(/^(XS|S|M|L)(\d+)$/i);
-    return m ? [ORDEN_TALLA[m[1].toUpperCase()], parseInt(m[2], 10)] : [4, 0];
+    const pr = prefijoDe(p.codigo);
+    const i = pr ? ops.indexOf(pr) : ops.length + 1;
+    return [i < 0 ? ops.length : i, parseInt(String(p.codigo).slice(pr.length), 10) || 0];
   };
-  return lista.sort((a, b) => {
-    const x = clave(a), y = clave(b);
-    return x[0] - y[0] || x[1] - y[1] || a.codigo.localeCompare(b.codigo, undefined, { numeric: true });
+  return lista.sort((x, y) => {
+    const a1 = clave(x), b1 = clave(y);
+    return a1[0] - b1[0] || a1[1] - b1[1] || x.codigo.localeCompare(y.codigo, undefined, { numeric: true });
   });
 }
 
 async function cargarProductos(){
+    if (!ATRS.length) await cargarAtributos();
   const { data, error } = await sb.from("productos").select("*").eq("negocio_id", NEG.id).order("nombre");
   $("pr-msg").textContent = error ? "No se pudo cargar: " + error.message : "";
   PRODS = error ? [] : ordenarProductos(data);
@@ -104,7 +112,7 @@ function listar(){
   $("lista").innerHTML = r.length ? r.map(p => {
     const url = fotoUrl(p.foto);
     const mini = url ? `<img class="miniatura" src="${url}" alt="" loading="lazy" onclick="verFoto('${url}')">` : `<span class="miniatura vacia"></span>`;
-    return `<div class="fila"><div class="prod-info">${mini}<div><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}<span class="stock ${p.stock > 0 ? "hay" : "cero"}">Stock: ${p.stock}${bajo(p) ? ' <b style="color:#b45309">· stock bajo</b>' : ""}</span></div></div>
+    return     `<div class="fila"><div><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}${atrResumen(p) ? ` <small class="gr">· ${esc(atrResumen(p))}</small>` : ""}<span class="stock ${p.stock > 0 ? "hay" : "cero"}">Stock: ${p.stock}${bajo(p) ? ' <b style="color:#b45309">· stock bajo</b>' : ""}</span></div></div>
      <div class="pre">S/ ${Number(p.precio).toFixed(2)}</div>
      ${PUEDE ? `<button onclick="editar('${p.id}')">Editar</button><button onclick="borrar('${p.id}')">Borrar</button>` : ""}</div>`;
   }).join("") : `<p class="gr">No hay productos para mostrar.</p>`;
@@ -112,8 +120,8 @@ function listar(){
 
 function limpiarForm(){
   EDIT = null;
-  ["f-codigo","f-nombre","f-color","f-precio","f-stock","f-min"].forEach(i => $(i).value = "");
-  $("f-foto").value = ""; FOTO_QUITAR = false; pintarPrevia(null);
+  ["f-codigo","f-precio","f-stock","f-min"].forEach(i => $(i).value = "");
+  atrLimpiar();
   $("f-titulo").textContent = "Agregar producto";
   $("f-btn").textContent = "Guardar producto";
   $("f-cancel").classList.add("hide");
@@ -122,12 +130,10 @@ function limpiarForm(){
 
 function editar(id){
   const p = PRODS.find(x => x.id === id); if (!p) return;
-  if (typeof verModo === "function") verModo("uno");
   EDIT = id;
-  $("f-codigo").value = p.codigo; $("f-nombre").value = p.modelo || p.nombre; $("f-color").value = p.color || "";
+  $("f-codigo").value = p.codigo;
   $("f-precio").value = p.precio; $("f-stock").value = p.stock; $("f-min").value = p.stock_minimo;
-  $("f-talla").value = (p.codigo.match(/^(XS|S|M|L)\d+$/) || [])[1] || "";
-  $("f-foto").value = ""; FOTO_QUITAR = false; pintarPrevia(fotoUrl(p.foto) || null);
+  atrPintar(p);
   $("f-titulo").textContent = "Editar producto";
   $("f-btn").textContent = "Guardar cambios";
   $("f-cancel").classList.remove("hide");
@@ -138,27 +144,20 @@ const normP = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, 
 
 async function guardarProducto(){
   const msg = $("pr-msg"); msg.textContent = "";
-  const codigo = $("f-codigo").value.trim(), modelo = $("f-nombre").value.trim(), color = $("f-color").value.trim(),
-        nombre = color ? modelo + " " + color : modelo,
-        precio = parseFloat($("f-precio").value), stock = parseInt($("f-stock").value || "0", 10),
+  const a = atrLeer();
+  const codigo = $("f-codigo").value.trim();
+  const precio = parseFloat($("f-precio").value), stock = parseInt($("f-stock").value || "0", 10),
         stock_minimo = parseInt($("f-min").value || "0", 10);
-  if (!codigo || !modelo) return msg.textContent = "Escribe el código y el nombre.";
+  if (!codigo) return msg.textContent = "Escribe el código.";
+  if (a.falta) return msg.textContent = "Falta: " + a.falta + ".";
+  if (!a.nombre) return msg.textContent = "Escribe el nombre del producto.";
   if (isNaN(precio) || precio < 0) return msg.textContent = "Escribe un precio válido.";
   if (isNaN(stock)) return msg.textContent = "Escribe un stock válido.";
   if (isNaN(stock_minimo) || stock_minimo < 0) return msg.textContent = "Escribe un aviso de stock válido.";
 
-  const anterior = EDIT ? ((PRODS.find(x => x.id === EDIT) || {}).foto || null) : null;
-  let foto = anterior;
-  const arch = $("f-foto").files[0];
-  try {
-    if (arch) foto = await subirFoto(arch);
-    else if (FOTO_QUITAR) foto = null;
-  } catch (e) { return msg.textContent = "No se pudo subir la foto: " + (e.message || e); }
-
-      if (!EDIT) {
-    const t = $("f-talla").value.toUpperCase(), clave = normP(nombre);
-    const ya = PRODS.find(p => p.codigo !== codigo && normP(p.nombre) === clave &&
-      ((p.codigo.match(/^(XS|S|M|L)\d+$/i) || [])[1] || "").toUpperCase() === t);
+  if (!EDIT) {
+    const clave = normP(a.nombre);
+    const ya = PRODS.find(p => p.codigo !== codigo && normP(p.nombre) === clave && prefijoDe(p.codigo) === a.prefijo);
     if (ya) {
       if (!confirm(`Ya existe ${ya.codigo} · ${ya.nombre} (stock ${ya.stock}).\n\n¿Sumar ${stock} unidad(es) a ese producto?\n\nSi cancelas, no se crea nada.`)) return;
       const { error: e2 } = await sb.from("productos").update({ stock: ya.stock + stock }).eq("id", ya.id).eq("negocio_id", NEG.id);
@@ -168,15 +167,12 @@ async function guardarProducto(){
     }
   }
 
-  const fila = { codigo, nombre, modelo, color: color || null, precio, stock, stock_minimo, foto };
+  const fila = { codigo, nombre: a.nombre, ...a.columnas, atributos: a.atributos, precio, stock, stock_minimo };
   const { error } = EDIT
     ? await sb.from("productos").update(fila).eq("id", EDIT)
     : await sb.from("productos").insert({ ...fila, negocio_id: NEG.id });
-  if (error) {
-    if (arch) borrarFotoStorage(foto);
-    return msg.textContent = error.code === "23505" ? "Ya tienes un producto con ese código." : "No se pudo guardar: " + error.message;
-  }
-  if (anterior && anterior !== foto && !fotoEnUso(anterior, EDIT)) borrarFotoStorage(anterior);
+  if (error) return msg.textContent = error.code === "23505"
+    ? "Ya tienes un producto con ese código." : "No se pudo guardar: " + error.message;
   limpiarForm();
   cargarProductos();
 }
@@ -190,50 +186,42 @@ function verModo(m){
 
 async function guardarPrenda(){
   const msg = $("p-msg"); msg.style.color = ""; msg.textContent = "";
+  const a = atrCodigo();
+  if (!a || a.tipo !== "lista") return msg.textContent = "Este rubro no usa carga por bloque.";
   const modelo = $("p-modelo").value.trim(), color = $("p-color").value.trim();
   const precio = parseFloat($("p-precio").value), min = parseInt($("p-min").value) || 0;
   if (!modelo) return msg.textContent = "Escribe el modelo.";
-  if (!color) return msg.textContent = "Escribe el color.";
   if (!(precio > 0)) return msg.textContent = "Escribe un precio válido.";
-  const tallas = ["XS", "S", "M", "L"].filter(t => $("p-" + t).value !== "");
-  if (!tallas.length) return msg.textContent = "Escribe la cantidad de al menos una talla.";
-  for (const t of tallas) if (!(parseInt($("p-" + t).value) >= 0)) return msg.textContent = "Cantidad inválida en la talla " + t + ".";
+  const ops = (a.opciones || []).filter(o => $("pb-" + o) && $("pb-" + o).value !== "");
+  if (!ops.length) return msg.textContent = `Escribe la cantidad de al menos una ${a.etiqueta.toLowerCase()}.`;
+  for (const o of ops) if (!(parseInt($("pb-" + o).value) >= 0)) return msg.textContent = "Cantidad inválida en " + o + ".";
 
-  const nombre = `${modelo} ${color}`, clave = normP(nombre);
+  const nombre = color ? `${modelo} ${color}` : modelo, clave = normP(nombre);
   const nuevas = [], sumadas = [];
-  for (const t of tallas) {
-    const cant = parseInt($("p-" + t).value);
-    const { data } = await sb.from("productos").select("id,codigo,nombre,stock,modelo,color").eq("negocio_id", NEG.id).like("codigo", t + "%");
-    const re = new RegExp("^" + t + "(\\d+)$");
-    const deTalla = (data || []).filter(r => re.test(r.codigo));
-    const ya = deTalla.find(r => normP(r.nombre) === clave);
+  for (const o of ops) {
+    const cant = parseInt($("pb-" + o).value);
+    const ya = PRODS.find(p => prefijoDe(p.codigo) === o && normP(p.nombre) === clave);
     if (ya) {
-      // ya existe ese modelo y color en esa talla: se suma al código que ya tiene
-      const { error } = await sb.from("productos")
-        .update({ stock: ya.stock + cant, modelo: ya.modelo || modelo, color: ya.color || color })
-        .eq("id", ya.id).eq("negocio_id", NEG.id);
+      const { error } = await sb.from("productos").update({ stock: ya.stock + cant }).eq("id", ya.id).eq("negocio_id", NEG.id);
       if (error) return msg.textContent = "No se pudo sumar el stock de " + ya.codigo + ": " + error.message;
       sumadas.push(`${ya.codigo} (${ya.stock} → ${ya.stock + cant})`);
       continue;
     }
-    const max = deTalla.reduce((m, r) => Math.max(m, +re.exec(r.codigo)[1]), 0);
-    nuevas.push({
-      negocio_id: NEG.id,
-      codigo: t + String(max + 1).padStart(6 - t.length, "0"),
-      nombre, modelo, color,
-      precio, stock: cant, stock_minimo: min
-    });
+    nuevas.push({ negocio_id: NEG.id, codigo: siguienteCodigo(o), nombre, modelo, color: color || null,
+      precio, stock: cant, stock_minimo: min });
+    PRODS.push(nuevas[nuevas.length - 1]);   // para que el siguiente código no se repita
   }
   if (nuevas.length) {
-    const { error } = await sb.from("productos").insert(nuevas);
+    const { error } = await sb.from("productos").insert(nuevas.map(({ negocio_id, codigo, nombre, modelo, color, precio, stock, stock_minimo }) =>
+      ({ negocio_id, codigo, nombre, modelo, color, precio, stock, stock_minimo })));
     if (error) return msg.textContent = "No se pudo guardar: " + error.message;
   }
   msg.style.color = "var(--ok,#16a34a)";
-  msg.textContent = "Listo." +
-    (nuevas.length ? ` Nuevos: ${nuevas.map(f => f.codigo).join(", ")}.` : "") +
+  msg.textContent = "Listo." + (nuevas.length ? ` Nuevos: ${nuevas.map(f => f.codigo).join(", ")}.` : "") +
     (sumadas.length ? ` Stock sumado en: ${sumadas.join(", ")}.` : "");
-  ["p-modelo", "p-color", "p-precio", "p-min", "p-XS", "p-S", "p-M", "p-L"].forEach(i => $(i).value = "");
-  if (typeof cargarProductos === "function") cargarProductos();
+  ["p-modelo","p-color","p-precio","p-min"].forEach(i => $(i).value = "");
+  (a.opciones || []).forEach(o => { const el = $("pb-" + o); if (el) el.value = ""; });
+  cargarProductos();
 }
 
 async function borrar(id){
