@@ -71,11 +71,11 @@ function pintarBloque(){
   const box = $("p-tallas"), a = atrCodigo();
   if (!box) return;
   const lbl = $("p-lbl-bloque");
-    const btn = document.getElementById("modo-b-bloque");
+  const btn = document.getElementById("modo-b-bloque");
   if (!a || a.tipo !== "lista") {
     box.innerHTML = "";
     if (btn) btn.classList.add("hide");
     if (typeof verModo === "function") verModo("uno");
     return;
   }
-  if (btn) { btn.classList.remove("hide"); btn.textContent = `Por bloque (${a.etiqueta.toLowerCase()})`; }
+  if (btn) { btn.classList.remove("hide"); btn.textContent = `Por bloque (${a.etiqueta.toLowerCase()})`; }}
