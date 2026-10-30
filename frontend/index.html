@@ -154,53 +154,48 @@
     <div class="inv-grid" id="inv-grid">
 
       <div class="inv-izq">
-                <div id="form-prod" class="card">
-          <b id="f-titulo">Agregar producto</b>
-          <div class="modos" id="modos">
-            <button type="button" id="modo-b-uno" class="act" onclick="verModo('uno')">Uno por uno</button>
-            <button type="button" id="modo-b-bloque" onclick="verModo('bloque')">Por bloque (tallas)</button>
-          </div>
+        <div id="form-prod" class="card">
+  <b id="f-titulo">Agregar producto</b>
+  <div class="modos" id="modos">
+    <button type="button" id="modo-b-uno" class="act" onclick="verModo('uno')">Uno por uno</button>
+    <button type="button" id="modo-b-bloque" onclick="verModo('bloque')">Por bloque (tallas)</button>
+  </div>
 
-          <div id="modo-uno">
-            <div id="f-atrs" class="f2"></div>
-                      <div class="f2">
-                        <div><label>Código</label><input type="text" id="f-codigo"></div>
-                        <div><label>Precio (S/)</label><input type="number" id="f-precio" min="0" step="0.01" inputmode="decimal"></div>
-                        <div><label>Stock</label><input type="number" id="f-stock" min="0" step="1" inputmode="numeric"></div>
-                        <div><label>Avisar si baja de</label><input type="number" id="f-min" min="0" step="1" inputmode="numeric" placeholder="0 = sin aviso"></div>
-                      </div>
-                        <div class="foto-box">
-              <label>Foto del producto (opcional)</label>
-              <div class="foto-fila">
-                <img id="f-foto-prev" class="miniatura grande hide" alt="">
-                <input type="file" id="f-foto" accept="image/*" onchange="previaFoto()">
-              </div>
-              <button type="button" id="f-foto-quitar" class="hide" onclick="quitarFoto()">Quitar foto</button>
-            </div>
-            <button class="pri full" id="f-btn" onclick="guardarProducto()">Guardar producto</button>
-            <button class="full hide" id="f-cancel" onclick="limpiarForm()">Cancelar edición</button>
-          </div>
+  <div id="modo-uno">
+    <div id="f-atrs" class="f2"></div>
+    <div class="f2">
+      <div><label>Código</label><input type="text" id="f-codigo"></div>
+      <div><label>Precio (S/)</label><input type="number" id="f-precio" min="0" step="0.01" inputmode="decimal"></div>
+      <div><label>Stock</label><input type="number" id="f-stock" min="0" step="1" inputmode="numeric"></div>
+      <div><label>Avisar si baja de</label><input type="number" id="f-min" min="0" step="1" inputmode="numeric" placeholder="0 = sin aviso"></div>
+    </div>
+    <div class="foto-box">
+      <label>Foto del producto (opcional)</label>
+      <div class="foto-fila">
+        <img id="f-foto-prev" class="miniatura grande hide" alt="">
+        <input type="file" id="f-foto" accept="image/*" onchange="previaFoto()">
+      </div>
+      <button type="button" id="f-foto-quitar" class="hide" onclick="quitarFoto()">Quitar foto</button>
+    </div>
+    <button class="pri full" id="f-btn" onclick="guardarProducto()">Guardar producto</button>
+    <button class="full hide" id="f-cancel" onclick="limpiarForm()">Cancelar edición</button>
+  </div>
 
-          <div id="modo-bloque" class="hide">
-            <div class="f2">
-              <div><label>Modelo</label><input type="text" id="p-modelo" placeholder="Ej.: encaje"></div>
-              <div><label>Color</label><input type="text" id="p-color" placeholder="Ej.: negro"></div>
-              <div><label>Precio (S/)</label><input type="number" id="p-precio" min="0" step="0.01" inputmode="decimal"></div>
-              <div><label>Avisar si baja de</label><input type="number" id="p-min" min="0" step="1" inputmode="numeric" placeholder="0 = sin aviso"></div>
-            </div>
-            <label id="p-lbl-bloque">Cantidad por talla (vacío si no hay)</label>
-<div class="tallas-grid" id="p-tallas"></div>
-              <div><small>XS</small><input type="number" min="0" id="p-XS" inputmode="numeric"></div>
-              <div><small>S</small><input type="number" min="0" id="p-S" inputmode="numeric"></div>
-              <div><small>M</small><input type="number" min="0" id="p-M" inputmode="numeric"></div>
-              <div><small>L</small><input type="number" min="0" id="p-L" inputmode="numeric"></div>
-            </div>
-            <label>Foto del modelo (opcional, se usa en todas las tallas)</label>
-            <input type="file" id="p-foto" accept="image/*">
-            <button class="pri full" onclick="guardarPrenda()">Guardar las tallas</button>
-            <div class="msg" id="p-msg"></div>
-          </div>
-        </div>
+  <div id="modo-bloque" class="hide">
+    <div class="f2">
+      <div><label>Modelo</label><input type="text" id="p-modelo" placeholder="Ej.: encaje"></div>
+      <div><label>Color</label><input type="text" id="p-color" placeholder="Ej.: negro"></div>
+      <div><label>Precio (S/)</label><input type="number" id="p-precio" min="0" step="0.01" inputmode="decimal"></div>
+      <div><label>Avisar si baja de</label><input type="number" id="p-min" min="0" step="1" inputmode="numeric" placeholder="0 = sin aviso"></div>
+    </div>
+    <label id="p-lbl-bloque">Cantidad por talla (vacío si no hay)</label>
+    <div class="tallas-grid" id="p-tallas"></div>
+    <label>Foto del modelo (opcional, se usa en todas las tallas)</label>
+    <input type="file" id="p-foto" accept="image/*">
+    <button class="pri full" onclick="guardarPrenda()">Guardar las tallas</button>
+    <div class="msg" id="p-msg"></div>
+  </div>
+</div>
         <div class="msg" id="pr-msg"></div>
         <div id="imp" class="card">
           <b>Importar desde Excel</b>
