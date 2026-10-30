@@ -365,7 +365,6 @@ function abrirServicios(){
     <div class="f2">
       <div><label>Nombre del servicio</label><input type="text" id="sv-nombre" maxlength="60" placeholder="Ej.: formateo e instalación"></div>
       <div><label>Precio (S/)</label><input type="number" id="sv-precio" min="0" step="0.01" inputmode="decimal"></div>
-      <div><label>Código (opcional)</label><input type="text" id="sv-codigo" maxlength="12" placeholder="SERV01"></div>
       <div><label>Garantía (días)</label><input type="number" id="sv-gar" min="0" step="1" value="0"></div>
     </div>
     <button class="pri full" onclick="guardarServicio()">Agregar servicio</button>
@@ -388,11 +387,20 @@ async function guardarServicio(){
   const nombre = $("sv-nombre").value.trim(), precio = parseFloat($("sv-precio").value);
   if (!nombre) return msg.textContent = "Escribe el nombre del servicio.";
   if (!(precio >= 0)) return msg.textContent = "Escribe un precio válido.";
-  const { error } = await sb.from("servicios").insert({ negocio_id: NEG.id, nombre, precio,
-    codigo: $("sv-codigo").value.trim() || null, garantia_dias: parseInt($("sv-gar").value, 10) || 0 });
+
+  // código automático: SERV0001, SERV0002...
+  const { data: todos } = await sb.from("servicios").select("codigo").eq("negocio_id", NEG.id);
+  let n = 0;
+  (todos || []).forEach(s => { const m = /^SERV(\d+)$/.exec(s.codigo || ""); if (m) n = Math.max(n, parseInt(m[1], 10)); });
+  const codigo = "SERV" + String(n + 1).padStart(4, "0");
+
+  const { error } = await sb.from("servicios").insert({ negocio_id: NEG.id, nombre, precio, codigo,
+    garantia_dias: parseInt($("sv-gar").value, 10) || 0 });
   if (error) return msg.textContent = error.code === "23505" ? "Ya tienes un servicio con ese nombre." : "No se pudo guardar: " + error.message;
-  ["sv-nombre","sv-precio","sv-codigo"].forEach(i => $(i).value = "");
+  ["sv-nombre","sv-precio"].forEach(i => $(i).value = "");
+  $("sv-gar").value = "0";
   await cargarServicios(); listarServicios();
+  msg.style.color = "#16a34a"; msg.textContent = "Servicio agregado con el código " + codigo + ".";
 }
 
 async function borrarServicio(id){
@@ -400,15 +408,6 @@ async function borrarServicio(id){
   await sb.from("servicios").update({ activo: false }).eq("id", id);
   await cargarServicios(); listarServicios();
 }
-
-// Botón para abrirlo
-(function(){
-  const barra = document.getElementById("barra-inv") || document.getElementById("buscar");
-  if (!barra || document.getElementById("btn-serv")) return;
-  const b = document.createElement("button");
-  b.type = "button"; b.id = "btn-serv"; b.textContent = "Servicios"; b.onclick = abrirServicios;
-  barra.id === "barra-inv" ? barra.appendChild(b) : barra.after(b);
-})();
 
 // En Inventario, elegir "Servicio" en Tipo de producto abre el catálogo de servicios
 document.addEventListener("change", e => {
