@@ -24,13 +24,18 @@ function prefijoDe(codigo){
 
 function pintarCamposProducto(){
   const box = $("f-atrs"); if (!box) return;
-  box.innerHTML = ATRS.map(a => {
+  const dinamicos = ATRS.map(a => {
     const id = "fa-" + a.clave, ayuda = a.ayuda ? ` placeholder="${esc(a.ayuda)}"` : "";
     const campo = a.tipo === "lista"
       ? `<select id="${id}"${a.en_codigo ? ' onchange="codigoPorAtributo()"' : ""}><option value="">${a.obligatorio ? "Elige una opción" : "—"}</option>${(a.opciones || []).map(o => `<option>${esc(o)}</option>`).join("")}</select>`
       : `<input type="${a.tipo === "numero" ? "number" : a.tipo === "fecha" ? "date" : "text"}" id="${id}"${ayuda}>`;
     return `<div><label>${esc(a.etiqueta)}${a.obligatorio ? "" : ` <small class="gr">(opcional)</small>`}</label>${campo}</div>`;
   }).join("");
+  box.innerHTML = dinamicos + `
+    <div><label>Código</label><input type="text" id="f-codigo"></div>
+    <div><label>Precio (S/)</label><input type="number" id="f-precio" min="0" step="0.01" inputmode="decimal"></div>
+    <div><label>Stock</label><input type="number" id="f-stock" min="0" step="1" inputmode="numeric"></div>
+    <div><label>Avisar si baja de</label><input type="number" id="f-min" min="0" step="1" inputmode="numeric" placeholder="0 = sin aviso"></div>`;
 }
 
 // Lee el formulario: qué va a columnas reales, qué al jsonb, el nombre y el prefijo
@@ -70,12 +75,15 @@ function atrResumen(p){
 function pintarBloque(){
   const box = $("p-tallas"), a = atrCodigo();
   if (!box) return;
-  const lbl = $("p-lbl-bloque");
-  const btn = document.getElementById("modo-b-bloque");
+  const lbl = $("p-lbl-bloque"), btn = document.getElementById("modo-b-bloque");
   if (!a || a.tipo !== "lista") {
     box.innerHTML = "";
     if (btn) btn.classList.add("hide");
     if (typeof verModo === "function") verModo("uno");
     return;
   }
-  if (btn) { btn.classList.remove("hide"); btn.textContent = `Por bloque (${a.etiqueta.toLowerCase()})`; }}
+  if (btn) { btn.classList.remove("hide"); btn.textContent = `Por bloque (${a.etiqueta.toLowerCase()})`; }
+  if (lbl) lbl.textContent = `Cantidad por ${a.etiqueta.toLowerCase()} (vacío si no hay)`;
+  box.innerHTML = (a.opciones || []).map(o =>
+    `<div><small>${esc(o)}</small><input type="number" min="0" id="pb-${esc(o)}" inputmode="numeric"></div>`).join("");
+}

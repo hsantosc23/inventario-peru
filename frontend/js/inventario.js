@@ -110,11 +110,10 @@ function listar(){
   const q = $("buscar").value.trim().toLowerCase();
   const r = PRODS.filter(p => p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q));
   $("lista").innerHTML = r.length ? r.map(p => {
-    const url = fotoUrl(p.foto);
-    const mini = url ? `<img class="miniatura" src="${url}" alt="" loading="lazy" onclick="verFoto('${url}')">` : `<span class="miniatura vacia"></span>`;
-    return     `<div class="fila"><div><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}${atrResumen(p) ? ` <small class="gr">· ${esc(atrResumen(p))}</small>` : ""}<span class="stock ${p.stock > 0 ? "hay" : "cero"}">Stock: ${p.stock}${bajo(p) ? ' <b style="color:#b45309">· stock bajo</b>' : ""}</span></div></div>
-     <div class="pre">S/ ${Number(p.precio).toFixed(2)}</div>
-     ${PUEDE ? `<button onclick="editar('${p.id}')">Editar</button><button onclick="borrar('${p.id}')">Borrar</button>` : ""}</div>`;
+    const extra = atrResumen(p);
+    return `<div class="fila"><div><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}${extra ? ` <small class="gr">· ${esc(extra)}</small>` : ""}<span class="stock ${p.stock > 0 ? "hay" : "cero"}">Stock: ${p.stock}${bajo(p) ? ' <b style="color:#b45309">· stock bajo</b>' : ""}</span></div>
+      <div class="pre">S/ ${Number(p.precio).toFixed(2)}</div>
+      ${PUEDE ? `<button onclick="editar('${p.id}')">Editar</button><button onclick="borrar('${p.id}')">Borrar</button>` : ""}</div>`;
   }).join("") : `<p class="gr">No hay productos para mostrar.</p>`;
 }
 
