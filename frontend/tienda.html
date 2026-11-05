@@ -4,73 +4,137 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tienda</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--c:#4f46e5;--tx:#0f172a;--gr:#64748b;--bd:#e6e9f2;--bg:#f6f7fb;--card:#fff;--r:18px}
+:root{--c:#c2714f;--tx:#15171a;--gr:#6b7280;--bd:#e7e7e7;--bg:#fff;--serif:"Playfair Display",Georgia,serif}
 *{box-sizing:border-box}
 body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased}
-img{max-width:100%;display:block}
-.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
-header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--bd)}
-.hd{display:flex;align-items:center;gap:12px;padding:12px 0}
-.hd h1{font-size:18px;margin:0;letter-spacing:-.3px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.btn{font:inherit;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:#fff;color:var(--tx);border-radius:12px;padding:10px 16px;transition:transform .12s,box-shadow .15s}
-.btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(15,23,42,.1)}
-.btn.p{background:var(--c);border-color:var(--c);color:#fff}
-.cart-b{position:relative;padding:10px 14px}
-.cart-b b{position:absolute;top:-6px;right:-6px;background:var(--c);color:#fff;border-radius:999px;font-size:11px;min-width:20px;height:20px;display:flex;align-items:center;justify-content:center;padding:0 5px}
-.hero{background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 55%,#000));color:#fff;border-radius:var(--r);padding:38px 24px;margin:18px 0;text-align:center}
-.hero h2{margin:0 0 8px;font-size:clamp(22px,4.5vw,34px);letter-spacing:-.6px}
-.hero p{margin:0 0 18px;opacity:.9}
-.sec{margin:26px 0}
-.sec h3{font-size:19px;margin:0 0 12px;letter-spacing:-.3px}
-.search{display:flex;gap:8px;margin-bottom:12px}
-.search input{flex:1;font:inherit;padding:13px 16px;border:1px solid var(--bd);border-radius:14px;background:#fff;min-width:0}
-.search input:focus{outline:0;border-color:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 18%,transparent)}
+img{display:block;max-width:100%}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px}
+.up{text-transform:uppercase;letter-spacing:.12em;font-size:11px;font-weight:600}
+
+/* aviso */
+.aviso{background:#111;color:#fff;text-align:center;padding:10px 16px}
+/* cabecera */
+header{position:sticky;top:0;z-index:40;background:#f7f7f5;border-bottom:1px solid var(--bd)}
+.hd{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:16px 0}
+.hd .nav{display:flex;gap:20px;align-items:center}
+.hd a.lk{color:var(--tx);text-decoration:none}
+.hd a.lk:hover{text-decoration:underline}
+.logo{font-family:var(--serif);font-size:26px;font-weight:700;text-align:center;letter-spacing:.01em}
+.ic{display:flex;gap:6px;justify-content:flex-end;align-items:center}
+.ib{width:42px;height:42px;border:0;background:none;cursor:pointer;font-size:18px;border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center}
+.ib:hover{background:#ececea}
+.ib b{position:absolute;top:4px;right:2px;background:var(--tx);color:#fff;border-radius:999px;font-size:10px;min-width:17px;height:17px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.burger{display:none}
+
+/* portada */
+.hero{position:relative;min-height:min(74vh,640px);display:flex;align-items:center;background:#1d2634 center/cover no-repeat}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,14,22,.62) 0%,rgba(10,14,22,.25) 55%,transparent 100%)}
+.hero .in{position:relative;z-index:2;color:#fff;max-width:560px;padding:56px 20px}
+.hero .eb{display:inline-block;border-top:1px solid rgba(255,255,255,.5);padding-top:12px;margin-bottom:10px}
+.hero h2{font-family:var(--serif);font-size:clamp(34px,6vw,62px);line-height:1.03;margin:0 0 14px;font-weight:600}
+.hero p{margin:0 0 24px;font-size:17px;line-height:1.5;opacity:.95}
+.cta{display:inline-block;background:var(--c);color:#fff;border:0;cursor:pointer;font:inherit;padding:15px 28px;text-transform:uppercase;letter-spacing:.1em;font-size:12px;font-weight:600}
+.cta:hover{filter:brightness(1.08)}
+
+/* beneficios */
+.bens{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--bd);border-bottom:1px solid var(--bd)}
+.ben{display:flex;gap:10px;align-items:center;justify-content:center;padding:18px 12px;border-left:1px solid var(--bd);text-align:left}
+.ben:first-child{border-left:0}
+.ben span{font-size:20px}
+
+/* secciones */
+.sec{padding:48px 0}
+.sec h3{font-size:24px;margin:0 0 22px;font-weight:600;letter-spacing:-.2px}
+.sec h3.big{font-family:var(--serif);font-size:clamp(28px,4vw,40px)}
+.search{display:flex;gap:10px;margin-bottom:16px;max-width:460px}
+.search input{flex:1;font:inherit;padding:13px 16px;border:1px solid var(--bd);border-radius:0;background:#fff;min-width:0}
+.search input:focus{outline:0;border-color:var(--tx)}
 .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex:0 0 auto;border:1px solid var(--bd);background:#fff;border-radius:999px;padding:8px 16px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
-.chip.on{background:var(--c);border-color:var(--c);color:#fff}
-.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s}
-.card:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(15,23,42,.1)}
-.ph{aspect-ratio:1;background:linear-gradient(135deg,#eef1f8,#e3e8f5);display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;color:#b9c2d8}
-.ph img{width:100%;height:100%;object-fit:cover}
-.bd{padding:12px;display:flex;flex-direction:column;gap:6px;flex:1}
-.bd .n{font-weight:600;font-size:14px;line-height:1.3}
-.bd .t{font-size:12px;color:var(--gr)}
-.bd .pr{font-weight:800;font-size:17px;margin-top:auto}
-.ag{font:inherit;font-weight:600;font-size:14px;cursor:pointer;border:0;background:var(--c);color:#fff;border-radius:11px;padding:9px;margin-top:4px}
-.ag:disabled{background:#cbd5e1;cursor:default}
-.ov{position:fixed;inset:0;background:rgba(10,14,28,.55);z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}
+.chip{flex:0 0 auto;border:1px solid var(--bd);background:#fff;padding:9px 18px;font:inherit;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;border-radius:999px}
+.chip.on{background:var(--tx);border-color:var(--tx);color:#fff}
+
+/* productos */
+.grid{display:grid;gap:26px 18px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.pc{display:flex;flex-direction:column;gap:8px}
+.ph{position:relative;aspect-ratio:3/4;background:#f1f1ef;overflow:hidden}
+.ph img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
+.pc:hover .ph img{transform:scale(1.04)}
+.ph .ini{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:50px;color:#c9c9c5}
+.off{position:absolute;right:10px;bottom:10px;background:#e01f26;color:#fff;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700}
+.pn{font-size:14px;line-height:1.35}
+.pp{display:flex;gap:8px;align-items:baseline;font-size:15px}
+.pp .old{color:#9aa0a6;text-decoration:line-through;font-size:13px}
+.pp .now{font-weight:700}
+.add{font:inherit;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:1px solid var(--tx);background:#fff;color:var(--tx);padding:11px;margin-top:2px}
+.add:hover{background:var(--tx);color:#fff}
+.add:disabled{border-color:var(--bd);color:#b6b6b6;background:#fff;cursor:default}
+
+/* carrito */
+.ov{position:fixed;inset:0;background:rgba(15,17,22,.5);z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}
 .ov.on{opacity:1;pointer-events:auto}
-.dw{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:var(--card);z-index:70;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s ease}
+.dw{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:#fff;z-index:70;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
 .dw.on{transform:none}
-.dw-h{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid var(--bd)}
-.dw-h b{flex:1;font-size:17px}
-.dw-b{flex:1;overflow:auto;padding:12px 16px}
-.dw-f{padding:16px;border-top:1px solid var(--bd)}
-.it{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd)}
-.it .mi{width:52px;height:52px;border-radius:12px;background:#eef1f8;flex:none;overflow:hidden}
+.dw-h{display:flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:1px solid var(--bd)}
+.dw-h b{flex:1;font-family:var(--serif);font-size:20px;font-weight:600}
+.dw-b{flex:1;overflow:auto;padding:8px 20px}
+.dw-f{padding:20px;border-top:1px solid var(--bd)}
+.it{display:flex;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--bd)}
+.it .mi{width:62px;height:78px;background:#f1f1ef;flex:none;overflow:hidden}
 .it .mi img{width:100%;height:100%;object-fit:cover}
 .it .in{flex:1;min-width:0}
-.it .in b{display:block;font-size:14px;font-weight:600}
+.it .in b{display:block;font-size:14px;font-weight:500}
 .it .in small{color:var(--gr)}
-.qt{display:flex;align-items:center;gap:6px}
-.qt button{width:30px;height:30px;border-radius:9px;border:1px solid var(--bd);background:#fff;font:inherit;font-weight:700;cursor:pointer}
-.tot{display:flex;justify-content:space-between;font-size:19px;font-weight:800;margin-bottom:12px}
-.x{width:38px;height:38px;border-radius:50%;border:1px solid var(--bd);background:#fff;font:inherit;cursor:pointer;flex:none}
-footer{background:#fff;border-top:1px solid var(--bd);margin-top:34px;padding:26px 0;color:var(--gr);font-size:14px}
-.vacio{text-align:center;color:var(--gr);padding:40px 0}
-@media (prefers-color-scheme:dark){
-  :root:not([data-tema="light"]){--tx:#eef2ff;--gr:#9aa5c4;--bd:#232c45;--bg:#0a0f1f;--card:#111a30}
-  :root:not([data-tema="light"]) header{background:rgba(10,15,31,.8)}
-  :root:not([data-tema="light"]) .btn,:root:not([data-tema="light"]) .chip,
-  :root:not([data-tema="light"]) .search input,:root:not([data-tema="light"]) .qt button,
-  :root:not([data-tema="light"]) .x{background:#111a30;color:var(--tx)}
-  :root:not([data-tema="light"]) .ph{background:linear-gradient(135deg,#17213a,#0f1830);color:#2e3a5c}
-  :root:not([data-tema="light"]) footer{background:#111a30}
+.qt{display:flex;align-items:center;gap:4px}
+.qt button{width:28px;height:28px;border:1px solid var(--bd);background:#fff;font:inherit;cursor:pointer}
+.tot{display:flex;justify-content:space-between;font-size:19px;font-weight:700;margin-bottom:14px}
+.x{width:40px;height:40px;border-radius:50%;border:1px solid var(--bd);background:#fff;font:inherit;cursor:pointer;flex:none}
+.vacio{text-align:center;color:var(--gr);padding:46px 0}
+
+footer{background:#f7f7f5;border-top:1px solid var(--bd);margin-top:40px;padding:40px 0;color:var(--gr);font-size:14px;line-height:1.8}
+footer b{color:var(--tx);font-family:var(--serif);font-size:20px}
+
+/* WhatsApp flotante */
+.wa{position:fixed;right:18px;bottom:18px;z-index:50;width:58px;height:58px;border-radius:50%;background:#25d366;border:0;cursor:pointer;box-shadow:0 8px 22px rgba(37,211,102,.45);display:flex;align-items:center;justify-content:center}
+.wa svg{width:30px;height:30px;fill:#fff}
+
+/* editor */
+.edbar{position:fixed;left:0;right:0;bottom:0;z-index:80;background:#111;color:#fff;display:flex;gap:10px;align-items:center;padding:12px 16px}
+.edbar span{flex:1;font-size:13px}
+.edbar button{font:inherit;font-weight:600;font-size:13px;cursor:pointer;border:1px solid #444;background:#1d1d1d;color:#fff;padding:10px 18px;border-radius:8px}
+.edbar button.ok{background:#16a34a;border-color:#16a34a}
+.edit-on [data-sec]{position:relative;outline:2px dashed transparent;transition:outline-color .15s}
+.edit-on [data-sec]:hover{outline-color:#4f46e5}
+.edit-on [data-sec].off{opacity:.38}
+.edit-on{padding-bottom:70px}
+.stools{position:absolute;top:8px;right:8px;z-index:30;display:flex;gap:4px;background:rgba(17,17,17,.9);border-radius:10px;padding:4px}
+.stools button{width:34px;height:34px;border:0;background:none;color:#fff;font:inherit;font-size:15px;cursor:pointer;border-radius:7px}
+.stools button:hover{background:#333}
+.stools .gr8{cursor:grab}
+.pnl{position:fixed;inset:0;background:rgba(10,12,18,.6);z-index:90;display:flex;align-items:center;justify-content:center;padding:16px}
+.pnl .bx{background:#fff;color:var(--tx);border-radius:16px;max-width:460px;width:100%;padding:20px;max-height:86vh;overflow:auto}
+.pnl label{display:block;margin:12px 0 5px;font-weight:600;font-size:13px}
+.pnl input,.pnl textarea{width:100%;font:inherit;padding:11px;border:1px solid var(--bd);border-radius:9px}
+.pnl .row{display:flex;gap:8px;margin-top:16px}
+.pnl .row button{flex:1;font:inherit;font-weight:600;padding:12px;border-radius:9px;border:1px solid var(--bd);background:#fff;cursor:pointer}
+.pnl .row button.ok{background:var(--tx);color:#fff;border-color:var(--tx)}
+
+@media(max-width:860px){
+  .bens{grid-template-columns:1fr 1fr}
+  .ben:nth-child(3){border-left:0}
+  .ben:nth-child(n+3){border-top:1px solid var(--bd)}
+}
+@media(max-width:700px){
+  .hd{grid-template-columns:auto 1fr auto;padding:12px 0}
+  .hd .nav{display:none}
+  .burger{display:flex}
+  .logo{font-size:21px}
+  .grid{grid-template-columns:1fr 1fr;gap:20px 12px}
+  .sec{padding:34px 0}
+  .hero .in{padding:48px 20px}
 }
 </style>
 </head>
@@ -83,7 +147,7 @@ footer{background:#fff;border-top:1px solid var(--bd);margin-top:34px;padding:26
   <div class="dw-b" id="dw-b"></div>
   <div class="dw-f">
     <div class="tot"><span>Total</span><span id="dw-t">S/ 0.00</span></div>
-    <button class="btn p" style="width:100%;padding:14px" onclick="pedirWhatsApp()">Comprar por WhatsApp</button>
+    <button class="cta" style="width:100%;padding:16px" onclick="pedirWhatsApp()">Comprar por WhatsApp</button>
   </div>
 </aside>
 
@@ -92,98 +156,135 @@ footer{background:#fff;border-top:1px solid var(--bd);margin-top:34px;padding:26
 <script src="/js/supabase-client.js"></script>
 <script>
 const SLUG = new URLSearchParams(location.search).get("t") || "";
-let T = null, ITEMS = [], CAT = "", Q = "", CAR = {};
+const LS = "carrito-" + SLUG;
+let T = null, ITEMS = [], CAT = "", Q = "", CAR = {}, DUENO = false, EDIT = false, DRAG = null;
+
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 const sol = n => "S/ " + Number(n || 0).toFixed(2);
 const foto = p => p.foto || p.foto_url || p.imagen || p.imagen_url || null;
 const cat = p => (p.atributos && T.campo_categoria) ? (p.atributos[T.campo_categoria] || "") : "";
-const LS = "carrito-" + SLUG;
+const DEF = [{k:"aviso",on:1},{k:"portada",on:1},{k:"beneficios",on:1},{k:"buscador",on:1},{k:"destacados",on:1},{k:"catalogo",on:1},{k:"info",on:1}];
+const TIT = { aviso:"Barra de aviso", portada:"Portada", beneficios:"Beneficios", buscador:"Buscador", destacados:"Destacados", catalogo:"Catálogo", info:"Información" };
 
-try { CAR = JSON.parse(localStorage.getItem(LS) || "{}"); } catch (e) { CAR = {}; }
-const guardar = () => { try { localStorage.setItem(LS, JSON.stringify(CAR)); } catch (e) {} };
+try { CAR = JSON.parse(localStorage.getItem(LS) || "{}"); } catch (e) {}
+const guardarCar = () => { try { localStorage.setItem(LS, JSON.stringify(CAR)); } catch (e) {} };
 
 (async function(){
   if (!SLUG) return fallo("Falta el enlace de la tienda.");
-  const { data, error } = await sb.rpc("tienda_publica", { p_slug: SLUG });
-  if (error || !data) return fallo("Esta tienda no existe o todavía no está publicada.");
-  T = data.tienda;
-  ITEMS = (data.productos || []).concat(data.servicios || []);
+  try {
+    const { data: s } = await sb.auth.getSession();
+    if (s && s.session) {
+      const { data: t } = await sb.from("tiendas").select("*").eq("slug", SLUG).maybeSingle();
+      if (t) {
+        DUENO = true; T = t;
+        const { data: ps } = await sb.from("productos").select("*").eq("negocio_id", t.negocio_id).eq("en_tienda", true);
+        const { data: sv } = await sb.from("servicios").select("*").eq("negocio_id", t.negocio_id).eq("activo", true);
+        ITEMS = (ps || []).concat((sv || []).map(x => ({ ...x, es_servicio: true })));
+      }
+    }
+  } catch (e) {}
+  if (!T) {
+    const { data } = await sb.rpc("tienda_publica", { p_slug: SLUG });
+    if (!data) return fallo("Esta tienda no existe o todavía no está publicada.");
+    T = data.tienda;
+    ITEMS = (data.productos || []).concat(data.servicios || []);
+  }
+  if (!T.secciones || !T.secciones.length) T.secciones = DEF;
   document.title = T.titulo || "Tienda";
-  document.documentElement.style.setProperty("--c", T.color || "#4f46e5");
+  if (T.color) document.documentElement.style.setProperty("--c", T.color);
   pintar(); pintarCarrito();
 })();
 
-function fallo(m){
-  document.getElementById("app").innerHTML = `<div class="wrap"><p class="vacio">${esc(m)}</p></div>`;
-}
+const fallo = m => document.getElementById("app").innerHTML = `<div class="wrap"><p class="vacio">${esc(m)}</p></div>`;
 
+/* ---------- Render ---------- */
 function pintar(){
-  const secs = (T.secciones && T.secciones.length ? T.secciones : [{k:"portada",on:1},{k:"buscador",on:1},{k:"destacados",on:1},{k:"catalogo",on:1},{k:"info",on:1}]).filter(s => s.on);
-  let h = `<header><div class="wrap hd"><h1>${esc(T.titulo || "Tienda")}</h1>
-    <button class="btn cart-b" onclick="verCarrito(true)">🛒<b id="cnt">0</b></button></div></header><div class="wrap">`;
-  secs.forEach(s => h += bloque(s.k));
-  h += `</div><footer><div class="wrap">
-      <b style="color:var(--tx)">${esc(T.titulo || "")}</b><br>
-      ${T.direccion ? esc(T.direccion) + "<br>" : ""}
-      ${T.horario ? esc(T.horario) + "<br>" : ""}
-      ${T.whatsapp ? `WhatsApp ${esc(T.whatsapp)}` : ""}
-    </div></footer>`;
+  const secs = T.secciones.filter(s => EDIT || s.on);
+  let h = "";
+  secs.forEach((s, i) => h += `<div data-sec="${s.k}" data-i="${i}" class="${s.on ? "" : "off"}">${EDIT ? tools(i) : ""}${bloque(s.k)}</div>`);
+  h += `<footer><div class="wrap"><b>${esc(T.titulo || "")}</b><br>
+    ${T.direccion ? esc(T.direccion) + "<br>" : ""}${T.horario ? esc(T.horario) + "<br>" : ""}
+    ${T.whatsapp ? "WhatsApp " + esc(T.whatsapp) : ""}</div></footer>`;
+  if (T.whatsapp) h += `<button class="wa" onclick="escribirnos()" aria-label="WhatsApp"><svg viewBox="0 0 24 24"><path d="M.06 24l1.69-6.16a11.87 11.87 0 01-1.6-5.95C.16 5.33 5.5 0 12.06 0a11.8 11.8 0 018.4 3.49 11.8 11.8 0 013.48 8.41c0 6.56-5.34 11.9-11.9 11.9a11.9 11.9 0 01-5.7-1.45L.06 24zm6.6-3.8c1.65.98 3.22 1.57 5.4 1.57 5.44 0 9.88-4.43 9.89-9.88a9.88 9.88 0 00-16.87-7 9.88 9.88 0 00-1.5 12.03l-1 3.65 3.75-.98zm11.4-5.1c-.07-.12-.27-.2-.57-.35-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.08a8.1 8.1 0 01-2.38-1.47 9 9 0 01-1.66-2.06c-.17-.3-.02-.46.13-.6.14-.14.3-.36.45-.53.15-.18.2-.3.3-.5.1-.2.05-.38-.02-.53-.08-.15-.67-1.6-.92-2.2-.24-.58-.49-.5-.67-.51l-.57-.01c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.07 2.88 1.22 3.08.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.7.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2-1.42.25-.7.25-1.29.18-1.41z"/></svg></button>`;
   document.getElementById("app").innerHTML = h;
   pintarGrid();
+  if (EDIT) activarDrag();
 }
 
+const tools = i => `<div class="stools">
+  <button class="gr8" title="Arrastrar">⠿</button>
+  <button onclick="mover(${i},-1)" title="Subir">↑</button>
+  <button onclick="mover(${i},1)" title="Bajar">↓</button>
+  <button onclick="ver(${i})" title="Mostrar u ocultar">${T.secciones[i].on ? "👁" : "🚫"}</button>
+  <button onclick="editar(${i})" title="Editar textos">✎</button></div>`;
+
 function bloque(k){
-  if (k === "portada") return `<section class="hero"><h2>${esc(T.titulo || "")}</h2>
-    ${T.descripcion ? `<p>${esc(T.descripcion)}</p>` : ""}
-    ${T.whatsapp ? `<button class="btn" onclick="escribirnos()">Escríbenos por WhatsApp</button>` : ""}</section>`;
+  if (k === "aviso") return `<div class="aviso up">${esc(T.aviso || "Envíos a todo el Perú")}</div>`;
+  if (k === "portada") {
+    const bg = T.hero_img ? `style="background-image:url('${esc(T.hero_img)}')"` : "";
+    return `<header><div class="wrap hd">
+        <div class="nav up"><a class="lk" href="#catalogo">Todas las prendas</a></div>
+        <div class="logo">${esc(T.titulo || "Tienda")}</div>
+        <div class="ic"><button class="ib" onclick="irBuscador()">🔍</button>
+          <button class="ib" onclick="verCarrito(true)">🛍<b id="cnt">0</b></button></div>
+      </div></header>
+      <section class="hero" ${bg}><div class="wrap in">
+        ${T.hero_eyebrow ? `<div class="eb up">${esc(T.hero_eyebrow)}</div>` : ""}
+        <h2>${esc(T.hero_titulo || T.titulo || "")}</h2>
+        ${T.hero_sub ? `<p>${esc(T.hero_sub)}</p>` : ""}
+        <button class="cta" onclick="irCatalogo()">${esc(T.hero_cta || "Comprar ahora")} →</button>
+      </div></section>`;
+  }
+  if (k === "beneficios") {
+    const b = Array.isArray(T.beneficios) ? T.beneficios : [];
+    return b.length ? `<div class="bens">${b.map(x => `<div class="ben"><span>${esc(x.i || "✔")}</span><div class="up">${esc(x.t || "")}</div></div>`).join("")}</div>` : "";
+  }
   if (k === "buscador") {
     const cats = [...new Set(ITEMS.map(cat).filter(Boolean))].sort();
-    return `<section class="sec"><div class="search"><input type="search" id="q" placeholder="Buscar producto..." oninput="buscar(this.value)"></div>
+    return `<section class="sec" id="buscador"><div class="wrap">
+      <div class="search"><input type="search" id="q" placeholder="Buscar producto..." oninput="buscar(this.value)"></div>
       ${cats.length ? `<div class="chips"><button class="chip on" data-c="" onclick="filtrar('')">Todo</button>
-        ${cats.map(c => `<button class="chip" data-c="${esc(c)}" onclick="filtrar('${esc(c)}')">${esc(c)}</button>`).join("")}</div>` : ""}</section>`;
+        ${cats.map(c => `<button class="chip" data-c="${esc(c)}" onclick="filtrar('${esc(c)}')">${esc(c)}</button>`).join("")}</div>` : ""}
+      </div></section>`;
   }
-  if (k === "destacados") return `<section class="sec" id="s-dest"></section>`;
-  if (k === "catalogo") return `<section class="sec"><h3>Catálogo</h3><div class="grid" id="g-cat"></div></section>`;
-  if (k === "info") return `<section class="sec"><h3>Dónde estamos</h3>
-    <div class="card" style="padding:18px">${T.direccion ? `<p style="margin:0 0 6px">📍 ${esc(T.direccion)}</p>` : ""}
-      ${T.horario ? `<p style="margin:0 0 6px">🕒 ${esc(T.horario)}</p>` : ""}
-      ${T.whatsapp ? `<p style="margin:0">💬 ${esc(T.whatsapp)}</p>` : ""}</div></section>`;
+  if (k === "destacados") return `<section class="sec"><div class="wrap" id="s-dest"></div></section>`;
+  if (k === "catalogo") return `<section class="sec" id="catalogo"><div class="wrap">
+      <h3 class="big">Todas las prendas</h3><div class="grid" id="g-cat"></div></div></section>`;
+  if (k === "info") return `<section class="sec"><div class="wrap"><h3>Dónde estamos</h3>
+    ${T.direccion ? `<p>📍 ${esc(T.direccion)}</p>` : ""}${T.horario ? `<p>🕒 ${esc(T.horario)}</p>` : ""}
+    ${T.whatsapp ? `<p>💬 ${esc(T.whatsapp)}</p>` : ""}</div></section>`;
   return "";
 }
 
-const tarjeta = p => `<article class="card">
-  <div class="ph">${foto(p) ? `<img src="${esc(foto(p))}" alt="${esc(p.nombre)}" loading="lazy">` : esc((p.nombre || "?")[0].toUpperCase())}</div>
-  <div class="bd"><span class="n">${esc(p.nombre)}</span>
-    ${cat(p) ? `<span class="t">${esc(cat(p))}</span>` : ""}
-    <span class="pr">${sol(p.precio)}</span>
-    <button class="ag" ${p.es_servicio || p.stock > 0 ? "" : "disabled"} onclick="agregar('${p.id}')">${p.es_servicio || p.stock > 0 ? "Agregar" : "Sin stock"}</button>
-  </div></article>`;
+function tarjeta(p){
+  const antes = Number(p.precio_antes || 0), ahora = Number(p.precio);
+  const off = antes > ahora ? Math.round((1 - ahora / antes) * 100) : 0;
+  const hay = p.es_servicio || p.stock > 0;
+  return `<article class="pc">
+    <div class="ph">${foto(p) ? `<img src="${esc(foto(p))}" alt="${esc(p.nombre)}" loading="lazy">` : `<div class="ini">${esc((p.nombre || "?")[0].toUpperCase())}</div>`}
+      ${off ? `<div class="off">Ahorra ${off}%</div>` : ""}</div>
+    <div class="pn">${esc(p.nombre)}</div>
+    <div class="pp">${antes > ahora ? `<span class="old">${sol(antes)}</span>` : ""}<span class="now">${sol(ahora)}</span></div>
+    <button class="add" ${hay ? "" : "disabled"} onclick="agregar('${p.id}')">${hay ? "Agregar" : "Agotado"}</button>
+  </article>`;
+}
 
 function pintarGrid(){
-  const vis = ITEMS.filter(p => (!CAT || cat(p) === CAT) &&
-    (!Q || (p.nombre + " " + (p.codigo || "")).toLowerCase().includes(Q)));
+  const vis = ITEMS.filter(p => (!CAT || cat(p) === CAT) && (!Q || (p.nombre + " " + (p.codigo || "")).toLowerCase().includes(Q)));
   const g = document.getElementById("g-cat");
   if (g) g.innerHTML = vis.length ? vis.map(tarjeta).join("") : `<p class="vacio" style="grid-column:1/-1">No encontramos nada con esa búsqueda.</p>`;
   const d = document.getElementById("s-dest"), dest = ITEMS.filter(p => p.destacado);
-  if (d) d.innerHTML = dest.length && !Q && !CAT ? `<h3>Destacados</h3><div class="grid">${dest.map(tarjeta).join("")}</div>` : "";
+  if (d) d.innerHTML = dest.length && !Q && !CAT ? `<h3>Productos destacados</h3><div class="grid">${dest.map(tarjeta).join("")}</div>` : "";
 }
 
-function buscar(v){ Q = v.trim().toLowerCase(); pintarGrid(); }
-function filtrar(c){
-  CAT = c;
-  document.querySelectorAll(".chip").forEach(b => b.classList.toggle("on", b.dataset.c === c));
-  pintarGrid();
-}
+const buscar = v => { Q = v.trim().toLowerCase(); pintarGrid(); };
+function filtrar(c){ CAT = c; document.querySelectorAll(".chip").forEach(b => b.classList.toggle("on", b.dataset.c === c)); pintarGrid(); }
+const irCatalogo = () => { const e = document.getElementById("catalogo"); if (e) e.scrollIntoView({ behavior:"smooth" }); };
+const irBuscador = () => { const e = document.getElementById("q"); if (e) { e.scrollIntoView({ behavior:"smooth", block:"center" }); e.focus(); } else irCatalogo(); };
 
-function agregar(id){
-  CAR[id] = (CAR[id] || 0) + 1;
-  guardar(); pintarCarrito(); verCarrito(true);
-}
-function cant(id, d){
-  CAR[id] = (CAR[id] || 0) + d;
-  if (CAR[id] <= 0) delete CAR[id];
-  guardar(); pintarCarrito();
-}
+/* ---------- Carrito ---------- */
+function agregar(id){ CAR[id] = (CAR[id] || 0) + 1; guardarCar(); pintarCarrito(); verCarrito(true); }
+function cant(id, d){ CAR[id] = (CAR[id] || 0) + d; if (CAR[id] <= 0) delete CAR[id]; guardarCar(); pintarCarrito(); }
 
 function pintarCarrito(){
   const ids = Object.keys(CAR).filter(id => ITEMS.some(p => p.id === id));
@@ -207,9 +308,7 @@ function verCarrito(on){
   document.body.style.overflow = on ? "hidden" : "";
 }
 
-function escribirnos(){
-  window.open(`https://wa.me/51${T.whatsapp}?text=` + encodeURIComponent(`Hola ${T.titulo || ""}! Quiero hacer una consulta.`), "_blank");
-}
+const escribirnos = () => window.open(`https://wa.me/51${T.whatsapp}?text=` + encodeURIComponent(`Hola ${T.titulo || ""}! Quiero hacer una consulta.`), "_blank");
 
 function pedirWhatsApp(){
   const ids = Object.keys(CAR).filter(id => ITEMS.some(p => p.id === id));
@@ -221,8 +320,110 @@ function pedirWhatsApp(){
     total += sub;
     return `• ${c} × ${p.nombre} — ${sol(sub)}`;
   }).join("\n");
-  const txt = `Hola ${T.titulo || ""}! Quiero pedir:\n\n${lineas}\n\nTotal: ${sol(total)}\n\n(Pedido desde su tienda en línea)`;
-  window.open(`https://wa.me/51${T.whatsapp}?text=` + encodeURIComponent(txt), "_blank");
+  window.open(`https://wa.me/51${T.whatsapp}?text=` +
+    encodeURIComponent(`Hola ${T.titulo || ""}! Quiero pedir:\n\n${lineas}\n\nTotal: ${sol(total)}\n\n(Pedido desde su tienda en línea)`), "_blank");
+}
+
+/* ---------- Editor en la página ---------- */
+if (DUENO) window.addEventListener("load", botonEditar);
+function botonEditar(){
+  if (!DUENO || document.getElementById("edbar")) return;
+  const d = document.createElement("div");
+  d.className = "edbar"; d.id = "edbar";
+  d.innerHTML = `<span id="ed-txt">${T.activa ? "Tu tienda está publicada." : "Tu tienda no está publicada todavía."}</span>
+    <button id="ed-b" onclick="modoEditar()">Editar</button>`;
+  document.body.appendChild(d);
+}
+
+function modoEditar(){
+  EDIT = !EDIT;
+  document.body.classList.toggle("edit-on", EDIT);
+  document.getElementById("ed-txt").textContent = EDIT
+    ? "Arrastra ⠿ o usa ↑ ↓ para mover. 👁 oculta. ✎ cambia los textos."
+    : (T.activa ? "Tu tienda está publicada." : "Tu tienda no está publicada todavía.");
+  const b = document.getElementById("ed-b");
+  b.textContent = EDIT ? "Guardar y salir" : "Editar";
+  b.className = EDIT ? "ok" : "";
+  if (!EDIT) guardarTda();
+  pintar();
+}
+
+function mover(i, d){
+  const a = T.secciones, j = i + d;
+  if (j < 0 || j >= a.length) return;
+  [a[i], a[j]] = [a[j], a[i]];
+  pintar();
+}
+function ver(i){ T.secciones[i].on = T.secciones[i].on ? 0 : 1; pintar(); }
+
+function activarDrag(){
+  document.querySelectorAll("[data-sec]").forEach(el => {
+    const h = el.querySelector(".gr8");
+    if (h) h.onpointerdown = () => { el.draggable = true; };
+    el.ondragstart = e => { DRAG = +el.dataset.i; e.dataTransfer.effectAllowed = "move"; };
+    el.ondragover = e => e.preventDefault();
+    el.ondrop = e => {
+      e.preventDefault();
+      const to = +el.dataset.i;
+      if (DRAG === null || DRAG === to) return;
+      const a = T.secciones, [x] = a.splice(DRAG, 1);
+      a.splice(to, 0, x); DRAG = null; pintar();
+    };
+    el.ondragend = () => { el.draggable = false; DRAG = null; };
+  });
+}
+
+function editar(i){
+  const k = T.secciones[i].k;
+  const campos = {
+    aviso:      [["aviso","Texto del aviso"]],
+    portada:    [["titulo","Nombre de la tienda"],["hero_eyebrow","Texto pequeño de arriba"],["hero_titulo","Título grande"],["hero_sub","Frase debajo"],["hero_cta","Texto del botón"],["hero_img","Enlace de la imagen de fondo"]],
+    beneficios: [],
+    buscador:   [],
+    destacados: [],
+    catalogo:   [],
+    info:       [["direccion","Dirección"],["horario","Horario"],["whatsapp","WhatsApp (9 dígitos)"]]
+  }[k] || [];
+  const extra = k === "beneficios"
+    ? (Array.isArray(T.beneficios) ? T.beneficios : []).map((b, j) =>
+        `<label>Beneficio ${j+1}</label><div style="display:flex;gap:8px">
+         <input style="width:68px" id="bi${j}" value="${esc(b.i || "")}"><input id="bt${j}" value="${esc(b.t || "")}"></div>`).join("")
+    : "";
+  if (!campos.length && !extra) return alert("Esta sección no tiene textos para editar. Su contenido sale de tu inventario.");
+
+  const p = document.createElement("div");
+  p.className = "pnl"; p.id = "pnl";
+  p.innerHTML = `<div class="bx"><b style="font-size:18px">${TIT[k]}</b>
+    ${campos.map(([c, lb]) => `<label>${lb}</label><input id="ed-${c}" value="${esc(T[c] || "")}">`).join("")}
+    ${extra}
+    <div class="row"><button onclick="cerrarPnl()">Cancelar</button>
+      <button class="ok" onclick="aplicarPnl('${k}')">Aplicar</button></div></div>`;
+  document.body.appendChild(p);
+}
+const cerrarPnl = () => { const p = document.getElementById("pnl"); if (p) p.remove(); };
+
+function aplicarPnl(k){
+  document.querySelectorAll("#pnl [id^='ed-']").forEach(el => { T[el.id.slice(3)] = el.value.trim() || null; });
+  if (k === "beneficios") {
+    T.beneficios = (T.beneficios || []).map((b, j) => ({
+      i: (document.getElementById("bi" + j) || {}).value || b.i,
+      t: (document.getElementById("bt" + j) || {}).value || b.t }));
+  }
+  cerrarPnl();
+  if (T.color) document.documentElement.style.setProperty("--c", T.color);
+  document.title = T.titulo || "Tienda";
+  pintar();
+}
+
+async function guardarTda(){
+  const { error } = await sb.from("tiendas").update({
+    titulo: T.titulo, descripcion: T.descripcion, whatsapp: T.whatsapp, direccion: T.direccion,
+    horario: T.horario, aviso: T.aviso, hero_titulo: T.hero_titulo, hero_eyebrow: T.hero_eyebrow,
+    hero_sub: T.hero_sub, hero_cta: T.hero_cta, hero_img: T.hero_img,
+    beneficios: T.beneficios, secciones: T.secciones
+  }).eq("id", T.id);
+  const t = document.getElementById("ed-txt");
+  if (t) t.textContent = error ? "No se pudo guardar: " + error.message : "Cambios guardados.";
 }
 </script>
 </body>

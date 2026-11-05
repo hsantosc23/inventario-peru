@@ -44,13 +44,7 @@ function pintarTienda(){
       <div class="msg" id="td-msg"></div></div>`;
     return;
   }
-  const lista = TDA.secciones.map((s, i) => `<div class="fila">
-      <div style="flex:1;min-width:0"><b>${SECCIONES[s.k] ? SECCIONES[s.k].titulo : s.k}</b>
-        <small class="gr" style="display:block">${SECCIONES[s.k] ? SECCIONES[s.k].ayuda : ""}</small></div>
-      <button onclick="moverSeccion(${i},-1)" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
-      <button onclick="moverSeccion(${i},1)" ${i === TDA.secciones.length - 1 ? "disabled" : ""} aria-label="Bajar">↓</button>
-      <button class="${s.on ? "" : "peligro"}" onclick="verSeccion(${i})">${s.on ? "Visible" : "Oculta"}</button>
-    </div>`).join("");
+  
 
   const listas = ATRS.filter(a => a.tipo === "lista");
   box.innerHTML = `<div class="inv-grid">
@@ -83,10 +77,10 @@ function pintarTienda(){
         </div>
         ${TDA.activa ? "" : `<p class="msg" style="margin-top:8px">La tienda está sin publicar: por ahora solo tú puedes verla.</p>`}
       </div>
-      <div class="card" style="margin-bottom:12px">
-        <b>Orden de las secciones</b>
-        <p class="gr" style="margin:6px 0">Usa las flechas para acomodar cómo se ve tu tienda.</p>
-        ${lista}
+            <div class="card" style="margin-bottom:12px">
+        <b>Diseño de la tienda</b>
+        <p class="gr" style="margin:6px 0">Abre tu tienda y toca <b>Editar</b> abajo: ahí mueves las secciones y cambias los textos viendo cómo queda.</p>
+        <button class="pri full" onclick="window.open(urlTienda(),'_blank')">Abrir y editar mi tienda</button>
       </div>
       <div class="card">
         <b>Qué se publica</b>
@@ -130,14 +124,6 @@ async function guardarTienda(){
   TDA = data;
   msg.style.color = "#16a34a"; msg.textContent = "Cambios guardados.";
 }
-
-function moverSeccion(i, d){
-  const a = TDA.secciones, j = i + d;
-  if (j < 0 || j >= a.length) return;
-  [a[i], a[j]] = [a[j], a[i]];
-  pintarTienda(); guardarTienda();
-}
-function verSeccion(i){ TDA.secciones[i].on = !TDA.secciones[i].on; pintarTienda(); guardarTienda(); }
 
 function listarPubs(){
   const q = ($("td-buscar").value || "").trim().toLowerCase();
