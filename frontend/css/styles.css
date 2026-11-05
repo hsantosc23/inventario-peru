@@ -528,3 +528,10 @@ html[data-tema="oscuro"] #md-ov .card,html[data-tema="oscuro"] .modal-caja.card{
   z-index:5;flex:none;
 }
 #md-ov .card > b:first-of-type{display:block;padding-right:44px}
+
+/* Formularios de dos columnas: una sola columna en celular */
+@media (max-width:600px){
+  .f2{grid-template-columns:1fr !important;gap:0 !important}
+  .f2 > div{min-width:0}
+  label small{white-space:nowrap}
+}
