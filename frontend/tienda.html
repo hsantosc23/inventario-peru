@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tienda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--c:#4f46e5;--tx:#0f172a;--gr:#64748b;--bd:#e6e9f2;--bg:#f6f7fb;--card:#fff;--r:18px}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--bd)}
+.hd{display:flex;align-items:center;gap:12px;padding:12px 0}
+.hd h1{font-size:18px;margin:0;letter-spacing:-.3px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{font:inherit;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:#fff;color:var(--tx);border-radius:12px;padding:10px 16px;transition:transform .12s,box-shadow .15s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(15,23,42,.1)}
+.btn.p{background:var(--c);border-color:var(--c);color:#fff}
+.cart-b{position:relative;padding:10px 14px}
+.cart-b b{position:absolute;top:-6px;right:-6px;background:var(--c);color:#fff;border-radius:999px;font-size:11px;min-width:20px;height:20px;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.hero{background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 55%,#000));color:#fff;border-radius:var(--r);padding:38px 24px;margin:18px 0;text-align:center}
+.hero h2{margin:0 0 8px;font-size:clamp(22px,4.5vw,34px);letter-spacing:-.6px}
+.hero p{margin:0 0 18px;opacity:.9}
+.sec{margin:26px 0}
+.sec h3{font-size:19px;margin:0 0 12px;letter-spacing:-.3px}
+.search{display:flex;gap:8px;margin-bottom:12px}
+.search input{flex:1;font:inherit;padding:13px 16px;border:1px solid var(--bd);border-radius:14px;background:#fff;min-width:0}
+.search input:focus{outline:0;border-color:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 18%,transparent)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--bd);background:#fff;border-radius:999px;padding:8px 16px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--c);border-color:var(--c);color:#fff}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(15,23,42,.1)}
+.ph{aspect-ratio:1;background:linear-gradient(135deg,#eef1f8,#e3e8f5);display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;color:#b9c2d8}
+.ph img{width:100%;height:100%;object-fit:cover}
+.bd{padding:12px;display:flex;flex-direction:column;gap:6px;flex:1}
+.bd .n{font-weight:600;font-size:14px;line-height:1.3}
+.bd .t{font-size:12px;color:var(--gr)}
+.bd .pr{font-weight:800;font-size:17px;margin-top:auto}
+.ag{font:inherit;font-weight:600;font-size:14px;cursor:pointer;border:0;background:var(--c);color:#fff;border-radius:11px;padding:9px;margin-top:4px}
+.ag:disabled{background:#cbd5e1;cursor:default}
+.ov{position:fixed;inset:0;background:rgba(10,14,28,.55);z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}
+.ov.on{opacity:1;pointer-events:auto}
+.dw{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:var(--card);z-index:70;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s ease}
+.dw.on{transform:none}
+.dw-h{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid var(--bd)}
+.dw-h b{flex:1;font-size:17px}
+.dw-b{flex:1;overflow:auto;padding:12px 16px}
+.dw-f{padding:16px;border-top:1px solid var(--bd)}
+.it{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd)}
+.it .mi{width:52px;height:52px;border-radius:12px;background:#eef1f8;flex:none;overflow:hidden}
+.it .mi img{width:100%;height:100%;object-fit:cover}
+.it .in{flex:1;min-width:0}
+.it .in b{display:block;font-size:14px;font-weight:600}
+.it .in small{color:var(--gr)}
+.qt{display:flex;align-items:center;gap:6px}
+.qt button{width:30px;height:30px;border-radius:9px;border:1px solid var(--bd);background:#fff;font:inherit;font-weight:700;cursor:pointer}
+.tot{display:flex;justify-content:space-between;font-size:19px;font-weight:800;margin-bottom:12px}
+.x{width:38px;height:38px;border-radius:50%;border:1px solid var(--bd);background:#fff;font:inherit;cursor:pointer;flex:none}
+footer{background:#fff;border-top:1px solid var(--bd);margin-top:34px;padding:26px 0;color:var(--gr);font-size:14px}
+.vacio{text-align:center;color:var(--gr);padding:40px 0}
+@media (prefers-color-scheme:dark){
+  :root:not([data-tema="light"]){--tx:#eef2ff;--gr:#9aa5c4;--bd:#232c45;--bg:#0a0f1f;--card:#111a30}
+  :root:not([data-tema="light"]) header{background:rgba(10,15,31,.8)}
+  :root:not([data-tema="light"]) .btn,:root:not([data-tema="light"]) .chip,
+  :root:not([data-tema="light"]) .search input,:root:not([data-tema="light"]) .qt button,
+  :root:not([data-tema="light"]) .x{background:#111a30;color:var(--tx)}
+  :root:not([data-tema="light"]) .ph{background:linear-gradient(135deg,#17213a,#0f1830);color:#2e3a5c}
+  :root:not([data-tema="light"]) footer{background:#111a30}
+}
+</style>
+</head>
+<body>
+<div id="app"><div class="wrap"><p class="vacio">Cargando tienda...</p></div></div>
+
+<div class="ov" id="ov" onclick="verCarrito(false)"></div>
+<aside class="dw" id="dw">
+  <div class="dw-h"><b>Tu pedido</b><button class="x" onclick="verCarrito(false)">✕</button></div>
+  <div class="dw-b" id="dw-b"></div>
+  <div class="dw-f">
+    <div class="tot"><span>Total</span><span id="dw-t">S/ 0.00</span></div>
+    <button class="btn p" style="width:100%;padding:14px" onclick="pedirWhatsApp()">Comprar por WhatsApp</button>
+  </div>
+</aside>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/supabase-client.js"></script>
+<script>
+const SLUG = new URLSearchParams(location.search).get("t") || "";
+let T = null, ITEMS = [], CAT = "", Q = "", CAR = {};
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const sol = n => "S/ " + Number(n || 0).toFixed(2);
+const foto = p => p.foto || p.foto_url || p.imagen || p.imagen_url || null;
+const cat = p => (p.atributos && T.campo_categoria) ? (p.atributos[T.campo_categoria] || "") : "";
+const LS = "carrito-" + SLUG;
+
+try { CAR = JSON.parse(localStorage.getItem(LS) || "{}"); } catch (e) { CAR = {}; }
+const guardar = () => { try { localStorage.setItem(LS, JSON.stringify(CAR)); } catch (e) {} };
+
+(async function(){
+  if (!SLUG) return fallo("Falta el enlace de la tienda.");
+  const { data, error } = await sb.rpc("tienda_publica", { p_slug: SLUG });
+  if (error || !data) return fallo("Esta tienda no existe o todavía no está publicada.");
+  T = data.tienda;
+  ITEMS = (data.productos || []).concat(data.servicios || []);
+  document.title = T.titulo || "Tienda";
+  document.documentElement.style.setProperty("--c", T.color || "#4f46e5");
+  pintar(); pintarCarrito();
+})();
+
+function fallo(m){
+  document.getElementById("app").innerHTML = `<div class="wrap"><p class="vacio">${esc(m)}</p></div>`;
+}
+
+function pintar(){
+  const secs = (T.secciones && T.secciones.length ? T.secciones : [{k:"portada",on:1},{k:"buscador",on:1},{k:"destacados",on:1},{k:"catalogo",on:1},{k:"info",on:1}]).filter(s => s.on);
+  let h = `<header><div class="wrap hd"><h1>${esc(T.titulo || "Tienda")}</h1>
+    <button class="btn cart-b" onclick="verCarrito(true)">🛒<b id="cnt">0</b></button></div></header><div class="wrap">`;
+  secs.forEach(s => h += bloque(s.k));
+  h += `</div><footer><div class="wrap">
+      <b style="color:var(--tx)">${esc(T.titulo || "")}</b><br>
+      ${T.direccion ? esc(T.direccion) + "<br>" : ""}
+      ${T.horario ? esc(T.horario) + "<br>" : ""}
+      ${T.whatsapp ? `WhatsApp ${esc(T.whatsapp)}` : ""}
+    </div></footer>`;
+  document.getElementById("app").innerHTML = h;
+  pintarGrid();
+}
+
+function bloque(k){
+  if (k === "portada") return `<section class="hero"><h2>${esc(T.titulo || "")}</h2>
+    ${T.descripcion ? `<p>${esc(T.descripcion)}</p>` : ""}
+    ${T.whatsapp ? `<button class="btn" onclick="escribirnos()">Escríbenos por WhatsApp</button>` : ""}</section>`;
+  if (k === "buscador") {
+    const cats = [...new Set(ITEMS.map(cat).filter(Boolean))].sort();
+    return `<section class="sec"><div class="search"><input type="search" id="q" placeholder="Buscar producto..." oninput="buscar(this.value)"></div>
+      ${cats.length ? `<div class="chips"><button class="chip on" data-c="" onclick="filtrar('')">Todo</button>
+        ${cats.map(c => `<button class="chip" data-c="${esc(c)}" onclick="filtrar('${esc(c)}')">${esc(c)}</button>`).join("")}</div>` : ""}</section>`;
+  }
+  if (k === "destacados") return `<section class="sec" id="s-dest"></section>`;
+  if (k === "catalogo") return `<section class="sec"><h3>Catálogo</h3><div class="grid" id="g-cat"></div></section>`;
+  if (k === "info") return `<section class="sec"><h3>Dónde estamos</h3>
+    <div class="card" style="padding:18px">${T.direccion ? `<p style="margin:0 0 6px">📍 ${esc(T.direccion)}</p>` : ""}
+      ${T.horario ? `<p style="margin:0 0 6px">🕒 ${esc(T.horario)}</p>` : ""}
+      ${T.whatsapp ? `<p style="margin:0">💬 ${esc(T.whatsapp)}</p>` : ""}</div></section>`;
+  return "";
+}
+
+const tarjeta = p => `<article class="card">
+  <div class="ph">${foto(p) ? `<img src="${esc(foto(p))}" alt="${esc(p.nombre)}" loading="lazy">` : esc((p.nombre || "?")[0].toUpperCase())}</div>
+  <div class="bd"><span class="n">${esc(p.nombre)}</span>
+    ${cat(p) ? `<span class="t">${esc(cat(p))}</span>` : ""}
+    <span class="pr">${sol(p.precio)}</span>
+    <button class="ag" ${p.es_servicio || p.stock > 0 ? "" : "disabled"} onclick="agregar('${p.id}')">${p.es_servicio || p.stock > 0 ? "Agregar" : "Sin stock"}</button>
+  </div></article>`;
+
+function pintarGrid(){
+  const vis = ITEMS.filter(p => (!CAT || cat(p) === CAT) &&
+    (!Q || (p.nombre + " " + (p.codigo || "")).toLowerCase().includes(Q)));
+  const g = document.getElementById("g-cat");
+  if (g) g.innerHTML = vis.length ? vis.map(tarjeta).join("") : `<p class="vacio" style="grid-column:1/-1">No encontramos nada con esa búsqueda.</p>`;
+  const d = document.getElementById("s-dest"), dest = ITEMS.filter(p => p.destacado);
+  if (d) d.innerHTML = dest.length && !Q && !CAT ? `<h3>Destacados</h3><div class="grid">${dest.map(tarjeta).join("")}</div>` : "";
+}
+
+function buscar(v){ Q = v.trim().toLowerCase(); pintarGrid(); }
+function filtrar(c){
+  CAT = c;
+  document.querySelectorAll(".chip").forEach(b => b.classList.toggle("on", b.dataset.c === c));
+  pintarGrid();
+}
+
+function agregar(id){
+  CAR[id] = (CAR[id] || 0) + 1;
+  guardar(); pintarCarrito(); verCarrito(true);
+}
+function cant(id, d){
+  CAR[id] = (CAR[id] || 0) + d;
+  if (CAR[id] <= 0) delete CAR[id];
+  guardar(); pintarCarrito();
+}
+
+function pintarCarrito(){
+  const ids = Object.keys(CAR).filter(id => ITEMS.some(p => p.id === id));
+  let total = 0, n = 0;
+  const h = ids.map(id => {
+    const p = ITEMS.find(x => x.id === id), c = CAR[id];
+    total += Number(p.precio) * c; n += c;
+    return `<div class="it"><div class="mi">${foto(p) ? `<img src="${esc(foto(p))}" alt="">` : ""}</div>
+      <div class="in"><b>${esc(p.nombre)}</b><small>${sol(p.precio)} c/u</small></div>
+      <div class="qt"><button onclick="cant('${id}',-1)">−</button><span>${c}</span><button onclick="cant('${id}',1)">+</button></div></div>`;
+  }).join("");
+  document.getElementById("dw-b").innerHTML = h || `<p class="vacio">Tu pedido está vacío.</p>`;
+  document.getElementById("dw-t").textContent = sol(total);
+  const b = document.getElementById("cnt");
+  if (b) { b.textContent = n; b.style.display = n ? "flex" : "none"; }
+}
+
+function verCarrito(on){
+  document.getElementById("dw").classList.toggle("on", on);
+  document.getElementById("ov").classList.toggle("on", on);
+  document.body.style.overflow = on ? "hidden" : "";
+}
+
+function escribirnos(){
+  window.open(`https://wa.me/51${T.whatsapp}?text=` + encodeURIComponent(`Hola ${T.titulo || ""}! Quiero hacer una consulta.`), "_blank");
+}
+
+function pedirWhatsApp(){
+  const ids = Object.keys(CAR).filter(id => ITEMS.some(p => p.id === id));
+  if (!ids.length) return alert("Agrega al menos un producto a tu pedido.");
+  if (!T.whatsapp) return alert("Esta tienda todavía no configuró su WhatsApp.");
+  let total = 0;
+  const lineas = ids.map(id => {
+    const p = ITEMS.find(x => x.id === id), c = CAR[id], sub = Number(p.precio) * c;
+    total += sub;
+    return `• ${c} × ${p.nombre} — ${sol(sub)}`;
+  }).join("\n");
+  const txt = `Hola ${T.titulo || ""}! Quiero pedir:\n\n${lineas}\n\nTotal: ${sol(total)}\n\n(Pedido desde su tienda en línea)`;
+  window.open(`https://wa.me/51${T.whatsapp}?text=` + encodeURIComponent(txt), "_blank");
+}
+</script>
+</body>
+</html>
