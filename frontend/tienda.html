@@ -189,10 +189,11 @@ const guardarCar = () => { try { localStorage.setItem(LS, JSON.stringify(CAR)); 
     T = data.tienda;
     ITEMS = (data.productos || []).concat(data.servicios || []);
   }
-  if (!T.secciones || !T.secciones.length) T.secciones = DEF;
+    if (!T.secciones || !T.secciones.length) T.secciones = DEF.map(d => ({ ...d }));
+  else DEF.forEach((d, i) => { if (!T.secciones.some(s => s.k === d.k)) T.secciones.splice(i, 0, { ...d }); });
   document.title = T.titulo || "Tienda";
   if (T.color) document.documentElement.style.setProperty("--c", T.color);
-  pintar(); pintarCarrito();
+  pintar(); pintarCarrito(); botonEditar();
 })();
 
 const fallo = m => document.getElementById("app").innerHTML = `<div class="wrap"><p class="vacio">${esc(m)}</p></div>`;
@@ -325,7 +326,7 @@ function pedirWhatsApp(){
 }
 
 /* ---------- Editor en la página ---------- */
-if (DUENO) window.addEventListener("load", botonEditar);
+// (el botón se agrega al final de la carga, cuando ya se sabe si eres el dueño)
 function botonEditar(){
   if (!DUENO || document.getElementById("edbar")) return;
   const d = document.createElement("div");
@@ -394,13 +395,54 @@ function editar(i){
   const p = document.createElement("div");
   p.className = "pnl"; p.id = "pnl";
   p.innerHTML = `<div class="bx"><b style="font-size:18px">${TIT[k]}</b>
-    ${campos.map(([c, lb]) => `<label>${lb}</label><input id="ed-${c}" value="${esc(T[c] || "")}">`).join("")}
+        ${campos.map(([c, lb]) => c === "hero_img"
+      ? `<label>${lb}</label>
+         <input type="file" accept="image/*" onchange="subirImagen(this.files[0],'portada')">
+         <div class="gr" id="up-est" style="font-size:12px;margin-top:6px"></div>
+         <div id="up-prev"></div>
+         <input id="ed-hero_img" value="${esc(T[c] || "")}" placeholder="o pega aquí un enlace" style="margin-top:8px">`
+      : `<label>${lb}</label><input id="ed-${c}" value="${esc(T[c] || "")}">`).join("")}
     ${extra}
     <div class="row"><button onclick="cerrarPnl()">Cancelar</button>
       <button class="ok" onclick="aplicarPnl('${k}')">Aplicar</button></div></div>`;
-  document.body.appendChild(p);
+    document.body.appendChild(p);
+  if (k === "portada") verPrevia(T.hero_img);
 }
 const cerrarPnl = () => { const p = document.getElementById("pnl"); if (p) p.remove(); };
+
+/* Subida de imágenes al Storage de Supabase */
+let BUCKET = null;
+async function bucketFotos(){
+  if (BUCKET) return BUCKET;
+  try {
+    const { data } = await sb.storage.listBuckets();
+    if (data && data.length) { BUCKET = (data.find(b => b.public) || data[0]).name; return BUCKET; }
+  } catch (e) {}
+  BUCKET = "fotos";          // si tu bucket se llama distinto, cámbialo aquí
+  return BUCKET;
+}
+
+async function subirImagen(file, destino){
+  const est = document.getElementById("up-est");
+  if (file.size > 5 * 1024 * 1024) { est.textContent = "La imagen pesa más de 5 MB. Usa una más liviana."; return; }
+  est.textContent = "Subiendo...";
+  try {
+    const bk = await bucketFotos();
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const ruta = `tiendas/${SLUG}/${destino}-${Date.now()}.${ext}`;
+    const { error } = await sb.storage.from(bk).upload(ruta, file, { upsert: true, contentType: file.type });
+    if (error) throw error;
+    const { data } = sb.storage.from(bk).getPublicUrl(ruta);
+    document.getElementById("ed-hero_img").value = data.publicUrl;
+    verPrevia(data.publicUrl);
+    est.textContent = "Imagen lista.";
+  } catch (e) { est.textContent = "No se pudo subir: " + (e.message || e); }
+}
+
+function verPrevia(u){
+  const p = document.getElementById("up-prev");
+  if (p) p.innerHTML = u ? `<img src="${esc(u)}" style="width:100%;height:120px;object-fit:cover;border-radius:9px;margin-top:8px">` : "";
+}
 
 function aplicarPnl(k){
   document.querySelectorAll("#pnl [id^='ed-']").forEach(el => { T[el.id.slice(3)] = el.value.trim() || null; });
