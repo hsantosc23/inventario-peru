@@ -41,8 +41,6 @@ function pintarPrevia(url){
   const i = $("f-foto-prev"); i.classList.toggle("hide", !url); if (url) i.src = url;
   $("f-foto-quitar").classList.toggle("hide", !url);
 }
-function previaFoto(){ const a = $("f-foto").files[0]; FOTO_QUITAR = false; pintarPrevia(a ? URL.createObjectURL(a) : null); }
-function quitarFoto(){ $("f-foto").value = ""; FOTO_QUITAR = true; pintarPrevia(null); }
 function verFoto(url){ const m = $("m-foto"); m.querySelector("img").src = url; m.classList.remove("hide"); }
 
 // Código = talla + número correlativo de todo el inventario (XS0001, M0002, L0003...).
@@ -112,8 +110,11 @@ function listar(){
   const q = $("buscar").value.trim().toLowerCase();
   const r = PRODS.filter(p => p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q));
   $("lista").innerHTML = r.length ? r.map(p => {
-    const extra = atrResumen(p);
-    return `<div class="fila"><div><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}${extra ? ` <small class="gr">· ${esc(extra)}</small>` : ""}<span class="stock ${p.stock > 0 ? "hay" : "cero"}">Stock: ${p.stock}${bajo(p) ? ' <b style="color:#b45309">· stock bajo</b>' : ""}</span></div>
+    const extra = atrResumen(p), f = fotoDe(p);
+    const mini = f
+      ? `<img src="${esc(f)}" alt="" loading="lazy" style="width:46px;height:46px;object-fit:cover;border-radius:10px;flex:none">`
+      : `<div title="Sin foto" style="width:46px;height:46px;border-radius:10px;flex:none;background:rgba(127,127,127,.15);display:flex;align-items:center;justify-content:center;font-size:18px;opacity:.6">📷</div>`;
+    return `<div class="fila"><div style="display:flex;gap:12px;align-items:center;min-width:0">${mini}<div style="min-width:0"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}${extra ? ` <small class="gr">· ${esc(extra)}</small>` : ""}<span class="stock ${p.stock > 0 ? "hay" : "cero"}">Stock: ${p.stock}${bajo(p) ? ' <b style="color:#b45309">· stock bajo</b>' : ""}</span></div></div>
       <div class="pre">S/ ${Number(p.precio).toFixed(2)}</div>
       ${PUEDE ? `<button onclick="editar('${p.id}')">Editar</button><button onclick="borrar('${p.id}')">Borrar</button>` : ""}</div>`;
   }).join("") : `<p class="gr">No hay productos para mostrar.</p>`;
@@ -123,6 +124,7 @@ function limpiarForm(){
   EDIT = null;
   ["f-codigo","f-precio","f-stock","f-min"].forEach(i => $(i).value = "");
   atrLimpiar();
+  mostrarFotoForm(null);
   $("f-titulo").textContent = "Agregar producto";
   $("f-btn").textContent = "Guardar producto";
   $("f-cancel").classList.add("hide");
@@ -135,6 +137,7 @@ function editar(id){
   $("f-codigo").value = p.codigo;
   $("f-precio").value = p.precio; $("f-stock").value = p.stock; $("f-min").value = p.stock_minimo;
   atrPintar(p);
+  mostrarFotoForm(p);
   $("f-titulo").textContent = "Editar producto";
   $("f-btn").textContent = "Guardar cambios";
   $("f-cancel").classList.remove("hide");
@@ -142,6 +145,65 @@ function editar(id){
 }
 
 const normP = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
+
+// ---------- Fotos de productos ----------
+const BUCKET_FOTOS = "fotos-productos";
+letFOTO_QUITAR = false;
+
+// Solo se muestran enlaces completos; los valores viejos incompletos se ignoran
+const fotoDe = p => { const u = p && (p.foto_url || p.foto || p.imagen || p.imagen_url); return /^(https?:|data:)/.test(u || "") ? u : null; };
+
+function comprimirFoto(file, max = 1400){
+  return new Promise(res => {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return res(file);
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+      cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(url);
+      cv.toBlob(b => res(b && b.size < file.size ? new File([b], "foto.jpg", { type: "image/jpeg" }) : file), "image/jpeg", 0.84);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); res(file); };
+    img.src = url;
+  });
+}
+
+async function subirFotoProducto(file, nombre){
+  if (!/^image\//.test(file.type)) throw new Error("el archivo no es una imagen");
+  const f = await comprimirFoto(file);
+  const limpio = String(nombre || "foto").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 40);
+  const ext = f.type === "image/png" ? "png" : f.type === "image/webp" ? "webp" : "jpg";
+  const ruta = `${NEG.id}/${limpio}-${Date.now()}.${ext}`;
+  const { error } = await sb.storage.from(BUCKET_FOTOS).upload(ruta, f, { contentType: f.type, cacheControl: "31536000", upsert: false });
+  if (error) throw error;
+  return sb.storage.from(BUCKET_FOTOS).getPublicUrl(ruta).data.publicUrl;
+}
+
+function previaFoto(){
+  const f = $("f-foto").files[0], img = $("f-foto-prev");
+  if (!f) return;
+  img.src = URL.createObjectURL(f);
+  img.classList.remove("hide");
+  $("f-foto-quitar").classList.remove("hide");
+  FOTO_QUITAR = false;
+}
+
+function quitarFoto(){
+  $("f-foto").value = "";
+  $("f-foto-prev").removeAttribute("src");
+  $("f-foto-prev").classList.add("hide");
+  $("f-foto-quitar").classList.add("hide");
+  FOTO_QUITAR = true;
+}
+
+function mostrarFotoForm(p){
+  $("f-foto").value = ""; FOTO_QUITAR = false;
+  const u = fotoDe(p), img = $("f-foto-prev");
+  if (u) { img.src = u; img.classList.remove("hide"); $("f-foto-quitar").classList.remove("hide"); }
+  else { img.removeAttribute("src"); img.classList.add("hide"); $("f-foto-quitar").classList.add("hide"); }
+}
 
 async function guardarProducto(){
   const msg = $("pr-msg"); msg.textContent = "";
@@ -168,7 +230,18 @@ async function guardarProducto(){
     }
   }
 
-  const fila = { codigo, nombre: a.nombre, ...a.columnas, atributos: a.atributos, precio, stock, stock_minimo };
+  // Foto: se sube solo si eligieron una nueva; si tocaron "Quitar foto", se borra
+  let foto_url;
+  const archivo = $("f-foto").files[0];
+  if (archivo) {
+    msg.textContent = "Subiendo foto...";
+    try { foto_url = await subirFotoProducto(archivo, a.nombre); }
+    catch (e) { return msg.textContent = "No se pudo subir la foto: " + (e.message || e); }
+    msg.textContent = "";
+  } else if (FOTO_QUITAR) foto_url = null;
+
+  const fila = { codigo, nombre: a.nombre, ...a.columnas, atributos: a.atributos, precio, stock, stock_minimo,
+    ...(foto_url !== undefined ? { foto_url } : {}) };
   const { error } = EDIT
     ? await sb.from("productos").update(fila).eq("id", EDIT)
     : await sb.from("productos").insert({ ...fila, negocio_id: NEG.id });
@@ -198,29 +271,42 @@ async function guardarPrenda(){
   for (const o of ops) if (!(parseInt($("pb-" + o).value) >= 0)) return msg.textContent = "Cantidad inválida en " + o + ".";
 
   const nombre = color ? `${modelo} ${color}` : modelo, clave = normP(nombre);
+
+  let fotoUrl = null;
+  const archivo = $("p-foto").files[0];
+  if (archivo) {
+    msg.textContent = "Subiendo foto...";
+    try { fotoUrl = await subirFotoProducto(archivo, nombre); }
+    catch (e) { return msg.textContent = "No se pudo subir la foto: " + (e.message || e); }
+    msg.textContent = "";
+  }
+
   const nuevas = [], sumadas = [];
   for (const o of ops) {
     const cant = parseInt($("pb-" + o).value);
     const ya = PRODS.find(p => prefijoDe(p.codigo) === o && normP(p.nombre) === clave);
     if (ya) {
-      const { error } = await sb.from("productos").update({ stock: ya.stock + cant }).eq("id", ya.id).eq("negocio_id", NEG.id);
+      const cambios = { stock: ya.stock + cant };
+      if (fotoUrl && !fotoDe(ya)) cambios.foto_url = fotoUrl;
+      const { error } = await sb.from("productos").update(cambios).eq("id", ya.id).eq("negocio_id", NEG.id);
       if (error) return msg.textContent = "No se pudo sumar el stock de " + ya.codigo + ": " + error.message;
       sumadas.push(`${ya.codigo} (${ya.stock} → ${ya.stock + cant})`);
       continue;
     }
-    nuevas.push({ negocio_id: NEG.id, codigo: siguienteCodigo(o), nombre, modelo, color: color || null,
-      precio, stock: cant, stock_minimo: min });
-    PRODS.push(nuevas[nuevas.length - 1]);   // para que el siguiente código no se repita
+    const fila = { negocio_id: NEG.id, codigo: siguienteCodigo(o), nombre, modelo, color: color || null,
+      precio, stock: cant, stock_minimo: min, foto_url: fotoUrl };
+    nuevas.push(fila);
+    PRODS.push(fila);   // para que el siguiente código no se repita
   }
   if (nuevas.length) {
-    const { error } = await sb.from("productos").insert(nuevas.map(({ negocio_id, codigo, nombre, modelo, color, precio, stock, stock_minimo }) =>
-      ({ negocio_id, codigo, nombre, modelo, color, precio, stock, stock_minimo })));
+    const { error } = await sb.from("productos").insert(nuevas);
     if (error) return msg.textContent = "No se pudo guardar: " + error.message;
   }
   msg.style.color = "var(--ok,#16a34a)";
   msg.textContent = "Listo." + (nuevas.length ? ` Nuevos: ${nuevas.map(f => f.codigo).join(", ")}.` : "") +
     (sumadas.length ? ` Stock sumado en: ${sumadas.join(", ")}.` : "");
   ["p-modelo","p-color","p-precio","p-min"].forEach(i => $(i).value = "");
+  $("p-foto").value = "";
   (a.opciones || []).forEach(o => { const el = $("pb-" + o); if (el) el.value = ""; });
   cargarProductos();
 }

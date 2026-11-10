@@ -209,7 +209,7 @@ const LS = "carrito-" + SLUG;
 const BASE = ["portada", "beneficios", "buscador", "destacados", "catalogo", "info"];
 const NOMBRES = { portada: "Portada", beneficios: "Beneficios", buscador: "Buscador", destacados: "Destacados",
   catalogo: "Catálogo", info: "Información", banner: "Banner", texto: "Texto", imagen: "Imagen" };
-const COLS_FOTO = ["foto", "foto_url", "imagen", "imagen_url"];
+const COLS_FOTO = ["foto_url", "foto", "imagen", "imagen_url"];
 const ICO = {
   lupa: '<svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
   bolsa: '<svg class="i" viewBox="0 0 24 24"><path d="M5.5 8h13l-1 12h-11z"/><path d="M9 8V6.5a3 3 0 016 0V8"/></svg>',
@@ -225,7 +225,7 @@ const cssv = s => String(s ?? "").replace(/[;"<>{}\\]/g, "");
 const urlCss = u => 'url("' + String(u || "").replace(/["\\\n\r]/g, c => encodeURIComponent(c)) + '")';
 const sol = n => "S/ " + Number(n || 0).toFixed(2);
 const uid = () => Math.random().toString(36).slice(2, 9);
-const foto = p => { for (const k of COLS_FOTO) if (p[k]) return p[k]; return null; };
+const foto = p => { for (const k of COLS_FOTO) if (/^(https?:|data:)/.test(p[k] || "")) return p[k]; return null; };
 const cat = p => (p.atributos && T.campo_categoria) ? (p.atributos[T.campo_categoria] || "") : "";
 
 try { CAR = JSON.parse(localStorage.getItem(LS) || "{}") || {}; } catch (e) { CAR = {}; }
