@@ -152,6 +152,22 @@ svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;stro
 .wa{position:fixed;right:18px;bottom:18px;z-index:50;width:58px;height:58px;border-radius:50%;background:#25d366;border:0;cursor:pointer;box-shadow:0 8px 22px rgba(37,211,102,.45);display:flex;align-items:center;justify-content:center}
 .wa svg{width:30px;height:30px;fill:#fff}
 
+/* destacados en carrusel */
+.carru-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:.9em}
+.carru-h h3.h{margin:0}
+.flechas{display:flex;gap:8px}
+.flechas button{width:40px;height:40px;border-radius:50%;border:1px solid var(--bd);background:#fff;color:var(--tx);cursor:pointer;font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+.flechas button:hover{background:var(--tx);color:#fff;border-color:var(--tx)}
+.carru{--g:18px;--n:4;display:flex;gap:var(--g);overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+.carru::-webkit-scrollbar{display:none}
+.carru>.pc{flex:0 0 calc((100% - (var(--n) - 1) * var(--g)) / var(--n));scroll-snap-align:start}
+.carru>.vacio{flex:1}
+.cols-2 .carru{--n:2}
+.cols-3 .carru{--n:3}
+.cols-5 .carru{--n:5}
+@media(max-width:1024px){.carru,.cols-5 .carru{--n:3}}
+@media(max-width:700px){.carru,.cols-3 .carru,.cols-5 .carru{--n:2.15;--g:12px}.flechas{display:none}}
+
 /* tablet */
 @media(max-width:1024px){
   .grid,.cols-5 .grid{grid-template-columns:repeat(3,1fr)}
@@ -366,7 +382,9 @@ function cuerpo(s){
     return `<div class="wrap"><div class="search"><input type="search" id="q" value="${esc(QRAW)}" placeholder="${esc(c.ph || "Buscar producto...")}" autocomplete="off"></div>
       ${cats.length ? `<div class="chips"><button class="chip${CAT ? "" : " on"}" data-cat="">Todo</button>${cats.map(x => `<button class="chip${CAT === x ? " on" : ""}" data-cat="${esc(x)}">${esc(x)}</button>`).join("")}</div>` : ""}</div>`;
   }
-  if (k === "destacados") return `<div class="wrap"><h3 class="h">${esc(c.titulo || "Productos destacados")}</h3><div class="grid" data-g="dest"></div></div>`;
+    if (k === "destacados") return `<div class="wrap"><div class="carru-h"><h3 class="h">${esc(c.titulo || "Productos destacados")}</h3>
+    <div class="flechas"><button data-carru="-1" aria-label="Anterior">‹</button><button data-carru="1" aria-label="Siguiente">›</button></div></div>
+    <div class="carru" data-g="dest"></div></div>`;
   if (k === "catalogo") return `<div class="wrap"><h3 class="h">${esc(c.titulo || "Todos los productos")}</h3><div class="grid" data-g="cat"></div></div>`;
   if (k === "info") return `<div class="wrap tx"><h3 class="h">${esc(c.titulo || "Dónde estamos")}</h3>
     ${T.direccion ? `<p>📍 ${esc(T.direccion)}</p>` : ""}${T.horario ? `<p>🕒 ${esc(T.horario)}</p>` : ""}
@@ -401,17 +419,56 @@ function pintarGrids(){
   document.querySelectorAll('[data-g="dest"]').forEach(g => {
     g.innerHTML = mostrar ? dest.map(tarjeta).join("")
       : (EDIT ? `<p class="vacio">Marca productos con ★ en Mi tienda para que aparezcan aquí.</p>` : "");
-    const sec = g.closest(".s");
+        const sec = g.closest(".s");
     if (sec) sec.style.display = (mostrar || EDIT) ? "" : "none";
   });
+  iniciarCarrusel();
+}
+
+// Destacados: carrusel que avanza solo hacia la izquierda
+function pasoCarrusel(c){
+  const card = c.querySelector(".pc");
+  return card ? card.getBoundingClientRect().width + (parseFloat(getComputedStyle(c).columnGap) || 0) : c.clientWidth;
+}
+function moverCarrusel(dir){
+  const c = document.querySelector('.carru[data-g="dest"]'); if (!c) return;
+  c._pausa = Date.now() + 6000;
+  const fin = c.scrollLeft + c.clientWidth >= c.scrollWidth - 4;
+  if (dir > 0 && fin) return c.scrollTo({ left: 0, behavior: "smooth" });
+  if (dir < 0 && c.scrollLeft <= 4) return c.scrollTo({ left: c.scrollWidth, behavior: "smooth" });
+  c.scrollBy({ left: dir * pasoCarrusel(c), behavior: "smooth" });
+}
+let TIMER_CARRU = null;
+function iniciarCarrusel(){
+  clearInterval(TIMER_CARRU);
+  const c = document.querySelector('.carru[data-g="dest"]'); if (!c) return;
+  const sec = c.closest(".s"), fl = sec && sec.querySelector(".flechas");
+  const sobra = () => c.scrollWidth > c.clientWidth + 4;
+  if (fl) fl.style.visibility = sobra() ? "" : "hidden";
+  if (!c.dataset.listo) {
+    c.dataset.listo = "1";
+    const parar = () => { c._pausa = Date.now() + 6000; };
+    ["pointerdown", "wheel", "touchstart", "focusin"].forEach(ev => c.addEventListener(ev, parar, { passive: true }));
+    c.addEventListener("mouseenter", () => { c._encima = true; });
+    c.addEventListener("mouseleave", () => { c._encima = false; });
+  }
+  if (EDIT || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  TIMER_CARRU = setInterval(() => {
+    if (!document.body.contains(c)) return clearInterval(TIMER_CARRU);
+    if (fl) fl.style.visibility = sobra() ? "" : "hidden";
+    if (c._encima || Date.now() < (c._pausa || 0) || document.hidden || !sobra()) return;
+    moverCarrusel(1);
+    c._pausa = 0;
+  }, 3500);
 }
 
 /* ---------- Interacción del cliente ---------- */
 document.addEventListener("click", e => {
   if (EDIT && e.target.closest("#app")) return;
-  const t = e.target.closest("[data-add],[data-cat],[data-go],[data-act]");
+  const t = e.target.closest("[data-add],[data-cat],[data-go],[data-act],[data-carru]");
   if (!t) return;
   const d = t.dataset;
+  if (d.carru) return moverCarrusel(Number(d.carru));
   if (d.add) return agregar(d.add);
   if (d.cat !== undefined) return filtrar(d.cat);
   if (d.go) return irA(d.go);
