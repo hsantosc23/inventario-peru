@@ -98,11 +98,11 @@ svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;stro
 .pc:hover .ph img{transform:scale(1.04)}
 .ph .ini{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:52px;color:#c9c9c5}
 .off{position:absolute;right:10px;bottom:10px;background:#e01f26;color:#fff;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700}
-.pn{font-size:.9em;line-height:1.35}
+.pn{font-size:.9em;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.7em}
 .pp{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
 .pp .old{color:#9aa0a6;text-decoration:line-through;font-size:.85em}
 .pp .now{font-weight:700}
-.add{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:1px solid currentColor;background:transparent;padding:11px;margin-top:2px}
+.add{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:1px solid currentColor;background:transparent;padding:11px;margin-top:auto}
 .add:hover{background:var(--tx);color:#fff;border-color:var(--tx)}
 .add:disabled{opacity:.4;cursor:default;background:transparent;color:inherit}
 .vacio{text-align:center;color:var(--gr);padding:40px 0;grid-column:1/-1;margin:0}
@@ -158,7 +158,7 @@ svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;stro
 .flechas{display:flex;gap:8px}
 .flechas button{width:40px;height:40px;border-radius:50%;border:1px solid var(--bd);background:#fff;color:var(--tx);cursor:pointer;font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
 .flechas button:hover{background:var(--tx);color:#fff;border-color:var(--tx)}
-.carru{--g:18px;--n:4;display:flex;gap:var(--g);overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+.carru{--g:18px;--n:4;display:flex;gap:var(--g);overflow-x:auto;scroll-snap-type:x proximity;scroll-behavior:smooth;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:4px}
 .carru::-webkit-scrollbar{display:none}
 .carru>.pc{flex:0 0 calc((100% - (var(--n) - 1) * var(--g)) / var(--n));scroll-snap-align:start}
 .carru>.vacio{flex:1}
@@ -166,7 +166,7 @@ svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;stro
 .cols-3 .carru{--n:3}
 .cols-5 .carru{--n:5}
 @media(max-width:1024px){.carru,.cols-5 .carru{--n:3}}
-@media(max-width:700px){.carru,.cols-3 .carru,.cols-5 .carru{--n:2.15;--g:12px}.flechas{display:none}}
+@media(max-width:700px){.carru,.cols-3 .carru,.cols-5 .carru{--n:2;--g:12px}.flechas button{width:34px;height:34px;font-size:18px}}
 
 /* tablet */
 @media(max-width:1024px){
@@ -430,13 +430,15 @@ function pasoCarrusel(c){
   const card = c.querySelector(".pc");
   return card ? card.getBoundingClientRect().width + (parseFloat(getComputedStyle(c).columnGap) || 0) : c.clientWidth;
 }
-function moverCarrusel(dir){
+
+function moverCarrusel(dir, auto){
   const c = document.querySelector('.carru[data-g="dest"]'); if (!c) return;
-  c._pausa = Date.now() + 6000;
-  const fin = c.scrollLeft + c.clientWidth >= c.scrollWidth - 4;
-  if (dir > 0 && fin) return c.scrollTo({ left: 0, behavior: "smooth" });
-  if (dir < 0 && c.scrollLeft <= 4) return c.scrollTo({ left: c.scrollWidth, behavior: "smooth" });
-  c.scrollBy({ left: dir * pasoCarrusel(c), behavior: "smooth" });
+  if (!auto) c._pausa = Date.now() + 6000;
+  const max = c.scrollWidth - c.clientWidth, paso = pasoCarrusel(c);
+  let dest = c.scrollLeft + dir * paso;
+  if (dir > 0 && c.scrollLeft >= max - paso / 2) dest = 0;        // al final: vuelve al inicio
+  else if (dir < 0 && c.scrollLeft <= paso / 2) dest = max;       // al inicio: va al final
+  c.scrollTo({ left: Math.max(0, Math.min(max, dest)), behavior: "smooth" });
 }
 let TIMER_CARRU = null;
 function iniciarCarrusel(){
@@ -448,17 +450,21 @@ function iniciarCarrusel(){
   if (!c.dataset.listo) {
     c.dataset.listo = "1";
     const parar = () => { c._pausa = Date.now() + 6000; };
-    ["pointerdown", "wheel", "touchstart", "focusin"].forEach(ev => c.addEventListener(ev, parar, { passive: true }));
-    c.addEventListener("mouseenter", () => { c._encima = true; });
-    c.addEventListener("mouseleave", () => { c._encima = false; });
+    ["pointerdown", "wheel", "touchstart"].forEach(ev => c.addEventListener(ev, parar, { passive: true }));
+    // solo el mouse lo detiene mientras está encima (en celular no existe "encima")
+    c.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") c._encima = true; });
+    c.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") c._encima = false; });
   }
   if (EDIT || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   TIMER_CARRU = setInterval(() => {
     if (!document.body.contains(c)) return clearInterval(TIMER_CARRU);
-    if (fl) fl.style.visibility = sobra() ? "" : "hidden";
-    if (c._encima || Date.now() < (c._pausa || 0) || document.hidden || !sobra()) return;
-    moverCarrusel(1);
-    c._pausa = 0;
+    const hay = sobra();
+    if (fl) fl.style.visibility = hay ? "" : "hidden";
+    if (!hay || c._encima || document.hidden || Date.now() < (c._pausa || 0)) return;
+    // si no se movió desde la última vez, se trabó al final: vuelve al inicio
+    if (c._ult != null && c.scrollLeft > 0 && Math.abs(c.scrollLeft - c._ult) < 2) c.scrollTo({ left: 0, behavior: "smooth" });
+    else moverCarrusel(1, true);
+    c._ult = c.scrollLeft;
   }, 3500);
 }
 
