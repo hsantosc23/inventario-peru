@@ -293,7 +293,7 @@
       h += C.r("st:osc", "Oscurecer la imagen", st.osc != null ? Math.round(st.osc * 100) : null, 70, 0, 100, 5, "%");
       h += C.t("t:hero_eyebrow", "Texto pequeño de arriba", T.hero_eyebrow, "NUEVA COLECCIÓN");
       h += C.t("t:hero_titulo", "Título", T.hero_titulo, T.titulo);
-      h += C.a("t:hero_sub", "Frase", T.hero_sub, "Comodidad y estilo en cada prenda");
+      h += C.a("t:hero_sub", "Frase", T.hero_sub == null ? T.descripcion : T.hero_sub, "Comodidad y estilo en cada prenda");
       h += C.t("t:hero_cta", "Texto del botón (vacío = sin botón)", T.hero_cta == null ? "Comprar ahora" : T.hero_cta);
       h += C.col("st:btn", "Color del botón", st.btn, T.color || "#c2714f");
     } else if (k === "banner") {

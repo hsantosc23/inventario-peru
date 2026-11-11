@@ -547,3 +547,13 @@ html[data-tema="oscuro"] #md-ov .card,html[data-tema="oscuro"] .modal-caja.card{
 .pub-b.est{width:40px !important;padding:8px 0 !important}
 .tab-ico{font-size:26px;line-height:1;display:block}
 @media(min-width:701px){.tab-ico{display:none}}
+
+/* Paleta de color de la tienda */
+.td-colores{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:8px;margin-top:6px}
+.td-sw{width:100% !important;aspect-ratio:1;height:auto;border-radius:50% !important;border:2px solid rgba(255,255,255,.18) !important;padding:0 !important;margin:0 !important;cursor:pointer}
+.td-sw.on{box-shadow:0 0 0 3px #0b1020,0 0 0 5px #60a5fa !important}
+html[data-tema="claro"] .td-sw.on{box-shadow:0 0 0 3px #fff,0 0 0 5px #3b82f6 !important}
+.td-otro{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;font-size:10px;margin:0 !important;font-weight:600}
+.td-otro input{width:30px;height:30px;padding:0 !important;border:0 !important;border-radius:50%;background:none;cursor:pointer}
+.td-muestra{display:flex;align-items:center;gap:10px;margin-top:10px}
+.td-muestra button{width:auto !important;margin:0 !important;color:#fff;border:0 !important;border-radius:10px;padding:10px 16px;font-weight:600}

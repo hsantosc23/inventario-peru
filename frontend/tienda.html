@@ -309,6 +309,7 @@ function pintar(){
   html += `<main id="secs">${T.secciones.filter(s => s.on || EDIT).map(secHTML).join("")}</main>`;
   const vf = (f.bg ? "--fbg:" + cssv(f.bg) + ";" : "") + (f.tx ? "--ftx:" + cssv(f.tx) : "");
   html += `<footer class="pie" data-fix="pie" style="${esc(vf)}"><div class="wrap"><b>${esc(T.titulo || "")}</b><br>
+      ${T.descripcion ? esc(T.descripcion) + "<br>" : ""}
       ${T.direccion ? esc(T.direccion) + "<br>" : ""}${T.horario ? esc(T.horario) + "<br>" : ""}
       ${T.whatsapp ? "WhatsApp " + esc(T.whatsapp) : ""}</div></footer>`;
   if (T.whatsapp && !EDIT) html += `<button class="wa" data-act="wa" aria-label="Escríbenos por WhatsApp">${ICO.wa}</button>`;
@@ -353,7 +354,7 @@ function heroHTML(img, eb, titulo, sub, cta){
 
 function cuerpo(s){
   const k = s.k, c = s.c || {};
-  if (k === "portada") return heroHTML(T.hero_img, T.hero_eyebrow, T.hero_titulo || T.titulo, T.hero_sub, T.hero_cta == null ? "Comprar ahora" : T.hero_cta);
+  if (k === "portada") return heroHTML(T.hero_img, T.hero_eyebrow, T.hero_titulo || T.titulo, T.hero_sub || T.descripcion, T.hero_cta == null ? "Comprar ahora" : T.hero_cta);
   if (k === "banner") return heroHTML(c.img, c.eyebrow, c.titulo, c.sub, c.cta == null ? "Ver catálogo" : c.cta);
   if (k === "beneficios") {
     const b = Array.isArray(T.beneficios) ? T.beneficios : [];

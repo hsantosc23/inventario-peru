@@ -33,6 +33,23 @@ async function cargarTienda(){
   pintarTienda();
 }
 
+// Colores más usados en tiendas
+const COLORES_TDA = [
+  ["#111111", "Negro"], ["#c2714f", "Terracota"], ["#dc2626", "Rojo"], ["#db2777", "Rosa"],
+  ["#c026d3", "Fucsia"], ["#7c3aed", "Morado"], ["#4f46e5", "Índigo"], ["#2563eb", "Azul"],
+  ["#0ea5e9", "Celeste"], ["#0d9488", "Turquesa"], ["#16a34a", "Verde"], ["#65a30d", "Oliva"],
+  ["#ca8a04", "Dorado"], ["#ea580c", "Naranja"], ["#92400e", "Café"], ["#475569", "Gris"]
+];
+
+function elegirColorTda(c, desdeInput){
+  c = String(c).toLowerCase();
+  if (!desdeInput) $("td-color").value = c;
+  document.querySelectorAll(".td-sw").forEach(b => b.classList.toggle("on", b.dataset.c === c));
+  $("td-muestra").style.background = c;
+  const n = COLORES_TDA.find(([x]) => x === c);
+  $("td-color-n").textContent = n ? n[1] : c;
+}
+
 function pintarTienda(){
   const box = $("t-tda"); if (!box) return;
   if (!TDA) {
@@ -52,12 +69,21 @@ function pintarTienda(){
       <b>Datos de la tienda</b>
       <label>Nombre que verán tus clientes</label><input type="text" id="td-titulo" maxlength="60" value="${esc(TDA.titulo || "")}">
       <label>Frase corta</label><input type="text" id="td-desc" maxlength="120" value="${esc(TDA.descripcion || "")}" placeholder="Ej.: Ropa para toda ocasión">
+      <small class="gr" style="display:block;margin-top:4px">Sale debajo del título de la portada y en el pie de la página.</small>
       <label>WhatsApp donde recibes los pedidos</label><input type="tel" id="td-wsp" inputmode="numeric" maxlength="9" value="${esc(TDA.whatsapp || "")}" placeholder="987654321">
       <div class="f2">
         <div><label>Dirección</label><input type="text" id="td-dir" maxlength="80" value="${esc(TDA.direccion || "")}"></div>
         <div><label>Horario</label><input type="text" id="td-hor" maxlength="60" value="${esc(TDA.horario || "")}" placeholder="Lun a sáb 10am - 8pm"></div>
       </div>
-      <label>Color principal</label><input type="color" id="td-color" value="${esc(TDA.color || "#4f46e5")}" style="height:44px;padding:4px">
+            <label>Color principal <small class="gr">(botones y detalles)</small></label>
+      <div class="td-colores">
+        ${COLORES_TDA.map(([c, n]) => `<button type="button" class="td-sw${(TDA.color || "").toLowerCase() === c ? " on" : ""}" data-c="${c}" style="background:${c}" title="${n}" aria-label="${n}" onclick="elegirColorTda('${c}')"></button>`).join("")}
+        <label class="td-otro" title="Elegir otro color"><input type="color" id="td-color" value="${esc(TDA.color || "#c2714f")}" oninput="elegirColorTda(this.value, true)"><span>Otro</span></label>
+      </div>
+      <div class="td-muestra">
+        <button type="button" id="td-muestra" style="background:${esc(TDA.color || "#c2714f")}">Así se verán tus botones</button>
+        <span id="td-color-n" class="gr">${esc(((COLORES_TDA.find(([c]) => c === (TDA.color || "").toLowerCase()) || [])[1]) || TDA.color || "")}</span>
+      </div>
       <label>Agrupar por</label>
       <select id="td-cat"><option value="">Sin categorías</option>
         ${listas.map(a => `<option value="${esc(a.clave)}"${TDA.campo_categoria === a.clave ? " selected" : ""}>${esc(a.etiqueta)}</option>`).join("")}</select>
@@ -117,7 +143,7 @@ async function guardarTienda(){
     titulo: $("td-titulo").value.trim() || NEG.nombre, descripcion: $("td-desc").value.trim() || null,
     whatsapp: wsp || null, direccion: $("td-dir").value.trim() || null, horario: $("td-hor").value.trim() || null,
     color: $("td-color").value, campo_categoria: $("td-cat").value || null,
-    mostrar_agotados: $("td-agot").checked, activa: $("td-act").checked, secciones: TDA.secciones
+    mostrar_agotados: $("td-agot").checked, activa: $("td-act").checked
   };
   const { data, error } = await sb.from("tiendas").update(fila).eq("id", TDA.id).select().single();
   if (error) return msg.textContent = "No se pudo guardar: " + error.message;
