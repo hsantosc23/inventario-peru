@@ -128,12 +128,17 @@ async function guardarTienda(){
 function listarPubs(){
   const q = ($("td-buscar").value || "").trim().toLowerCase();
   const r = PRODS.filter(p => !q || p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)).slice(0, 200);
-  $("td-prods").innerHTML = r.length ? r.map(p => `<div class="fila">
-      <div style="flex:1;min-width:0"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}
-        <small class="gr" style="display:block">S/ ${Number(p.precio).toFixed(2)} · stock ${p.stock}</small></div>
-      <button class="${p.en_tienda !== false ? "pri" : ""}" onclick="pubProd('${p.id}','en_tienda')">${p.en_tienda !== false ? "Publicado" : "Oculto"}</button>
-      <button class="${p.destacado ? "pri" : ""}" onclick="pubProd('${p.id}','destacado')">★</button>
-    </div>`).join("") : `<p class="gr">No hay productos.</p>`;
+  $("td-prods").innerHTML = r.length ? r.map(p => {
+    const f = typeof fotoDe === "function" ? fotoDe(p) : null, pub = p.en_tienda !== false;
+    return `<div class="pub-fila">
+      ${f ? `<img class="pub-img" src="${esc(f)}" alt="" loading="lazy">` : `<div class="pub-img pub-sin">📷</div>`}
+      <div class="pub-info"><b>${esc(p.codigo)}</b> · ${esc(p.nombre)}
+        <small>S/ ${Number(p.precio).toFixed(2)} · stock ${p.stock}</small></div>
+      <div class="pub-bts">
+        <button class="pub-b${pub ? " pri" : ""}" onclick="pubProd('${p.id}','en_tienda')">${pub ? "Publicado" : "Oculto"}</button>
+        <button class="pub-b est${p.destacado ? " pri" : ""}" onclick="pubProd('${p.id}','destacado')" title="Destacado">★</button>
+      </div></div>`;
+  }).join("") : `<p class="gr">No hay productos.</p>`;
 }
 
 async function pubProd(id, campo){
@@ -153,3 +158,26 @@ function compartirTienda(){
   if (navigator.share) navigator.share({ title: TDA.titulo || NEG.nombre, text: t, url: urlTienda() }).catch(() => {});
   else window.open("https://wa.me/?text=" + encodeURIComponent(t), "_blank");
 }
+
+// Íconos de Taller y Mi tienda en la barra, con el mismo estilo que las demás pestañas
+window.addEventListener("load", () => {
+  const ref = document.querySelector("#tab-est img, #tab-inv img");
+  const ICONOS = { "tab-ser": ["Hammer and wrench", "🛠️"], "tab-tda": ["Shopping bags", "🛍️"] };
+  Object.entries(ICONOS).forEach(([id, [nombre, emoji]]) => {
+    const b = document.getElementById(id);
+    if (!b || b.querySelector("img, .tab-ico")) return;
+    const emojiSpan = cls => {
+      const s = document.createElement("span");
+      s.className = (cls ? cls + " " : "") + "tab-ico";
+      s.textContent = emoji;
+      return s;
+    };
+    if (!ref) return b.insertBefore(emojiSpan(""), b.firstChild);
+    const img = ref.cloneNode(true);
+    const base = ref.src.includes("fluentui-emoji") ? ref.src.split("/assets/")[0] : "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main";
+    img.src = `${base}/assets/${encodeURIComponent(nombre)}/3D/${nombre.toLowerCase().replace(/ /g, "_")}_3d.png`;
+    img.alt = "";
+    img.onerror = () => img.replaceWith(emojiSpan(img.className));   // si no carga, queda el emoji
+    b.insertBefore(img, b.firstChild);
+  });
+});
