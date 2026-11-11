@@ -13,6 +13,9 @@
 <title>Gestora Perú · Tu negocio bajo control</title>
 <link rel="icon" href="/images/logo.jpeg">
 <script>try{var t=localStorage.getItem("tema");if(!t)t=matchMedia("(prefers-color-scheme:dark)").matches?"oscuro":"claro";document.documentElement.dataset.tema=t}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -34,19 +37,129 @@
 
 <!-- INICIO -->
 <section class="v hide" id="v-home">
-  <div class="hero">
-    <img src="/images/logo.jpeg" alt="Gestora Perú" class="hero-logo" width="150">
-    <h1>Administra tu negocio sin complicaciones</h1>
-    <p>Controla tu inventario o tus habitaciones desde el celular o la computadora. Prueba gratis 7 días.</p>
-    <button class="pri" onclick="show('registro')">Empieza gratis</button>
-    <button onclick="show('login')">Ya tengo cuenta</button>
+<div class="lp">
+
+  <div class="lp-hero">
+    <div class="lp-marca" aria-hidden="true">gestora</div>
+    <div class="lp-in">
+      <span class="lp-eyebrow">Hecho para negocios peruanos</span>
+      <h1>Tu negocio bajo control,<br><span>desde el celular o la PC</span></h1>
+      <p>Inventario, ventas, caja, boletas y facturas electrónicas en un solo lugar. Para tiendas, bodegas, talleres y hostales.</p>
+      <div class="lp-ctas">
+        <button class="pri lp-cta" onclick="show('registro')">Empieza gratis 7 días <span aria-hidden="true">→</span></button>
+        <button class="lp-ghost" onclick="show('login')">Ya tengo cuenta</button>
+      </div>
+      <ul class="lp-mini">
+        <li>Boletas y facturas SUNAT</li><li>Celular y computadora</li><li>Varias sedes</li>
+      </ul>
+    </div>
+
+    <div class="lp-demo" aria-hidden="true">
+      <div class="lp-bar"><i></i><i></i><i></i><span>gestoraperu.vercel.app</span></div>
+      <div class="lp-tabs"><b>Inventario</b><b class="on">Ventas</b><b>Caja</b><b>Estadísticas</b></div>
+      <div class="lp-kpis">
+        <div class="lp-kpi"><small>Ventas del mes</small><strong>S/ 18,450</strong><em>▲ 12.4%</em>
+          <svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline stroke="#2dd4bf" points="0,24 10,22 20,23 30,18 40,19 50,14 60,15 70,10 80,11 90,6 100,4"/></svg></div>
+        <div class="lp-kpi"><small>N.º de ventas</small><strong>642</strong><em>▲ 8.1%</em>
+          <svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline stroke="#a78bfa" points="0,20 10,16 20,18 30,12 40,15 50,9 60,13 70,8 80,12 90,7 100,9"/></svg></div>
+        <div class="lp-kpi"><small>Productos</small><strong>1,204</strong><em>▲ 2.0%</em>
+          <svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline stroke="#38bdf8" points="0,18 10,18 20,16 30,17 40,14 50,15 60,12 70,13 80,11 90,12 100,10"/></svg></div>
+        <div class="lp-kpi"><small>Gastos del mes</small><strong>S/ 4,120</strong><em class="dn">▼ 3.1%</em>
+          <svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline stroke="#fbbf24" points="0,8 10,10 20,9 30,13 40,11 50,15 60,14 70,18 80,17 90,21 100,22"/></svg></div>
+      </div>
+      <div class="lp-row">
+        <div class="lp-box">
+          <small>Ventas por día</small>
+          <div class="lp-bars">
+            <i style="--h:42%"></i><i style="--h:58%"></i><i style="--h:35%"></i><i style="--h:66%"></i><i style="--h:52%"></i><i style="--h:78%"></i><i style="--h:60%"></i>
+            <i style="--h:48%"></i><i style="--h:70%"></i><i style="--h:88%"></i><i style="--h:64%"></i><i style="--h:74%"></i><i style="--h:56%"></i><i style="--h:95%"></i>
+          </div>
+        </div>
+        <div class="lp-box lp-top">
+          <small>Más vendidos</small>
+          <div><span>Polo básico</span><b style="--w:92%"></b></div>
+          <div><span>Jean slim</span><b style="--w:74%"></b></div>
+          <div><span>Zapatilla urbana</span><b style="--w:61%"></b></div>
+          <div><span>Funda de celular</span><b style="--w:45%"></b></div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="grid">
-    <div class="card"><b>Busca por código</b><p>Encuentra cualquier producto y su precio en segundos, y vende más rápido.</p></div>
-    <div class="card"><b>Stock al día</b><p>Sabe qué tienes y qué te falta, sin cuadernos ni hojas sueltas.</p></div>
-    <div class="card"><b>Control de hostales</b><p>Registra huéspedes y habitaciones, por hora, noche o día completo.</p></div>
-    <div class="card"><b>Tus datos seguros</b><p>Cada negocio ve solo su información, con su propia cuenta.</p></div>
+
+  <div class="lp-sec">
+    <div class="lp-head">
+      <span class="lp-kicker">Todo en un solo lugar</span>
+      <h2>Deja el cuaderno. Controla todo desde una app.</h2>
+      <p>Lo que vendes, lo que tienes, lo que gastas y lo que ganas, al día y sin hojas sueltas.</p>
+    </div>
+    <div class="lp-feats">
+      <div class="lp-feat"><span class="lp-ico" style="--c:#0d9488"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8"/></svg></span>
+        <h3>Inventario al día</h3><p>Stock por producto, talla y color, con aviso cuando algo se está acabando.</p></div>
+      <div class="lp-feat"><span class="lp-ico" style="--c:#7c3aed"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2M7 8v8M10 8v8M14 8v8M17 8v8"/></svg></span>
+        <h3>Códigos de barras</h3><p>Imprime etiquetas y vende escaneando con la cámara del celular o un lector.</p></div>
+      <div class="lp-feat"><span class="lp-ico" style="--c:#e11d48"><svg viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2zM9 7h6M9 11h6M9 15h4"/></svg></span>
+        <h3>Boletas y facturas</h3><p>Comprobantes electrónicos enviados a SUNAT, o tickets de venta si aún no eres formal.</p></div>
+      <div class="lp-feat"><span class="lp-ico" style="--c:#d97706"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h13v4M3 7v10a2 2 0 002 2h15V9H5a2 2 0 01-2-2zM16 14h.01"/></svg></span>
+        <h3>Caja y gastos</h3><p>Cierre de caja diario, gastos por categoría y pagos pendientes de tus clientes.</p></div>
+      <div class="lp-feat"><span class="lp-ico" style="--c:#0284c7"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg></span>
+        <h3>Estadísticas</h3><p>Qué se vende más, a qué hora vendes y cuánto ganas, en gráficos claros.</p></div>
+      <div class="lp-feat"><span class="lp-ico" style="--c:#059669"><svg viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9M3 9v11h18V9M3 9h18M9 20v-6h6v6"/></svg></span>
+        <h3>Varias sedes</h3><p>Un solo catálogo para todas tus tiendas, con el stock de cada una por separado.</p></div>
+      <div class="lp-feat"><span class="lp-ico" style="--c:#db2777"><svg viewBox="0 0 24 24"><path d="M6 7h12l1 14H5L6 7zM9 7a3 3 0 016 0"/></svg></span>
+        <h3>Tienda virtual</h3><p>Tu catálogo en línea con carrito y pedidos que te llegan por WhatsApp.</p></div>
+      <div class="lp-feat"><span class="lp-ico" style="--c:#4f46e5"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4 2.6-2.6z"/></svg></span>
+        <h3>Taller de reparación</h3><p>Órdenes de servicio con estado, repuestos y comprobante al entregar.</p></div>
+    </div>
   </div>
+
+  <div class="lp-sec lp-alt">
+    <div class="lp-head">
+      <span class="lp-kicker">Para tu rubro</span>
+      <h2>Se adapta a lo que vendes</h2>
+      <p>Al crear tu cuenta eliges tu rubro y la app te muestra solo los campos que necesitas.</p>
+    </div>
+    <div class="lp-rubros">
+      <div class="lp-rubro"><span class="lp-ico" style="--c:#db2777"><svg viewBox="0 0 24 24"><path d="M8 3L3 6l2 5 3-1v11h8V10l3 1 2-5-5-3a4 4 0 01-8 0z"/></svg></span>
+        <div><h3>Ropa y calzado</h3><p>Tallas, colores y modelos, con código por modelo y cambio de prenda.</p></div></div>
+      <div class="lp-rubro"><span class="lp-ico" style="--c:#4f46e5"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span>
+        <div><h3>Celulares y accesorios</h3><p>Equipos con IMEI, repuestos y servicio técnico en el mismo lugar.</p></div></div>
+      <div class="lp-rubro"><span class="lp-ico" style="--c:#059669"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.4 11h11l2-8H6.2M9 20h.01M18 20h.01"/></svg></span>
+        <div><h3>Bodegas y minimarkets</h3><p>Venta rápida por código de barras y control de lo que se acaba.</p></div></div>
+      <div class="lp-rubro"><span class="lp-ico" style="--c:#d97706"><svg viewBox="0 0 24 24"><path d="M15 12l-8.5 8.5a2.1 2.1 0 01-3-3L12 9M17.6 6.4l-2-2a2 2 0 00-2.8 0L12 5l7 7 .8-.8a2 2 0 000-2.8z"/></svg></span>
+        <div><h3>Ferreterías y artefactos</h3><p>Muchos productos, stock mínimo y precios siempre a la mano.</p></div></div>
+      <div class="lp-rubro"><span class="lp-ico" style="--c:#0284c7"><svg viewBox="0 0 24 24"><path d="M3 18V6M3 14h18v4M21 14v-3a3 3 0 00-3-3h-7v6M7 11h.01"/></svg></span>
+        <div><h3>Hostales y hoteles</h3><p>Habitaciones por hora, noche o día completo y registro de huéspedes.</p></div></div>
+      <div class="lp-rubro"><span class="lp-ico" style="--c:#0d9488"><svg viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2zM9 7h6M9 11h4"/></svg></span>
+        <div><h3>Negocios por formalizar</h3><p>Ordena tus ventas con tickets de venta hoy y pasa a SUNAT cuando quieras.</p></div></div>
+    </div>
+  </div>
+
+  <div class="lp-sec">
+    <div class="lp-head">
+      <span class="lp-kicker">Empieza en minutos</span>
+      <h2>Tres pasos y ya estás vendiendo</h2>
+    </div>
+    <div class="lp-pasos">
+      <div class="lp-paso"><h3>Crea tu cuenta</h3><p>Con tu correo o tu cuenta de Google. Tienes 7 días gratis.</p></div>
+      <div class="lp-paso"><h3>Elige tu rubro</h3><p>Ropa, celulares, bodega, ferretería, hostal y más.</p></div>
+      <div class="lp-paso"><h3>Carga y vende</h3><p>Agrega tus productos uno por uno o por bloque y empieza a vender.</p></div>
+    </div>
+  </div>
+
+  <div class="lp-final">
+    <div>
+      <h2>Pon tu negocio bajo control hoy</h2>
+      <p>Pruébalo gratis 7 días, desde tu celular o tu computadora.</p>
+    </div>
+    <button class="pri lp-cta" onclick="show('registro')">Crear mi cuenta gratis <span aria-hidden="true">→</span></button>
+  </div>
+
+  <footer class="lp-pie">
+    <div class="lp-pie-logo"><img src="/images/logo.jpeg" alt="" width="28" height="28"> Gestora Perú</div>
+    <span>Tu negocio bajo control · © 2026</span>
+  </footer>
+
+</div>
 </section>
 
 <!-- REGISTRO -->
