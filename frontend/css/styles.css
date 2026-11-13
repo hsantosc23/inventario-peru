@@ -821,3 +821,7 @@ body:has(#v-home:not(.hide)) header button:not(.pri):hover{background:rgba(255,2
   .lp-final .lp-cta{width:100%}
 }
 @media(prefers-reduced-motion:reduce){.lp *{transition:none!important}}
+
+/* Campos del formulario alineados aunque una etiqueta ocupe 2 líneas */
+#f-atrs.f2,#f-atrs .f2{align-items:end}
+#f-atrs.f2>div,#f-atrs .f2>div{display:flex;flex-direction:column;justify-content:flex-end}

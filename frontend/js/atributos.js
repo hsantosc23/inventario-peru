@@ -97,3 +97,37 @@ function pintarBloque(){
   box.innerHTML = (a.opciones || []).map(o =>
     `<div><small>${esc(o)}</small><input type="number" min="0" id="pb-${esc(o)}" inputmode="numeric"></div>`).join("");
 }
+
+/* ===== Ejemplos (placeholders) según el tipo de producto ===== */
+(function () {
+  const EJ = {
+    "Equipo":              { marca: "Samsung",   nombre: "Galaxy A54",               color: "negro" },
+    "Repuesto":            { marca: "Samsung",   nombre: "Pantalla Galaxy A54",      color: "negro" },
+    "Accesorio":           { marca: "Genérico",  nombre: "Cargador tipo C 25W",      color: "blanco" },
+    "Laptop":              { marca: "HP",        nombre: "Pavilion 15",              color: "plata",  serie: "5CD1234XYZ" },
+    "PC de escritorio":    { marca: "Lenovo",    nombre: "ThinkCentre / PC Gamer",   color: "negro",  serie: "MJ0ABC12" },
+    "Componente de PC":    { marca: "Kingston",  nombre: "Fury Beast 16 GB DDR4",    color: "negro",  serie: "KF432C16BB" },
+    "Periférico":          { marca: "Logitech",  nombre: "Mouse M170",               color: "negro",  serie: "2134LZ0ABC" },
+    "Impresora":           { marca: "Epson",     nombre: "EcoTank L3250",            color: "negro",  serie: "X8HY012345" },
+    "Software / licencia": { marca: "Microsoft", nombre: "Office 2021 Hogar" }
+  };
+  const campo = (caja, txt) => {
+    const lab = [...caja.querySelectorAll("label")].find(l => l.textContent.trim().toLowerCase().startsWith(txt));
+    return lab && lab.parentElement.querySelector("input:not([type=file]),textarea");
+  };
+  function aplicar() {
+    const caja = document.getElementById("f-atrs"); if (!caja) return;
+    const tipo = [...caja.querySelectorAll("select")].find(s => [...s.options].some(o => o.value === "Componente de PC"));
+    const e = tipo && EJ[tipo.value]; if (!e) return;
+    const poner = (txt, v) => { const i = campo(caja, txt); if (i && v && i.placeholder !== "Ej.: " + v) i.placeholder = "Ej.: " + v; };
+    poner("marca", e.marca); poner("nombre", e.nombre); poner("color", e.color); poner("n.º de serie", e.serie);
+  }
+  document.addEventListener("change", ev => { if (ev.target.closest && ev.target.closest("#f-atrs")) setTimeout(aplicar, 0); });
+  const iniciar = () => {
+    const caja = document.getElementById("f-atrs");
+    if (!caja) return setTimeout(iniciar, 500);
+    new MutationObserver(() => aplicar()).observe(caja, { childList: true, subtree: true });
+    aplicar();
+  };
+  iniciar();
+})();
